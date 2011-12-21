@@ -1,4 +1,4 @@
-from threading import Lock, local
+from threading import Lock, local, currentThread
 
 
 def synchronized(f):

@@ -6,19 +6,7 @@ from rt import RT
 
 class APersistentMap(IPersistentMap):
     def cons(self, o):
-        if isinstance(o, MapEntry):
-            return self.assoc(o.getKey(), o.getValue())
-        if hasattr(o, "__getitem__") and hasattr(o, "__len__"):
-            if len(o) != 2:
-                raise InvalidArgumentException("Vector arg must be a pair")
-            return self.assoc(o[0], o[1])
-
-        s = RT.seq(o)
-        map = self
-        for s in s.interator():
-            m = s.first()
-            map = map.assoc(m.getKey(), m.getValue())
-        return map
+        return RT.conjToAssoc(self, o)
     def __eq__(self, other):
         return APersistentMap.mapEquals(self, other)
 
@@ -99,6 +87,12 @@ class APersistentMap(IPersistentMap):
 
     def __call__(self, *args, **kwargs):
         return apply(self.valAt, args)
+
+    def __getitem__(self, item):
+        return self.valAt(item)
+
+    def __contains__(self, item):
+        return self.containsKey(item)
 
 
 

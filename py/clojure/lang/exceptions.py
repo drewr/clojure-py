@@ -16,3 +16,7 @@ class InvalidArgumentException(Exception):
     def __init__(self, s = None):
         Exception.__init__(self, s)
 
+class IllegalAccessError(Exception):
+    def __init__(self, s = None):
+        Exception.__init__(s)
+
