@@ -20,3 +20,23 @@ class ATransientMap(IFn, ITransientMap):
     def conj(self, val):
         self.ensureEditable()
         return RT.conjToAssoc(self, val)
+
+    def __call__(self, *args):
+        return apply(self.valAt, args)
+
+    def without(self, key):
+        self.ensureEditable()
+        return self.doWithout()
+
+    def valAt(self, key, notFound = None):
+        self.ensureEditable()
+        return self.doValAt(key, notFound)
+    def assoc(self, key, value):
+        self.ensureEditable()
+        return self.doAssoc(key, value)
+    def count(self):
+        self.ensureEditable()
+        return self.count()
+    def persistent(self):
+        self.ensureEditable()
+        return self.persistent()
