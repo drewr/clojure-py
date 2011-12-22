@@ -6,7 +6,7 @@ from seqable import Seqable
 from iseq import ISeq
 from sequential import Sequential
 from obj import Obj
-from exceptions import ArityException, IllegalStateException
+from cljexceptions import ArityException, IllegalStateException
 import rt as RT
 
 class PersistentList(ASeq, IPersistentList, IReduce, Counted):

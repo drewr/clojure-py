@@ -1,5 +1,5 @@
-from exceptions import AbstractMethodCall
+from cljexceptions import AbstractMethodCall
 
-class IObj(object):
+class IObj():
     def withMeta(self, meta):
         raise AbstractMethodCall()

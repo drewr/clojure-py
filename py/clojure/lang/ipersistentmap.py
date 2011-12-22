@@ -1,4 +1,4 @@
-from exceptions import AbstractMethodCall
+from cljexceptions import AbstractMethodCall
 from associative import Associative
 from interable import Interable
 from counted import Counted

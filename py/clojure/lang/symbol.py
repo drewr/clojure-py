@@ -1,5 +1,5 @@
 from iobj import IObj
-from exceptions import ArityException
+from cljexceptions import ArityException
 
 
 class Symbol(object, IObj):

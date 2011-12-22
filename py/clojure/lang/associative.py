@@ -1,4 +1,4 @@
-from exceptions import AbstractMethodCall
+from cljexceptions import AbstractMethodCall
 from ilookup import ILookup
 from ipersistentcollection import IPersistentCollection
 

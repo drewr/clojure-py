@@ -1,7 +1,7 @@
 from areference import AReference
 from iref import IRef
 import rt as RT
-from exceptions import IllegalStateException, ArityException
+from cljexceptions import IllegalStateException, ArityException
 from threadutil import synchronized
 from persistenthashmap import EMPTY
 

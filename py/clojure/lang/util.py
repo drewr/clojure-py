@@ -1,4 +1,4 @@
-from exceptions import AbstractMethodCall, InvalidArgumentException
+from cljexceptions import AbstractMethodCall, InvalidArgumentException
 from mapentry import MapEntry
 import rt as RT
 

@@ -1,4 +1,4 @@
-from exceptions import AbstractMethodCall
+from cljexceptions import AbstractMethodCall
 
 class IHashEq(object):
     def hasheq(self):

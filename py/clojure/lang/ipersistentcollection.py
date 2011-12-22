@@ -1,4 +1,4 @@
-from exceptions import AbstractMethodCall
+from cljexceptions import AbstractMethodCall
 from seqable import Seqable
 
 

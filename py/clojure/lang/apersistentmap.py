@@ -1,8 +1,8 @@
 from ipersistentmap import IPersistentMap
 from mapentry import MapEntry
-from exceptions import AbstractMethodCall, ArityException, InvalidArgumentException
+from cljexceptions import AbstractMethodCall, ArityException, InvalidArgumentException
 from aseq import ASeq
-from rt import RT
+import rt as RT
 
 class APersistentMap(IPersistentMap):
     def cons(self, o):

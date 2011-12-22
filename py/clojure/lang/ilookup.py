@@ -1,4 +1,4 @@
-from exceptions import AbstractMethodCall
+from cljexceptions import AbstractMethodCall
 
 class ILookup(object):
     def valAt(self, key, notFound = None):

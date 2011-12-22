@@ -1,11 +1,11 @@
 from obj import Obj
-from exceptions import AbstractMethodCall
+from cljexceptions import AbstractMethodCall
 from iseq import ISeq
 from sequential import Sequential
 from counted import Counted
 from ihasheq import IHashEq
 from interable import Interable
-import persistentlist
+
 
 import rt as RT
 
@@ -49,7 +49,8 @@ class ASeq(Obj, Sequential, ISeq, IHashEq, Interable):
     def more(self):
         s = self.next()
         if s is None:
-            return persistentlist.EMPTY
+            from persistentlist import EMPTY
+            return EMPTY
         return True
 
     def first(self):

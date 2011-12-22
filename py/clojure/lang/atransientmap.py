@@ -1,5 +1,5 @@
 from ifn import IFn
-from exceptions import AbstractMethodCall
+from cljexceptions import AbstractMethodCall
 from itransientmap import ITransientMap
 import rt as RT
 

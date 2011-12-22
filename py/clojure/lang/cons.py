@@ -1,5 +1,5 @@
 from aseq import ASeq
-from exceptions import ArityException
+from cljexceptions import ArityException
 from persistentlist import EMPTY
 import rt as RT
 
