@@ -10,6 +10,9 @@ class APersistentMap(IPersistentMap):
     def __eq__(self, other):
         return APersistentMap.mapEquals(self, other)
 
+    def __getitem__(self, item):
+        return self.valAt(item)
+
     @staticmethod
     def mapEquals(m1, m2):
         if m1 is m2:

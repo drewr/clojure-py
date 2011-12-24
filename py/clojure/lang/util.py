@@ -25,12 +25,10 @@ def conjToAssoc(self, o):
         map = map.assoc(m.getKey(), m.getValue())
     return map
 
-def bitCount(int_type):
-    count = 0
-    while(int_type):
-        int_type &= int_type - 1
-        count += 1
-    return(count)
+def bitCount(i):
+    i -= ((i >> 1) & 0x55555555)
+    i = (i & 0x33333333) + ((i >> 2) & 0x33333333)
+    return (((i + (i >> 4)) & 0x0F0F0F0F) * 0x01010101) >> 24
 
 def arrayCopy(src, srcPos, dest, destPos, length):
-    src[srcPos:length] = dest[destPos:length]
+    dest[destPos:length] = src[srcPos:length]
