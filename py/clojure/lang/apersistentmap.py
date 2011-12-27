@@ -16,6 +16,8 @@ class APersistentMap(IPersistentMap):
     def __iter__(self):
         s = self.seq()
         while s is not None:
+            if s.first() is None:
+                pass
             yield s.first().getKey()
             s = s.next()
 
