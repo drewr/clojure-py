@@ -13,6 +13,14 @@ class APersistentMap(IPersistentMap):
     def __getitem__(self, item):
         return self.valAt(item)
 
+    def __iter__(self):
+        s = self.seq()
+        while s is not None:
+            yield s.first().getKey()
+            s = s.next()
+
+
+
     @staticmethod
     def mapEquals(m1, m2):
         if m1 is m2:
@@ -21,14 +29,14 @@ class APersistentMap(IPersistentMap):
             return False
         if not hasattr(m2, "__len__"):
             return False
+        if not hasattr(m2, "__iter__"):
+            return False
 
         if len(m1) != len(m2):
             return False
 
-        for s in m1.interator():
-            e = s.first()
-            found = m2.containsKey(e.getKey())
-            if not found or e.getValue() != m2.get(e.getKey()):
+        for s in m1:
+            if s not in m2 or m2[s] != m1[s]:
                 return False
         return True
 
