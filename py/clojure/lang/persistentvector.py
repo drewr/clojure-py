@@ -18,9 +18,9 @@ class PersistentVector(APersistentVector):
         self.tail = tail
 
     class Node:
-        def __init__(self, edit, array = ([None] * 32)):
+        def __init__(self, edit, array = None):
             self.edit = edit
-            self.array = array
+            self.array = array if array is not None else [None] * 32
 
     def tailoff(self):
         if self.cnt < 32:
@@ -34,6 +34,8 @@ class PersistentVector(APersistentVector):
             node = self.root
             for level in range(self.shift, 0, -5):
                 node = node.array[(i >> level) & 0x01f]
+                if node is None or isinstance(node, int):
+                    pass
             return node.array
         raise IndexOutOfBoundsException()
 
@@ -69,6 +71,8 @@ class PersistentVector(APersistentVector):
         return PersistentVector(meta, self.cnt + 1, self.shift, self.root, self.tail)
 
     def cons(self, val):
+        if self.cnt > 1055:
+            pass
         if self.cnt - self.tailoff() < 32:
             newTail = self.tail[:]
             newTail.append(val)
@@ -76,7 +80,7 @@ class PersistentVector(APersistentVector):
 
         tailnode = PersistentVector.Node(self.root.edit, self.tail)
         newshift = self.shift
-        if self.cnt >> 5 > 1 << self.shift:
+        if (self.cnt >> 5) > (1 << self.shift):
             newroot = PersistentVector.Node(self.root.edit)
             newroot.array[0] = self.root
             newroot.array[1] = newPath(self.root.edit, self.shift, tailnode)
@@ -96,7 +100,7 @@ class PersistentVector(APersistentVector):
         else:
             child = parent.array[subidx]
             nodeToInsert = self.pushTail(level-5,child, tailnode) \
-                                if (child is not None) \
+                                if child is not None \
                                 else newPath(self.root.edit,level-5, tailnode)
         ret.array[subidx] = nodeToInsert
         return ret
@@ -148,6 +152,7 @@ def newPath(edit, level, node):
         return node
     ret = PersistentVector.Node(edit)
     ret.array[0] = newPath(edit, level - 5, node)
+    return ret
 
 def doAssoc(level, node, i, val):
     ret = PersistentVector.Node(node.edit,node.array[:])
@@ -159,14 +164,14 @@ def doAssoc(level, node, i, val):
     return ret
 
 NOEDIT = AtomicReference()
-EMPTY_NODE = PersistentVector.Node(NOEDIT, [None] * 32)
+EMPTY_NODE = PersistentVector.Node(NOEDIT)
 EMPTY = PersistentVector(0, 5, EMPTY_NODE, [])
 
 
 if __name__ == '__main__':
     print "running tests..."
     m = EMPTY
-    times = 100000
+    times = 5000
     for x in range(times):
         m = m.cons(x)
     for x in range(times):
