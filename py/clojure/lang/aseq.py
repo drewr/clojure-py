@@ -56,11 +56,11 @@ class ASeq(Obj, Sequential, ISeq, IHashEq, Interable):
     def first(self):
         raise AbstractMethodCall()
 
-    def interator(self):
+    def __iter__(self):
         s = self.seq()
         while s is not None:
             yield s
-            s = s.rest()
+            s = s.next()
 
     def hasheq(self):
         hash = 1

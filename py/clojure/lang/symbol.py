@@ -7,9 +7,9 @@ class Symbol(object, IObj):
         if len(args) == 2:
             self.ns = args[0]
             self.name = args[1]
-            self.meta = null
+            self._meta = None
         elif len(args) == 3:
-            self.meta = agrs[0]
+            self._meta = agrs[0]
             self.ns = args[1]
             self.name = args[2]
         else:
@@ -18,6 +18,9 @@ class Symbol(object, IObj):
     def withMeta(self, meta):
         return Symbol(meta, ns, name)
 
+    def meta(self):
+        return self._meta
+
     def __eq__(self, other):
         if self is other:
             return True
@@ -25,12 +28,16 @@ class Symbol(object, IObj):
             return False
         return (self.ns is other.ns) and (self.name is other.name)
 
-    def intern(self, *args):
+    def __hash__(self):
+        return hash(self.name) ^ hash(self.ns)
+
+    @staticmethod
+    def intern(*args):
         if len(args) == 1:
             a = args[0]
             idx = a.rfind("/")
             if idx == -1 or a == "/":
-                return Symbol(null, intern(a))
+                return Symbol(None, intern(a))
             else:
                 return Symbol(a[idx:], a[:idx+1])
 

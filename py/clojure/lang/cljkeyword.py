@@ -51,3 +51,12 @@ class Keyword(IFn, Named):
             return Keyword.find(Symbol.intern(*args))
         raise ArityException()
 
+if __name__ == '__main__':
+    print "running tests..."
+    kw1 = Keyword.intern("foo")
+    print id(kw1), kw1, kw1.sym.name
+    kw2 = Keyword.intern("foo")
+    print id(kw2), kw2, kw2.sym.name
+    assert(kw1 is kw2)
+    kw3 = Keyword.intern("foo2")
+    assert(kw3 != kw1)

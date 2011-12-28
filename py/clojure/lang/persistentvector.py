@@ -34,8 +34,7 @@ class PersistentVector(APersistentVector):
             node = self.root
             for level in range(self.shift, 0, -5):
                 node = node.array[(i >> level) & 0x01f]
-                if node is None or isinstance(node, int):
-                    pass
+
             return node.array
         raise IndexOutOfBoundsException()
 
@@ -68,11 +67,9 @@ class PersistentVector(APersistentVector):
         return self.cnt
 
     def withMeta(self, meta):
-        return PersistentVector(meta, self.cnt + 1, self.shift, self.root, self.tail)
+        return PersistentVector(meta, self.cnt, self.shift, self.root, self.tail)
 
     def cons(self, val):
-        if self.cnt > 1055:
-            pass
         if self.cnt - self.tailoff() < 32:
             newTail = self.tail[:]
             newTail.append(val)
@@ -123,11 +120,13 @@ class PersistentVector(APersistentVector):
 
         newroot = self.popTail(self.shift, self.root)
         newshift = self.shift
-        if newroot is not None:
+        if newroot is None:
             newroot = EMPTY_NODE
         if self.shift > 5 and newroot.array[1] is None:
             newroot = newroot.array[0]
             newshift -= 5
+        if newroot is None:
+            pass
         return PersistentVector(self.meta(), self.cnt - 1, newshift, newroot, newtail)
 
     def popTail(self, level, node):
@@ -137,7 +136,7 @@ class PersistentVector(APersistentVector):
             if newchild is None and not subidx:
                 return None
             else:
-                ret = PersistentVector.Node(self.root.edit, node.array.clone())
+                ret = PersistentVector.Node(self.root.edit, node.array[:])
                 ret.array[subidx] = newchild
                 return ret
         elif not subidx:
@@ -171,8 +170,13 @@ EMPTY = PersistentVector(0, 5, EMPTY_NODE, [])
 if __name__ == '__main__':
     print "running tests..."
     m = EMPTY
-    times = 5000
+    times = 2000000
     for x in range(times):
         m = m.cons(x)
-    for x in range(times):
-        assert(m[x] ==  x)
+    #for x in range(times):
+    #    assert(m[x] ==  x)
+    for x in range(times, 0, -1):
+        assert(len(m) == x)
+        m = m.pop()
+        assert(len(m) == x - 1)
+

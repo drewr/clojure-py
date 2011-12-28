@@ -8,3 +8,7 @@ class AtomicReference(object):
         self.val = val
     def mutate(self, fn):
         self.val = fn(self.val)
+
+    def compareAndSet(self, old, newval):
+        self.val = newval
+        return True
