@@ -6,3 +6,5 @@ class AtomicReference(object):
         return self.val
     def set(self, val):
         self.val = val
+    def mutate(self, fn):
+        self.val = fn(self.val)

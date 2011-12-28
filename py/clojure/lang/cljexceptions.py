@@ -20,3 +20,6 @@ class IllegalAccessError(Exception):
     def __init__(self, s = None):
         Exception.__init__(s)
 
+class IndexOutOfBoundsException(Exception):
+    def __init__(self, s = None):
+        Exception.__init__(s)

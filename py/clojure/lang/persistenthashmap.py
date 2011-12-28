@@ -633,36 +633,31 @@ EMPTY = PersistentHashMap(0, None, False, None)
 EMPTY_BITMAP_NODE = PersistentHashMap.BitmapIndexedNode(-1, 0, [])
 NOT_FOUND = AtomicReference()
 
-
 if __name__ == '__main__':
-    import unittest
-    class TestPersistentHashMaps(unittest.TestCase):
-        def setUp(self):
-            pass
-        def test_assoc(self):
-            m = EMPTY
-            times = 100000
-            for x in range(times):
-                m = m.assoc(str(x), x)
-            for x in range(times):
-                self.assertEquals(str(x) in m, True)
-            for x in range(times):
-                self.assertEquals(m[str(x)], x)
-            for x in range(times):
-                m = m.without(str(x))
-                self.assertTrue(str(x) not in m)
+    print "running tests..."
+    m = EMPTY
+    times = 100000
+    for x in range(times):
+        m = m.assoc(str(x), x)
+    for x in range(times):
+        assert(str(x) in m)
+    for x in range(times):
+        assert(m[str(x)] ==  x)
+    for x in range(times):
+        m = m.without(str(x))
+        assert(str(x) not in m)
 
-            self.assertEqual(m.seq(), None)
-            for x in m:
-                #print x
-                self.fail("{}.seq() should be None")
+    assert(m.seq() is None)
+    for x in m:
+        #print x
+        raise Exception("{}.seq() should be None")
 
-            d = {1: 2, 3: 4, 5:6, 7:8}
-            self.assertEquals(PersistentHashMap.fromDict(d), PersistentHashMap.fromDict(d))
-            emp =  PersistentHashMap.fromDict({})
-            self.assertTrue(emp == m)
-            self.assertTrue(emp == EMPTY)
-            self.assertTrue(m == m)
-            self.assertTrue(m == emp)
+    d = {1: 2, 3: 4, 5:6, 7:8}
+    assert(PersistentHashMap.fromDict(d) == PersistentHashMap.fromDict(d))
+    emp =  PersistentHashMap.fromDict({})
+    assert(emp == m)
+    assert(emp == EMPTY)
+    assert(m == m)
+    assert(m == emp)
 
-    unittest.main()
+
