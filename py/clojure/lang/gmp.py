@@ -172,12 +172,14 @@ class Integer(object):
             op2 = Integer(op2)
         return func(op1, op2)
 
-    def set(self, value):
+    def set(self, value, radix = 10):
         if isinstance(value, Integer):
-            _MPZ_set_str(self, value.__str__(), 10)
+            _MPZ_set_str(self, value.__str__(), radix)
+        elif isinstance(value, str):
+            _MPZ_set_str(self, value, radix)
         else:
             try:
-                _MPZ_set_str(self, str(int(value)), 10)
+                _MPZ_set_str(self, str(int(value)), radix)
             except:
                 raise TypeError, "non-int"
 
@@ -382,6 +384,8 @@ class Float(object):
     def set(self, value):
         if isinstance(value, Float):
             _MPF_set_str(self, value.__str__(), 10)
+        elif isinstance(value, str):
+            _MPF_set_str(self, value)
         else:
             try:
                 _MPF_set_str(self, str(float(value)), 10)

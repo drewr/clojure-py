@@ -23,3 +23,7 @@ class IllegalAccessError(Exception):
 class IndexOutOfBoundsException(Exception):
     def __init__(self, s = None):
         Exception.__init__(s)
+
+class ReaderException(Exception):
+    def __init__(self, s = None):
+        Exception.__init__(s)

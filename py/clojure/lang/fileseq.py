@@ -32,6 +32,8 @@ class FileSeq(ASeq):
         newline = self.line + 1 if c == '\n' else self.line
         newcol = 1 if newline != self.line else self.col + 1
 
+        # Nasty mutation here please don't use this
+        # with threads
         self._next = FileSeq(self.rdr, newline, newcol, c)
         return self._next
 
@@ -51,6 +53,8 @@ class FileSeq(ASeq):
     def __eq__(self, other):
         if isinstance(other, str):
             return self.ccur == other
+        if other is None:
+            return False
         if self is other:
             return True
         if self.rdr is other.rdr and \
@@ -58,7 +62,28 @@ class FileSeq(ASeq):
             return True
         return False
 
+class MutatableFileSeq(ASeq):
+    def __init__(self, fs):
+        self.fs = fs
+        self.old = None
+        self.d = dir
 
+    def first(self):
+        return self.fs.first()
+
+    def next(self):
+        if self.fs is None:
+            return None
+        ret = self.fs.next()
+        self.old = self.fs
+        self.fs = ret
+        return ret
+
+    def back(self):
+        if self.old is None:
+            raise InvalidArgumentException("Can only go back once")
+        self.fs = self.old
+        self.old = None
 
 if __name__ == '__main__':
     print "running tests..."
@@ -71,4 +96,18 @@ if __name__ == '__main__':
             print x.lineCol() , "".join(s).strip("\n\r")
             s = []
 
+    oldpos = f.tell()
+
+    for x in fstart:
+        s.append(x.first())
+        if x.atLineEnd():
+            print x.lineCol() , "".join(s).strip("\n\r")
+            s = []
+
+    m = MutatableFileSeq(fstart)
+    m.next()
+    print m.first(), fstart.next().first()
+    assert(m.first() is fstart.next().first())
+
+    assert(f.tell() == oldpos)
 
