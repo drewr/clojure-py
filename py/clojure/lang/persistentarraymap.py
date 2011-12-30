@@ -1,4 +1,4 @@
-from exceptions import ArityException, InvalidArgumentException, IllegalAccessError
+from cljexceptions import ArityException, InvalidArgumentException, IllegalAccessError
 from apersistentmap import APersistentMap
 from atransientmap import ATransientMap
 from ieditablecollection import IEditableCollection

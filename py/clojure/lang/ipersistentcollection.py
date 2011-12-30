@@ -4,11 +4,11 @@ from seqable import Seqable
 
 class IPersistentCollection(Seqable):
     def count(self):
-        raise AbstractMethodCall()
+        raise AbstractMethodCall(self)
     def cons(self, o):
-        raise AbstractMethodCall()
+        raise AbstractMethodCall(self)
     def empty(self):
-        raise AbstractMethodCall()
+        raise AbstractMethodCall(self)
     def __eq__(self, other):
-        raise AbstractMethodCall()
+        raise AbstractMethodCall(self)
 

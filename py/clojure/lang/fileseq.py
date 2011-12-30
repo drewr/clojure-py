@@ -85,6 +85,9 @@ class MutatableFileSeq(ASeq):
         self.fs = self.old
         self.old = None
 
+    def lineCol(self):
+        return self.fs.lineCol() if self.fs is not None else [None, None]
+
 if __name__ == '__main__':
     print "running tests..."
     f = open("fileseq.py", "r")

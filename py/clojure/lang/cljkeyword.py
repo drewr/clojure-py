@@ -51,6 +51,8 @@ class Keyword(IFn, Named):
             return Keyword.find(Symbol.intern(*args))
         raise ArityException()
 
+LINE_KEY = Keyword.intern(None, "line")
+
 if __name__ == '__main__':
     print "running tests..."
     kw1 = Keyword.intern("foo")

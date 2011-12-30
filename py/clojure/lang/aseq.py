@@ -27,11 +27,11 @@ class ASeq(Obj, Sequential, ISeq, IHashEq, Interable):
     def __hash__(self):
         if self._hash == -1:
             hval = -1
-            for s in self.interator():
+            for s in self:
                 curhash = 0
                 if s.first() is not None:
                     curhash = hash(s.first())
-                hash = 31 * hval + curhash
+                hval = 31 * hval + curhash
             self._hash = hval
         return self._hash
 

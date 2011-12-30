@@ -2,6 +2,7 @@ from fileseq import FileSeq, MutatableFileSeq
 from cljexceptions import ReaderException
 from gmp import Integer, Rational, Float
 import rt as RT
+from cljkeyword import LINE_KEY
 import re
 
 def read1(rdr):
@@ -41,10 +42,9 @@ def digit(d, base = 10):
     return idx
 
 def isDigit(d):
-    return d in DIGITS
+    return d in DIGITS and DIGITS.index(d) < 10
 
 
-macros = {}
 
 chrLiterals = {'t': '\t',
                'r': '\r',
@@ -57,6 +57,7 @@ chrLiterals = {'t': '\t',
 def read(rdr, eofIsError, eofValue, isRecursive):
     while True:
         ch = read1(rdr)
+
         while isWhitespace(ch):
             ch = read1(rdr)
 
@@ -74,12 +75,12 @@ def read(rdr, eofIsError, eofValue, isRecursive):
             return ret
 
         if ch in ["+", "-"]:
-            ch2 = read(rdr)
+            ch2 = read1(rdr)
             if isDigit(ch2):
-                unread(rdr, ch2)
+                rdr.back()
                 n = readNumber(rdr, ch)
                 return n
-            unread(rdr, ch2)
+            rdr.back()
 
         token = readToken(r, ch)
         return interpretToken(token)
@@ -87,7 +88,7 @@ def read(rdr, eofIsError, eofValue, isRecursive):
 
 def stringReader(rdr, doublequote):
     sb = []
-    ch = rdr.first()
+    ch = read1(rdr)
     while ch != '\"':
         if ch == "":
             raise ReaderException("EOF while reading string")
@@ -163,6 +164,9 @@ def matchNumber(s):
         return f
     return None
 
+def getMacro(ch):
+    return macros[ch] if ch in macros else None
+
 def commentReader(rdr, semicolon):
     while True:
         chr = read1(rdr)
@@ -204,7 +208,7 @@ def listReader(rdr, leftparen):
     startline = rdr.lineCol()[0]
     lst = readDelimitedList(')', rdr, True)
     lst = apply(RT.list, lst)
-    return lst.withMeta(RT.map(RT.LINE_KEY, startline))
+    return lst.withMeta(RT.map(LINE_KEY, startline))
 
 def vectorReader(rdr, leftbracket):
     startline = rdr.lineCol()[0]
@@ -217,6 +221,9 @@ def mapReader(rdr, leftbrace):
     lst = readDelimitedList('}', rdr, True)
     lst = apply(RT.map, lst)
     return lst
+
+def unmatchedDelimiterReader(rdr, un):
+    raise ReaderException("Unmatched Delimiter " + un)
 
 def readDelimitedList(delim, rdr, isRecursive):
     firstline = rdr.lineCol()[0]
@@ -241,9 +248,19 @@ def readDelimitedList(delim, rdr, isRecursive):
         else:
             rdr.back()
             o = read(rdr, True, None, isRecursive)
+            a.append(o)
 
     return a
 
+
+macros = {'\"': stringReader,
+          "(": listReader,
+          ")": unmatchedDelimiterReader,
+          "[": vectorReader,
+          "]": unmatchedDelimiterReader,
+          "{": mapReader,
+          "}": unmatchedDelimiterReader,
+          ";": commentReader}
 
 
 if __name__ == '__main__':
@@ -251,26 +268,17 @@ if __name__ == '__main__':
     def rdr(s):
         return MutatableFileSeq(FileSeq(StringIO(s)))
 
-    ## stringReader
-    print "running tests..."
-    tst = '\\"This is \\t\\n\\ra test\\"'
-    #tst = "\"12\""
-    r = rdr(tst)
-    s = stringReader(r, read1(r))
-    print s
-    #assert(s == "\"This is \t\n\ra test\"")
+    fl = open("/home/tim/core.clj")
+    s = fl.read()
+    fl.close()
+    import sys
+    sys.path = ["."] + sys.path
 
-
-    ## readNumber
-    tst = '110'
-    r = rdr(tst)
-    s = readNumber(r, r.first())
-    print s
-    assert(s == 110)
-
-    tst = "(a True False (1 2 3))"
-    r = rdr(tst)
-    s = read(r, True, None, True)
-    print s
-
+    r = rdr(" "+s)
+    try:
+        while r.fs:
+            s = read(r, True, None, True)
+            #print '-' + repr(s) + '-'
+    except:
+        pass
 

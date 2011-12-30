@@ -42,6 +42,13 @@ def list(*args):
         c = c.cons(args[x])
     return c
 
+def vector(*args):
+    from persistentvector import EMPTY
+    c = EMPTY
+    for x in args:
+        c = c.cons(x)
+    return c
+
 def map(*args):
     from persistenthashmap import EMPTY, PersistentHashMap
     from persistentarraymap import PersistentArrayMap, HASHTABLE_THRESHOLD

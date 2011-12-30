@@ -1,8 +1,11 @@
 
 
 class AbstractMethodCall(Exception):
-    def __init__(self):
-        Exception.__init__(self)
+    def __init__(self, cls = None):
+        if cls is not None:
+            Exception.__init__(self, "in " + cls.__class__.__name__)
+        else:
+            Exception.__init__(self)
 
 class ArityException(TypeError):
     def __init__(self, s = None):
@@ -18,12 +21,12 @@ class InvalidArgumentException(Exception):
 
 class IllegalAccessError(Exception):
     def __init__(self, s = None):
-        Exception.__init__(s)
+        Exception.__init__(self, s)
 
 class IndexOutOfBoundsException(Exception):
     def __init__(self, s = None):
-        Exception.__init__(s)
+        Exception.__init__(self, s)
 
 class ReaderException(Exception):
     def __init__(self, s = None):
-        Exception.__init__(s)
+        Exception.__init__(self, s)

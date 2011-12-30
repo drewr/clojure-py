@@ -121,6 +121,12 @@ class PersistentHashMap(APersistentMap, IEditableCollection, IObj):
             return self.hasNull
         return self.root.find(0, hash(key), key, NOT_FOUND) is not NOT_FOUND if self.root is not None else False
 
+    def __repr__(self):
+        s = []
+        for x in self:
+            s.append(repr(x))
+            s.append(repr(self[x]))
+        return "{" + " ".join(s) + "}"
 
     class INode(object):
         def assoc(self, shift,  hsh, key, val, addedLeaf):

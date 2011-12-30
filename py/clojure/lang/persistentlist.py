@@ -22,6 +22,7 @@ class PersistentList(ASeq, IPersistentList, IReduce, Counted):
             self._count = args[3]
         else:
             raise ArityException
+        self._hash = -1
 
     @staticmethod
     def create(lst):
@@ -69,6 +70,17 @@ class PersistentList(ASeq, IPersistentList, IReduce, Counted):
             ret = fn(ret, s.first())
         return ret
 
+    def withMeta(self, meta):
+        if meta is self.meta():
+            return self
+        return PersistentList(meta, self._first, self._rest, self._count)
+
+    def __repr__(self):
+        s = []
+        for x in self:
+            s.append(repr(x.first()))
+        return "(" + " ".join(s) + ")"
+
 class EmptyList(Obj, IPersistentList, ISeq, Counted):
     def __init__(self, meta = None):
         self._meta = meta
@@ -103,6 +115,8 @@ class EmptyList(Obj, IPersistentList, ISeq, Counted):
         return 0
     def seq(self):
         return None
+    def __repr__(self):
+        return "()"
 
 EMPTY = EmptyList()
 

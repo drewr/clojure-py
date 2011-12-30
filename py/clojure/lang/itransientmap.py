@@ -1,5 +1,6 @@
-from exceptions import AbstractMethodCall
+from cljexceptions import AbstractMethodCall
 from itransientassociative import ITransientAssociative
+from counted import Counted
 
 class ITransientMap(ITransientAssociative, Counted):
     def assoc(self, key, value):
