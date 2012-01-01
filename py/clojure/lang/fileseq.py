@@ -1,5 +1,5 @@
-from aseq import ASeq
-from cljexceptions import IllegalAccessError, ArityException, InvalidArgumentException
+from py.clojure.lang.aseq import ASeq
+from py.clojure.lang.cljexceptions import IllegalAccessError, ArityException, InvalidArgumentException
 
 def isReader(rdr):
     if not hasattr(rdr, "read"):
@@ -21,6 +21,23 @@ class FileSeq(ASeq):
 
     def first(self):
         return self.ccur
+
+    def reuseNext(self, nxt):
+        c = self.rdr.read(1)
+        if c == "":
+            return None
+
+        newline = self.line + 1 if c == '\n' else self.line
+        newcol = 1 if newline != self.line else self.col + 1
+
+        nxt.rdr = self.rdr
+        nxt.line = newline
+        nxt.col = newcol
+        nxt.ccur = c
+        nxt._next = None
+
+        return nxt
+
 
     def next(self):
         if self._next is not None:
@@ -72,10 +89,15 @@ class MutatableFileSeq(ASeq):
         return self.fs.first()
 
     def next(self):
-        if self.fs is None:
-            return None
-        ret = self.fs.next()
+        #if self.fs is None:
+        #    return None
+
+        o = self.old
         self.old = self.fs
+        if o is not None:
+            ret = self.fs.reuseNext(o)
+        else:
+            ret = self.fs.next()
         self.fs = ret
         return ret
 
@@ -87,6 +109,52 @@ class MutatableFileSeq(ASeq):
 
     def lineCol(self):
         return self.fs.lineCol() if self.fs is not None else [None, None]
+
+class StringReader(object):
+    def __init__(self, s):
+        self.line = 1;
+        self.col = 1
+        self.idx = -1
+        self.s = s
+        self.lastline = -1
+        self.lastcol = -1
+        self.haslast = False
+
+    def read(self):
+        self.lastcol = self.col
+        self.lastline = self.line
+        self.haslast = True
+        self.idx += 1
+        if self.idx >= len(self.s):
+            return ""
+
+        cc = self.s[self.idx]
+        if cc == '\n':
+            self.line += 1;
+            self.col = 1
+        return cc
+
+    def next(self):
+        self.read()
+        return self
+
+    def first(self):
+        return self.s[self.idx] if self.idx < len(self.s) else ""
+
+    def lineCol(self):
+        return [self.line, self.col]
+
+    def back(self):
+        if not self.haslast:
+            raise IllegalAccessError()
+        self.idx -= 1
+        self.haslast = False
+        self.line = self.lastline
+        self.col = self.lastcol
+
+
+
+
 
 if __name__ == '__main__':
     print "running tests..."

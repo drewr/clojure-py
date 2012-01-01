@@ -1,6 +1,6 @@
-from cljexceptions import AbstractMethodCall
-from itransientassociative import ITransientAssociative
-from counted import Counted
+from py.clojure.lang.cljexceptions import AbstractMethodCall
+from py.clojure.lang.itransientassociative import ITransientAssociative
+from py.clojure.lang.counted import Counted
 
 class ITransientMap(ITransientAssociative, Counted):
     def assoc(self, key, value):

@@ -1,9 +1,9 @@
-from associative import Associative
-from sequential import Sequential
-from ipersistentstack import IPersistentStack
-from reversible import Reversible
-from indexed import Indexed
-from cljexceptions import AbstractMethodCall
+from py.clojure.lang.associative import Associative
+from py.clojure.lang.sequential import Sequential
+from py.clojure.lang.ipersistentstack import IPersistentStack
+from py.clojure.lang.reversible import Reversible
+from py.clojure.lang.indexed import Indexed
+from py.clojure.lang.cljexceptions import AbstractMethodCall
 
 
 class IPersistentVector(Associative, Sequential, IPersistentStack, Reversible, Indexed):

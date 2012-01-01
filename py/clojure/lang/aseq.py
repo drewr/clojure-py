@@ -1,13 +1,13 @@
-from obj import Obj
-from cljexceptions import AbstractMethodCall
-from iseq import ISeq
-from sequential import Sequential
-from counted import Counted
-from ihasheq import IHashEq
-from interable import Interable
+from py.clojure.lang.obj import Obj
+from py.clojure.lang.cljexceptions import AbstractMethodCall
+from py.clojure.lang.iseq import ISeq
+from py.clojure.lang.sequential import Sequential
+from py.clojure.lang.counted import Counted
+from py.clojure.lang.ihasheq import IHashEq
+from py.clojure.lang.interable import Interable
 
 
-import rt as RT
+import py.clojure.lang.rt as RT
 
 class ASeq(Obj, Sequential, ISeq, IHashEq, Interable):
     def __eq__(self, other):
@@ -49,7 +49,7 @@ class ASeq(Obj, Sequential, ISeq, IHashEq, Interable):
     def more(self):
         s = self.next()
         if s is None:
-            from persistentlist import EMPTY
+            from py.clojure.lang.persistentlist import EMPTY
             return EMPTY
         return True
 

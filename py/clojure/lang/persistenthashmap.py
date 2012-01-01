@@ -1,14 +1,14 @@
-from apersistentmap import APersistentMap
-#from atransientmap import ATransientMap
-from cljexceptions import ArityException, AbstractMethodCall
-from ieditablecollection import IEditableCollection
-from iobj import IObj
-from aseq import ASeq
-from util import bitCount, arrayCopy
-from box import Box
-from atomicreference import AtomicReference
-from mapentry import MapEntry
-from cons import Cons
+from py.clojure.lang.apersistentmap import APersistentMap
+#from py.clojure.lang.atransientmap import ATransientMap
+from py.clojure.lang.cljexceptions import ArityException, AbstractMethodCall
+from py.clojure.lang.ieditablecollection import IEditableCollection
+from py.clojure.lang.iobj import IObj
+from py.clojure.lang.aseq import ASeq
+from py.clojure.lang.util import bitCount, arrayCopy
+from py.clojure.lang.box import Box
+from py.clojure.lang.atomicreference import AtomicReference
+from py.clojure.lang.mapentry import MapEntry
+from py.clojure.lang.cons import Cons
 
 def mask(h, shift):
     return (h >> shift) & 0x01f

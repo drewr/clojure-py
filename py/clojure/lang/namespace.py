@@ -1,8 +1,8 @@
-from areference import AReference
-from atomicreference import AtomicReference
-from persistenthashmap import EMPTY as EMPTY_MAP
-from cljexceptions import InvalidArgumentException, IllegalStateException, ArityException
-import rt as RT
+from py.clojure.lang.areference import AReference
+from py.clojure.lang.atomicreference import AtomicReference
+from py.clojure.lang.persistenthashmap import EMPTY as EMPTY_MAP
+from py.clojure.lang.cljexceptions import InvalidArgumentException, IllegalStateException, ArityException
+import py.clojure.lang.rt as RT
 
 namespaces = AtomicReference(EMPTY_MAP)
 
@@ -52,7 +52,7 @@ class Namespace(AReference):
         return self.mappings
 
     def intern(self, sym):
-        from var import Var
+        from py.clojure.lang.var import Var
 
         if sym.ns is not None:
             raise InvalidArgumentException("Can't intern namespace-qualified symbol")
@@ -83,8 +83,8 @@ class Namespace(AReference):
         return v
 
     def wardOrFailOnReplace(self, sym, o, v):
-        from var import Var
-        from rt import CLOJURE_NS
+        from py.clojure.lang.var import Var
+        from py.clojure.lang.rt import CLOJURE_NS
         if isinstance(o, Var):
             ns = o.ns
             if ns is self:

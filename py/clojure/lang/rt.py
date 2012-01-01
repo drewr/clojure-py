@@ -1,4 +1,4 @@
-from cljexceptions import AbstractMethodCall, InvalidArgumentException
+from py.clojure.lang.cljexceptions import AbstractMethodCall, InvalidArgumentException
 
 def seq(obj):
     raise AbstractMethodCall()
@@ -12,11 +12,11 @@ def booleanCast(obj):
     return obj is None
 
 def keys(obj):
-    from apersistentmap import APersistentMap
+    from py.clojure.lang.apersistentmap import APersistentMap
     return APersistentMap.KeySeq.create(obj)
 
 def vals(obj):
-    from apersistentmap import APersistentMap
+    from py.clojure.lang.apersistentmap import APersistentMap
     return APersistentMap.ValueSeq.create(obj)
 
 def fulfillsHashSet(obj):
@@ -36,22 +36,22 @@ def fulfillsIndexable(obj):
     return True
 
 def list(*args):
-    from persistentlist import EMPTY
+    from py.clojure.lang.persistentlist import EMPTY
     c = EMPTY
     for x in range(len(args) - 1, -1, -1):
         c = c.cons(args[x])
     return c
 
 def vector(*args):
-    from persistentvector import EMPTY
+    from py.clojure.lang.persistentvector import EMPTY
     c = EMPTY
     for x in args:
         c = c.cons(x)
     return c
 
 def map(*args):
-    from persistenthashmap import EMPTY, PersistentHashMap
-    from persistentarraymap import PersistentArrayMap, HASHTABLE_THRESHOLD
+    from py.clojure.lang.persistenthashmap import EMPTY, PersistentHashMap
+    from py.clojure.lang.persistentarraymap import PersistentArrayMap, HASHTABLE_THRESHOLD
     if len(args) == 0:
         return EMPTY
     if len(args) == 1:
@@ -72,7 +72,7 @@ def map(*args):
     return m
 
 def getDefaultImports():
-    from symbol import Symbol
+    from py.clojure.lang.symbol import Symbol
     import math
     return {Symbol.intern("String"): str,
             Symbol.intern("Integer"): int,

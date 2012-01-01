@@ -1,5 +1,5 @@
-from exceptions import AbstractMethodCall
-from ideref import IDeref
+from py.clojure.lang.exceptions import AbstractMethodCall
+from py.clojure.lang.ideref import IDeref
 
 class IRef(IDeref):
     def setValidator(self, fn):

@@ -1,4 +1,4 @@
-from cljexceptions import AbstractMethodCall
+from py.clojure.lang.cljexceptions import AbstractMethodCall
 
 class ITransientCollection(object):
     def conj(self, val):

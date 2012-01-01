@@ -1,7 +1,7 @@
-from aseq import ASeq
-from cljexceptions import ArityException
-from persistentlist import EMPTY
-import rt as RT
+from py.clojure.lang.aseq import ASeq
+from py.clojure.lang.cljexceptions import ArityException
+from py.clojure.lang.persistentlist import EMPTY
+import py.clojure.lang.rt as RT
 
 class Cons(ASeq):
     def __init__(self, *args):

@@ -1,6 +1,6 @@
-from apersistentset import APersistentSet
-from persistenthashmap import EMPTY as EMPTY_MAP
-from iobj import IObj
+from py.clojure.lang.apersistentset import APersistentSet
+from py.clojure.lang.persistenthashmap import EMPTY as EMPTY_MAP
+from py.clojure.lang.iobj import IObj
 
 class PersistentHashSet(APersistentSet, IObj):
     def __init__(self, meta, impl):

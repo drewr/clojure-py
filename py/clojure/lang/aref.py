@@ -1,9 +1,9 @@
-from areference import AReference
-from iref import IRef
-import rt as RT
-from cljexceptions import IllegalStateException, ArityException
-from threadutil import synchronized
-from persistenthashmap import EMPTY
+from py.clojure.lang.areference import AReference
+from py.clojure.lang.iref import IRef
+import py.clojure.lang.rt as RT
+from py.clojure.lang.cljexceptions import IllegalStateException, ArityException
+from py.clojure.lang.threadutil import synchronized
+from py.clojure.lang.persistenthashmap import EMPTY
 
 class ARef(AReference, IRef):
     def __init__(self, meta = None):

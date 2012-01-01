@@ -1,4 +1,4 @@
-from threading import Lock, local, currentThread
+from py.clojure.lang.threading import Lock, local, currentThread
 
 
 def synchronized(f):

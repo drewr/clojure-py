@@ -1,6 +1,6 @@
-from apersistentvector import APersistentVector
-from cljexceptions import ArityException, IndexOutOfBoundsException, IllegalStateException
-from atomicreference import AtomicReference
+from py.clojure.lang.apersistentvector import APersistentVector
+from py.clojure.lang.cljexceptions import ArityException, IndexOutOfBoundsException, IllegalStateException
+from py.clojure.lang.atomicreference import AtomicReference
 
 class PersistentVector(APersistentVector):
     def __init__(self, *args):

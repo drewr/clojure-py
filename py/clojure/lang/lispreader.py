@@ -1,31 +1,31 @@
-from fileseq import FileSeq, MutatableFileSeq
-from cljexceptions import ReaderException
-from gmp import Integer, Rational, Float
-import rt as RT
-from cljkeyword import LINE_KEY
+from py.clojure.lang.fileseq import FileSeq, MutatableFileSeq
+from py.clojure.lang.cljexceptions import ReaderException
+from py.clojure.lang.gmp import Integer, Rational, Float
+import py.clojure.lang.rt as RT
+from py.clojure.lang.cljkeyword import LINE_KEY
 import re
 
 def read1(rdr):
     rdr.next()
-    if rdr.fs == None:
+    if rdr is None:
         return ""
     return rdr.first()
 
 WHITESPACE = [',', '\n', '\t', '\r', ' ']
 
-symbolPat = re.compile("[:]?([\\D&&[^/]].*/)?([\\D&&[^/]][^/]*)")
+symbolPat = re.compile("[:]?([\\D^/].*/)?([\\D^/][^/]*)")
 intPat = re.compile("([-+]?)(?:(0)|([1-9][0-9]*)|0[xX]([0-9A-Fa-f]+)|0([0-7]+)|([1-9][0-9]?)[rR]([0-9A-Za-z]+)|0[0-9]+)(N)?")
 ratioPat = re.compile("([-+]?[0-9]+)/([0-9]+)")
 floatPat = re.compile("([-+]?[0-9]+(\\.[0-9]*)?([eE][-+]?[0-9]+)?)(M)?")
 
-def isWhitespace(chr):
-    return chr in WHITESPACE
+def isWhitespace(c):
+    return c in WHITESPACE
 
-def isMacro(chr):
-    return chr in macros
+def isMacro(c):
+    return c in macros
 
-def isTerminatingMacro(chr):
-    return ch != "#" and ch != "\'" and isMacro(chr)
+def isTerminatingMacro(ch):
+    return ch != "#" and ch != "\'" and isMacro(ch)
 
 def forIter(start, whileexpr, next):
     cur = start
@@ -82,7 +82,7 @@ def read(rdr, eofIsError, eofValue, isRecursive):
                 return n
             rdr.back()
 
-        token = readToken(r, ch)
+        token = readToken(rdr, ch)
         return interpretToken(token)
 
 
@@ -100,11 +100,11 @@ def stringReader(rdr, doublequote):
                 ch = read1(rdr)
                 if digit(ch, 16) == -1:
                     raise ReaderException("Invalid unicode escape: \\u" + ch)
-                ch = readUnicodeChar(r, ch, 16, 4, True)
+                ch = readUnicodeChar(rdr, ch, 16, 4, True)
             else:
                 if digit(ch, 8) == -1:
                     raise ReaderException("Unsupported escape character: \\" + ch)
-                ch = readUnicodeChar(r, ch, 8, 4, True)
+                ch = readUnicodeChar(rdr, ch, 8, 4, True)
                 if ch > 0377:
                     raise ReaderException("Octal escape sequence must be in range [0, 377].")
         sb.append(ch)
@@ -116,7 +116,7 @@ def readToken(rdr, initch):
     sb = [initch]
     while True:
         ch = read1(rdr)
-        if ch == "" or isWhitespace(ch) or isMacro(ch):
+        if ch == "" or isWhitespace(ch) or isTerminatingMacro(ch):
             rdr.back()
             break
         sb.append(ch)
@@ -132,7 +132,14 @@ INTERPRET_TOKENS = {"nil": None,
 def interpretToken(s):
     if s in INTERPRET_TOKENS:
         return INTERPRET_TOKENS[s]
-    return s
+    if s == ":added":
+        pass
+    ret = matchSymbol(s)
+    if ret is None:
+        if s == ":added":
+            pass
+        raise ReaderException("Unknown symbol " + str(s))
+    return ret
 
 
 def readNumber(rdr, initch):
@@ -172,7 +179,7 @@ def commentReader(rdr, semicolon):
         chr = read1(rdr)
         if chr == -1 or chr == '\n' or chr == '\r':
             break
-    return r
+    return rdr
 
 def discardReader(rdr, underscore):
     read(rdr, True, None, True)
@@ -183,7 +190,7 @@ class wrappingReader():
     def __init__(self, sym):
         self.sym = sym
     def __call__(self, rdr, quote):
-        o = read(r, True, None, True)
+        o = read(rdr, True, None, True)
         return RT.list(self.sym, o)
 
 def varReader():
@@ -195,13 +202,13 @@ def dispatchReader(rdr, hash):
         raise ReaderException("EOF while reading character")
 
     if ch not in dispatchMacros:
-        fn = dispatchMacros[ch]
-        rdr.back()
-        result = fn(rdr, ch)
-        if result is not None:
-            return result
-        else:
-            raise ReaderException("No dispatch macro for: "+ ch)
+        #rdr.back()
+        #result = fn(rdr, ch)
+        #if result is not None:
+        #    return result
+        #else:
+        #    raise ReaderException("No dispatch macro for: "+ ch)
+        raise ReaderException("No dispatch macro for: ("+ ch + ")")
     return dispatchMacros[ch](rdr, ch)
 
 def listReader(rdr, leftparen):
@@ -223,7 +230,7 @@ def mapReader(rdr, leftbrace):
     return lst
 
 def unmatchedDelimiterReader(rdr, un):
-    raise ReaderException("Unmatched Delimiter " + un)
+    raise ReaderException("Unmatched Delimiter " + un + "at " + str(rdr.lineCol()))
 
 def readDelimitedList(delim, rdr, isRecursive):
     firstline = rdr.lineCol()[0]
@@ -252,6 +259,61 @@ def readDelimitedList(delim, rdr, isRecursive):
 
     return a
 
+def regexReader(rdr, doubleQuote):
+    s = []
+    ch = read1(rdr)
+    while ch != '\"':
+        if ch == "":
+            raise ReaderException("EOF while reading string")
+        s.append(ch)
+        if ch == "\\":
+            ch = read1(rdr)
+            if ch == "":
+                raise ReaderException("EOF while reading regex")
+            s.append(ch)
+
+    return re.compile("".join(s))
+
+def metaReader(rdr, caret):
+    from py.clojure.lang.symbol import Symbol
+    from py.clojure.lang.cljkeyword import Keyword, TAG_KEY, T
+    from py.clojure.lang.ipersistentmap import IPersistentMap
+    line = rdr.lineCol()[0]
+    meta = read(rdr, True, None, True)
+    if isinstance(meta, Symbol) or isinstance(meta, str):
+        meta = RT.map(TAG_KEY, meta)
+    elif isinstance(meta, Keyword):
+        meta = RT.map(meta, T)
+    elif not isinstance(meta, IPersistentMap):
+        raise ReaderException("Metadata must be Symbol,Keyword,String or Map")
+    o = read(rdr, True, None, True)
+    if not hasattr(o, "withMeta"):
+        raise ReaderException("Cannot attach meta to a object without .withMeta")
+    return o.withMeta(meta)
+
+def matchSymbol(s):
+    from py.clojure.lang.symbol import Symbol
+    from py.clojure.lang.cljkeyword import Keyword
+    m = symbolPat.match(s)
+    if m is not None:
+        ns = m.group(1)
+        name = m.group(2)
+        if ns is not None and ns.endswith(":/") or name.endswith(":") \
+            or s.find("::") != -1:
+            return None
+        if s.startswith("::"):
+            return "FIX"
+        iskeyword = s.find(':') == 0
+        sym = Symbol.intern(s[(1 if iskeyword else 0):])
+        if iskeyword:
+            return Keyword.intern(s)
+        else:
+            return sym
+    return None
+
+def setReader(rdr, leftbrace):
+    from persistenthashset import PersistentHashSet
+    return PersistentHashSet.create(readDelimitedList("}", rdr,  True))
 
 macros = {'\"': stringReader,
           "(": listReader,
@@ -260,13 +322,22 @@ macros = {'\"': stringReader,
           "]": unmatchedDelimiterReader,
           "{": mapReader,
           "}": unmatchedDelimiterReader,
-          ";": commentReader}
+          ";": commentReader,
+          "#": dispatchReader,
+          "^": metaReader}
+
+dispatchMacros = {"\"": regexReader,
+                  "{": setReader,
+                  "!": commentReader
+                  "_": discardReader}
 
 
 if __name__ == '__main__':
     from StringIO import StringIO
+    from fileseq import StringReader
     def rdr(s):
-        return MutatableFileSeq(FileSeq(StringIO(s)))
+        #return MutatableFileSeq(FileSeq(StringIO(s)))
+        return StringReader(s)
 
     fl = open("/home/tim/core.clj")
     s = fl.read()
@@ -277,8 +348,8 @@ if __name__ == '__main__':
     r = rdr(" "+s)
     try:
         while r.fs:
-            s = read(r, True, None, True)
+            s = read(rdr, True, None, True)
             #print '-' + repr(s) + '-'
-    except:
+    except IOError:
         pass
 

@@ -1,29 +1,26 @@
+from StringIO import StringIO
+from py.clojure.lang.lispreader import *
+from py.clojure.lang.fileseq import StringReader
 
-gcount = 0
+def rdr(s):
+    return StringReader(s)
 
-def count(f):
-    global gcount
-    gcount += 1
-    c = gcount
-    def wrap(*args, **kw):
-        print c
-        f(*args, **kw)
-    return wrap
 
-class Bar1():
-    @count
-    def foo(self):
-        print "done"
+fl = open("/home/tim/core.clj")
+data = fl.read()
+fl.close()
+import sys
+sys.path = ["."] + sys.path
 
-class Bar2():
-    @count
-    def foo(self):
-        print "done2"
+c = 0
+for x in range(1):
+    r = rdr("["+data +"]")
+    try:
+        while True:
+            c += 1
+            s = read(r, True, None, True)
+            print '-' ,len(s), '-'
+    except IOError:
+        print "error"
+    print x
 
-bar1 = Bar1()
-bar2 = Bar1()
-bar3 = Bar2()
-
-bar1.foo()
-bar2.foo()
-bar3.foo()

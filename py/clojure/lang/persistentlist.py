@@ -1,13 +1,13 @@
-from ipersistentlist import IPersistentList
-from aseq import ASeq
-from ireduce import IReduce
-from counted import Counted
-from seqable import Seqable
-from iseq import ISeq
-from sequential import Sequential
-from obj import Obj
-from cljexceptions import ArityException, IllegalStateException
-import rt as RT
+from py.clojure.lang.ipersistentlist import IPersistentList
+from py.clojure.lang.aseq import ASeq
+from py.clojure.lang.ireduce import IReduce
+from py.clojure.lang.counted import Counted
+from py.clojure.lang.seqable import Seqable
+from py.clojure.lang.iseq import ISeq
+from py.clojure.lang.sequential import Sequential
+from py.clojure.lang.obj import Obj
+from py.clojure.lang.cljexceptions import ArityException, IllegalStateException
+import py.clojure.lang.rt as RT
 
 class PersistentList(ASeq, IPersistentList, IReduce, Counted):
     def __init__(self, *args):

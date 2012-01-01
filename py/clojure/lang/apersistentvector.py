@@ -1,6 +1,6 @@
-from ipersistentvector import IPersistentVector
-from cljexceptions import AbstractMethodCall, ArityException
-from indexableseq import IndexableSeq
+from py.clojure.lang.ipersistentvector import IPersistentVector
+from py.clojure.lang.cljexceptions import AbstractMethodCall, ArityException
+from py.clojure.lang.indexableseq import IndexableSeq
 
 
 class APersistentVector(IPersistentVector):

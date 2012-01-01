@@ -1,8 +1,8 @@
-from ipersistentmap import IPersistentMap
-from mapentry import MapEntry
-from cljexceptions import AbstractMethodCall, ArityException, InvalidArgumentException
-from aseq import ASeq
-import rt as RT
+from py.clojure.lang.ipersistentmap import IPersistentMap
+from py.clojure.lang.mapentry import MapEntry
+from py.clojure.lang.cljexceptions import AbstractMethodCall, ArityException, InvalidArgumentException
+from py.clojure.lang.aseq import ASeq
+import py.clojure.lang.rt as RT
 
 class APersistentMap(IPersistentMap):
     def cons(self, o):

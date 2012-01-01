@@ -1,10 +1,10 @@
-from symbol import Symbol
-from persistenthashmap import EMPTY as EMPTY_MAP
-from atomicreference import AtomicReference
-from cljexceptions import InvalidArgumentException, ArityException
+from py.clojure.lang.symbol import Symbol
+from py.clojure.lang.persistenthashmap import EMPTY as EMPTY_MAP
+from py.clojure.lang.atomicreference import AtomicReference
+from py.clojure.lang.cljexceptions import InvalidArgumentException, ArityException
 import weakref
-from ifn import IFn
-from named import Named
+from py.clojure.lang.ifn import IFn
+from py.clojure.lang.named import Named
 
 interned = AtomicReference(EMPTY_MAP)
 
@@ -18,9 +18,9 @@ class Keyword(IFn, Named):
                     sym = sym.withMeta(None)
                 k = Keyword(sym)
 
-                interned.mutate(lambda old: old if sym in old else old.assoc(sym, weakref.ref(k)))
+                interned.mutate(lambda old: old if sym in old else old.assoc(sym,k))
 
-                return interned.get()[sym]()
+                return interned.get()[sym]
             elif isinstance(args[0], str):
                 return Keyword.intern(Symbol.intern(args[0]))
             else:
@@ -52,6 +52,8 @@ class Keyword(IFn, Named):
         raise ArityException()
 
 LINE_KEY = Keyword.intern(None, "line")
+TAG_KEY = Keyword.intern(None, "tag")
+T = Keyword.intern(None, "T")
 
 if __name__ == '__main__':
     print "running tests..."

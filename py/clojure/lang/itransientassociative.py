@@ -1,6 +1,6 @@
-from cljexceptions import AbstractMethodCall
-from itransientcollection import ITransientCollection
-from ilookup import ILookup
+from py.clojure.lang.cljexceptions import AbstractMethodCall
+from py.clojure.lang.itransientcollection import ITransientCollection
+from py.clojure.lang.ilookup import ILookup
 
 class ITransientAssociative(ITransientCollection, ILookup):
     def assoc(self, key, val):

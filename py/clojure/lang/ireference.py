@@ -1,5 +1,5 @@
-from exceptions import AbstractMethodCall
-from imeta import IMeta
+from py.clojure.lang.exceptions import AbstractMethodCall
+from py.clojure.lang.imeta import IMeta
 
 class IReference(object, IMeta):
     def alterMeta(self, fn, args):

@@ -1,6 +1,6 @@
-from cljexceptions import AbstractMethodCall, InvalidArgumentException
-from mapentry import MapEntry
-import rt as RT
+from py.clojure.lang.cljexceptions import AbstractMethodCall, InvalidArgumentException
+from py.clojure.lang.mapentry import MapEntry
+import py.clojure.lang.rt as RT
 
 def hashCombine(hash, seed):
     seed ^= seed + 0x9e3779b9 + (seed << 6) + (seed >> 2)

@@ -1,10 +1,10 @@
-from cljexceptions import ArityException, InvalidArgumentException, IllegalAccessError
-from apersistentmap import APersistentMap
-from atransientmap import ATransientMap
-from ieditablecollection import IEditableCollection
-from mapentry import MapEntry
-from aseq import ASeq
-from counted import Counted
+from py.clojure.lang.cljexceptions import ArityException, InvalidArgumentException, IllegalAccessError
+from py.clojure.lang.apersistentmap import APersistentMap
+from py.clojure.lang.atransientmap import ATransientMap
+from py.clojure.lang.ieditablecollection import IEditableCollection
+from py.clojure.lang.mapentry import MapEntry
+from py.clojure.lang.aseq import ASeq
+from py.clojure.lang.counted import Counted
 from threading import currentThread
 
 HASHTABLE_THRESHOLD = 16

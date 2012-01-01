@@ -1,6 +1,6 @@
-from cljexceptions import AbstractMethodCall
-from ipersistentcollection import IPersistentCollection
-from counted import Counted
+from py.clojure.lang.cljexceptions import AbstractMethodCall
+from py.clojure.lang.ipersistentcollection import IPersistentCollection
+from py.clojure.lang.counted import Counted
 class IPersistentSet(IPersistentCollection, Counted):
     def disjoin(self, key):
         raise AbstractMethodCall()

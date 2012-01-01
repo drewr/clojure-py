@@ -1,7 +1,7 @@
-from ifn import IFn
-from cljexceptions import AbstractMethodCall
-from itransientmap import ITransientMap
-import rt as RT
+from py.clojure.lang.ifn import IFn
+from py.clojure.lang.cljexceptions import AbstractMethodCall
+from py.clojure.lang.itransientmap import ITransientMap
+import py.clojure.lang.rt as RT
 
 class ATransientMap(IFn, ITransientMap):
     def ensureEditable(self):

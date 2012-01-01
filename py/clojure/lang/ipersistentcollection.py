@@ -1,5 +1,5 @@
-from cljexceptions import AbstractMethodCall
-from seqable import Seqable
+from py.clojure.lang.cljexceptions import AbstractMethodCall
+from py.clojure.lang.seqable import Seqable
 
 
 class IPersistentCollection(Seqable):

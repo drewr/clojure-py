@@ -1,5 +1,5 @@
-from iobj import IObj
-from cljexceptions import AbstractMethodCall
+from py.clojure.lang.iobj import IObj
+from py.clojure.lang.cljexceptions import AbstractMethodCall
 
 
 

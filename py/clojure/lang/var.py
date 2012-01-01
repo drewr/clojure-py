@@ -1,11 +1,11 @@
-from iref import IRef
-from ifn import IFn
-from settable import Settable
-from aref import ARef
-from exceptions import ArityException, InvalidArgumentException
-from persistenthashmap import EMPTY
-from threadutil import ThreadLocal, synchronized
-from symbol import Symbol
+from py.clojure.lang.iref import IRef
+from py.clojure.lang.ifn import IFn
+from py.clojure.lang.settable import Settable
+from py.clojure.lang.aref import ARef
+from py.clojure.lang.exceptions import ArityException, InvalidArgumentException
+from py.clojure.lang.persistenthashmap import EMPTY
+from py.clojure.lang.threadutil import ThreadLocal, synchronized
+from py.clojure.lang.symbol import Symbol
 
 class Var(ARef, Settable, IFn, IRef ):
 

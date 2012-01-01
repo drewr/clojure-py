@@ -1,5 +1,5 @@
-from iobj import IObj
-from cljexceptions import ArityException
+from py.clojure.lang.iobj import IObj
+from py.clojure.lang.cljexceptions import ArityException
 
 
 class Symbol(object, IObj):
@@ -9,14 +9,16 @@ class Symbol(object, IObj):
             self.name = args[1]
             self._meta = None
         elif len(args) == 3:
-            self._meta = agrs[0]
+            self._meta = args[0]
             self.ns = args[1]
             self.name = args[2]
         else:
             raise ArityException()
 
     def withMeta(self, meta):
-        return Symbol(meta, ns, name)
+        if meta is self.meta():
+            return self
+        return Symbol(meta, self.ns, self.name)
 
     def meta(self):
         return self._meta
@@ -30,6 +32,12 @@ class Symbol(object, IObj):
 
     def __hash__(self):
         return hash(self.name) ^ hash(self.ns)
+
+    def __repr__(self):
+        if self.ns is None:
+            return self.name
+        else:
+            return self.ns + "/" + self.name
 
     @staticmethod
     def intern(*args):

@@ -1,5 +1,5 @@
-from aseq import ASeq
-from counted import Counted
+from py.clojure.lang.aseq import ASeq
+from py.clojure.lang.counted import Counted
 
 class IndexableSeq(ASeq, Counted):
     def __init__(self, array, i):

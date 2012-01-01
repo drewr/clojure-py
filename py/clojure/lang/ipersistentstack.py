@@ -1,5 +1,5 @@
-from cljexceptions import AbstractMethodCall
-from ipersistentcollection import IPersistentCollection
+from py.clojure.lang.cljexceptions import AbstractMethodCall
+from py.clojure.lang.ipersistentcollection import IPersistentCollection
 
 class IPersistentStack(IPersistentCollection):
     def peek(self):
