@@ -1,8 +1,10 @@
 from py.clojure.lang.fileseq import FileSeq, MutatableFileSeq
-from py.clojure.lang.cljexceptions import ReaderException
+from var import Var
+from py.clojure.lang.cljexceptions import ReaderException, IllegalStateException
 from py.clojure.lang.gmp import Integer, Rational, Float
 import py.clojure.lang.rt as RT
 from py.clojure.lang.cljkeyword import LINE_KEY
+from py.clojure.lang.symbol import Symbol
 import re
 
 def read1(rdr):
@@ -10,6 +12,11 @@ def read1(rdr):
     if rdr is None:
         return ""
     return rdr.first()
+
+_AMP_ = Symbol.intern("&")
+_FN_ = Symbol.intern("fn")
+
+ARG_ENV = Var.create(None).setDynamic()
 
 WHITESPACE = [',', '\n', '\t', '\r', ' ']
 
@@ -315,6 +322,68 @@ def setReader(rdr, leftbrace):
     from persistenthashset import PersistentHashSet
     return PersistentHashSet.create(readDelimitedList("}", rdr,  True))
 
+def argReader(rdr, perc):
+    if ARG_ENV.deref() is None:
+        return interpretToken(readToken(r, '%'))
+    ch = read1(rdr)
+    rdr.back()
+    if ch == "" or isWhitespace(ch) or isTerminatingMacro(ch):
+        return registerArg(1)
+    n = read(rdr, True, None, True)
+    if n == _AMP_:
+        return registerArg(-1)
+    if not isinstance(n, Integer):
+        raise IllegalStateException("arg literal must be %, %& or %integer")
+    return registerArg(n)
+
+def registerArg(arg):
+    argsyms = ARG_ENV.deref()
+    if argsyms is None:
+        raise IllegalStateException("arg literal not in #()")
+    ret = argsyms[arg]
+    if ret is None:
+        ret = garg(arg)
+        ARG_ENV.set(argsyms.assoc(n, ret))
+    return ret
+
+def fnReader(rdr, lparen):
+    from py.clojure.lang.persistenthashmap import EMPTY
+    from py.clojure.lang.var import popThreadBindings, pushThreadBindings
+
+    if ARG_ENV.deref() is not None:
+        raise IllegalStateException("Nested #()s are not allowed")
+    #try:
+    pushThreadBindings(RT.map(ARG_ENV, EMPTY))
+    rdr.back()
+    form = read(rdr, True, None, True)
+    drefed = ARG_ENV.deref()
+    sargs = sorted(filter(lambda x: x != -1, drefed))
+    args = []
+    if len(sargs):
+        for x in range(sargs[-1]):
+            if x in drefed:
+                args.append(drefed[x])
+            else:
+                args.append(garg(x))
+        retsym = drefed[-1]
+        if retsym is not None:
+            args.append(_AMP_)
+            args.append(retsym)
+
+    vargs = RT.vector(args)
+    popThreadBindings()
+    return RT.list(_FN_, vargs, form)
+    #finally:
+
+
+
+
+
+
+def garg(n):
+    from symbol import Symbol
+    return Symbol.intern(null,  "rest" if n == -1 else  ("p" + n) + "__" + RT.nextID() + "#")
+
 macros = {'\"': stringReader,
           "(": listReader,
           ")": unmatchedDelimiterReader,
@@ -324,12 +393,14 @@ macros = {'\"': stringReader,
           "}": unmatchedDelimiterReader,
           ";": commentReader,
           "#": dispatchReader,
-          "^": metaReader}
+          "^": metaReader,
+          "%": argReader}
 
 dispatchMacros = {"\"": regexReader,
                   "{": setReader,
-                  "!": commentReader
-                  "_": discardReader}
+                  "!": commentReader,
+                  "_": discardReader,
+                  "(": fnReader}
 
 
 if __name__ == '__main__':

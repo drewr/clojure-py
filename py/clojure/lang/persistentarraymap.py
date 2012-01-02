@@ -27,8 +27,9 @@ class PersistentArrayMap(APersistentMap, IEditableCollection):
     def withMeta(self, meta):
         return PersistentArrayMap(meta, self.array)
 
-    def create(self, *args):
-        return PersistentArrayMap(self.meta(), args)
+    @staticmethod
+    def create(*args):
+        return PersistentArrayMap(None, args)
 
     def createHT(self, init):
         return PersistentArrayMap(self.meta(), init)

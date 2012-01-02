@@ -26,6 +26,10 @@ class ARef(AReference, IRef):
     def setValidator(self, fn):
         self.validate(fn, self.deref())
         self.validator = fn
+    def getValidator(self):
+        if not hasattr(self, "validator"):
+            return None
+        return self.validator
     def getWatches(self):
         return self.watches
 

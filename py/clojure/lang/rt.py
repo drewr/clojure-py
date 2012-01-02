@@ -1,4 +1,5 @@
 from py.clojure.lang.cljexceptions import AbstractMethodCall, InvalidArgumentException
+from py.clojure.lang.threadutil import AtomicInteger
 
 def seq(obj):
     raise AbstractMethodCall()
@@ -78,4 +79,9 @@ def getDefaultImports():
             Symbol.intern("Integer"): int,
             Symbol.intern("Math"): math
             }
+
+id = AtomicInteger()
+def nextID():
+    return id.getAndIncrement()
+
 #DEFAULT_IMPORTS = map(getDefaultImports())

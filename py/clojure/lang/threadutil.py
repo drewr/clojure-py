@@ -1,4 +1,4 @@
-from py.clojure.lang.threading import Lock, local, currentThread
+from threading import Lock, local, currentThread
 
 
 def synchronized(f):
@@ -14,7 +14,7 @@ def synchronized(f):
     return synchronized_closure
 
 
-def ThreadLocal(local):
+class ThreadLocal(local):
     def __init__(self):
         pass
     def get(self, defaultfn):
@@ -23,3 +23,10 @@ def ThreadLocal(local):
         return self.value
     def set(self, value):
         self.value = value
+
+class AtomicInteger:
+    def __init__(self, v = 0):
+        self.v = v
+    def getAndIncrement(self):
+        self.v += 1
+        return self.v

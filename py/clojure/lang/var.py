@@ -2,10 +2,40 @@ from py.clojure.lang.iref import IRef
 from py.clojure.lang.ifn import IFn
 from py.clojure.lang.settable import Settable
 from py.clojure.lang.aref import ARef
-from py.clojure.lang.exceptions import ArityException, InvalidArgumentException
+from py.clojure.lang.cljexceptions import ArityException, InvalidArgumentException, IllegalStateException
 from py.clojure.lang.persistenthashmap import EMPTY
-from py.clojure.lang.threadutil import ThreadLocal, synchronized
+from py.clojure.lang.threadutil import ThreadLocal, synchronized, currentThread
 from py.clojure.lang.symbol import Symbol
+from py.clojure.lang.cljkeyword import Keyword
+from persistentarraymap import PersistentArrayMap
+
+privateKey = Keyword.intern(Symbol.intern(":private"))
+dvals = ThreadLocal()
+privateMeta = PersistentArrayMap.create([privateKey, True])
+UKNOWN = Symbol.intern("UNKNOWN")
+
+def pushThreadBindings(bindings):
+    f = dvals.get(lambda: Var.Frame())
+    bmap = f.bindings
+    bs = bindings.seq()
+    while bs is not None:
+        e = bs.first()
+        v = e.getKey()
+        if not v.dynamic:
+            raise IllegalStateException("Can't dynamically bind non-dynamic var: " + str(v.ns) + "/" + str(v.sym))
+        v.validate(v.getValidator(), e.getValue())
+        v.threadBound = True
+        bmap = bmap.assoc(v, Var.TBox(currentThread(), e.getValue()))
+        bs = bs.next()
+    dvals.set(Var.Frame(bmap, f))
+
+def popThreadBindings():
+    f = dvals.get(Var.Frame())
+    if f.prev is None:
+        raise IllegalStateException("Pop without matching push")
+    dvals.set(f.prev)
+
+
 
 class Var(ARef, Settable, IFn, IRef ):
 
@@ -29,19 +59,27 @@ class Var(ARef, Settable, IFn, IRef ):
         def clone(self):
             return Var.Frame(self.bindings)
 
-    dvals = ThreadLocal()
-    privateMeta = PersistentArrayMap.create([Var.privateKey, True])
 
-    def __init__(self, ns, sym, root = Var.Unbound()):
+
+    def __init__(self, ns, sym, root = UKNOWN):
+        if root == UKNOWN:
+            self.root = Var.Unbound(self)
         self.ns = ns
         self.sym = sym
-        self.threadBound = false
+        self.threadBound = False
         self.root = root
-        self.setMeta(EMPTY)
+        self._meta = EMPTY
         self.rev = 0
         self.dynamic = False
         if isinstance(self.root, Var.Unbound):
             self.rev += 1
+
+    @staticmethod
+    def create(root = UKNOWN):
+        if root is not UKNOWN:
+            return Var(None, None, root)
+        else:
+            return Var(None, None)
 
     @staticmethod
     def getThreadBindingFrame():
@@ -59,12 +97,13 @@ class Var(ARef, Settable, IFn, IRef ):
 
     def setDynamic(self, val = True):
         self.dynamic = val
+        return self
 
     def isDynamic(self):
         return self.dynamic
 
     @staticmethod
-    def intern(ns, sym, root, replaceRoot = true):
+    def intern(ns, sym, root, replaceRoot = True):
         dvout = ns.intern(sym)
         if not dvout.hasRoot() or replaceRoot:
             dvout.bindRoot(root)
@@ -97,6 +136,20 @@ class Var(ARef, Settable, IFn, IRef ):
         ret = Var.intern(ns, Symbol.intern(sym))
         ret.setMeta(Var.privateMeta)
         return ret
+
+
+    def deref(self):
+        b = self.getThreadBinding()
+        if b is not None:
+            return b.val
+        return self.root
+
+    def getThreadBinding(self):
+        if self.threadBound:
+            e = dvals.get(lambda: Var.Frame()).bindings.entryAt(self)
+            if e is not None:
+                return e.getValue()
+        return None
 
 
 

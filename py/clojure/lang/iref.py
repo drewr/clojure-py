@@ -1,4 +1,4 @@
-from py.clojure.lang.exceptions import AbstractMethodCall
+from py.clojure.lang.cljexceptions import AbstractMethodCall
 from py.clojure.lang.ideref import IDeref
 
 class IRef(IDeref):
