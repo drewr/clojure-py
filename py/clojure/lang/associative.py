@@ -4,9 +4,9 @@ from py.clojure.lang.ipersistentcollection import IPersistentCollection
 
 class Associative(ILookup, IPersistentCollection):
     def containsKey(self, key):
-        raise AbstractMethodCall()
+        raise AbstractMethodCall(self)
     def entryAt(self, key):
-        raise AbstractMethodCall()
+        raise AbstractMethodCall(self)
     def assoc(self, key, val):
-        raise AbstractMethodCall()
+        raise AbstractMethodCall(self)
 

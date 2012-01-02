@@ -1,6 +1,7 @@
 from StringIO import StringIO
 from py.clojure.lang.lispreader import *
 from py.clojure.lang.fileseq import StringReader
+import py.clojure.lang.rt as RT
 
 def rdr(s):
     return StringReader(s)
@@ -13,13 +14,24 @@ import sys
 sys.path = ["."] + sys.path
 
 c = 0
-for x in range(1):
-    r = rdr("["+data +"]")
+from py.clojure.lang.compiler import Compiler
+RT.init()
+comp = Compiler()
+
+for x in range(10):
+    #r = rdr("["+data +"]")
+    r = rdr(data)
     try:
-        while True:
+        for x in range(6):
             c += 1
+            oldl = r.lineCol()
             s = read(r, True, None, True)
-            print '-' ,len(s), '-'
+            print s
+            res = comp.compileForm(s)
+            print res
+
+            #print '-' ,len(s), '-', oldl, r.lineCol()
+
     except IOError:
         print "error"
     print x

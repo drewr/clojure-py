@@ -5,4 +5,4 @@ from py.clojure.lang.counted import Counted
 
 class IPersistentMap(Interable, Associative, Counted):
     def without(self, key):
-        raise AbstractMethodCall()
+        raise AbstractMethodCall(self)

@@ -3,7 +3,7 @@ from py.clojure.lang.cljexceptions import AbstractMethodCall, ArityException
 from py.clojure.lang.ipersistentset import IPersistentSet
 import py.clojure.lang.rt as RT
 
-class APersistentSet(IPersistentSet, IFn):
+class APersistentSet(object, IPersistentSet, IFn):
     def __init__(self, impl):
         self.impl = impl
     def __getitem__(self, item):

@@ -28,5 +28,11 @@ class IndexOutOfBoundsException(Exception):
         Exception.__init__(self, s)
 
 class ReaderException(Exception):
-    def __init__(self, s = None):
-        Exception.__init__(self, s)
+    def __init__(self, s = None, rdr = None):
+        Exception.__init__(self, s + ("" if rdr is None else " at line " + str(rdr.lineCol()[0])))
+
+class CompilerException(Exception):
+    def __init__(self, reason, form):
+        from lispreader import LINE_KEY
+        msg = "Compiler Exception " + reason + " at " + str(form.meta()[LINE_KEY])
+        Exception.__init__(self, msg)

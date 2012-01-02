@@ -7,4 +7,4 @@ class Obj(object, IObj):
     def meta(self):
         return self._meta
     def withMeta(self, meta):
-        raise AbstractMethodCall()
+        raise AbstractMethodCall(self)

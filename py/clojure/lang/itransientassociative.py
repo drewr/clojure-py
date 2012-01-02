@@ -4,4 +4,4 @@ from py.clojure.lang.ilookup import ILookup
 
 class ITransientAssociative(ITransientCollection, ILookup):
     def assoc(self, key, val):
-        raise AbstractMethodCall()
+        raise AbstractMethodCall(self)

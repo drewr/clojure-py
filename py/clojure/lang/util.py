@@ -8,7 +8,7 @@ def hashCombine(hash, seed):
 
 
 def hasheq(o):
-    raise AbstractMethodCall()
+    raise AbstractMethodCall(self)
 
 def conjToAssoc(self, o):
     if isinstance(o, MapEntry):

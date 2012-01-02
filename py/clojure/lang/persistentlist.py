@@ -48,7 +48,7 @@ class PersistentList(ASeq, IPersistentList, IReduce, Counted):
             return EMPTY.withMeta(self._meta)
         return self._rest
 
-    def count(self):
+    def __len__(self):
         return self._count
 
     def cons(self, o):

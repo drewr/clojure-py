@@ -1,6 +1,6 @@
 from py.clojure.lang.cljexceptions import AbstractMethodCall
 
-class Interable(object):
+class Interable():
     def __iter__(self):
-        raise AbstractMethodCall()
+        raise AbstractMethodCall(self)
 

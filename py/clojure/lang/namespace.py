@@ -9,7 +9,7 @@ namespaces = AtomicReference(EMPTY_MAP)
 def areDifferentInstancesOfSameClassName(o1, o2):
     return o1.__class__ is o2.__class__
 
-def findOrCreate(self, name):
+def findOrCreate(name):
     ns = namespaces.get()[name]
     if ns is not None:
         return ns
@@ -18,7 +18,7 @@ def findOrCreate(self, name):
         ns = Namespace(name)
         newns = namespaces.get().assoc(name, ns)
         namespaces.compareAndSet(namespaces, newns)
-        ns = namespaces.get()[ns]
+        ns = namespaces.get()[name]
     return ns
 
 def remove(name):
@@ -59,14 +59,14 @@ class Namespace(AReference):
         map = self.getMappings().get()
         v = None
 
-        o = map[sym]
+        o = map[sym] if map is not None else None
         v = None
         while o is None:
             if v is None:
                 v = Var(self, sym)
             newmap = map.assoc(sym, v)
-            mappings.compareAndSet(map, newmap)
-            map = self.getMappings()
+            self.mappings.compareAndSet(map, newmap)
+            map = self.getMappings().get()
             o = map[sym]
 
         if isinstance(o, Var) and o.ns is self:

@@ -1,5 +1,5 @@
 from py.clojure.lang.cljexceptions import AbstractMethodCall
 
-class Seqable(object):
+class Seqable():
     def seq(self):
-        raise AbstractMethodCall()
+        raise AbstractMethodCall(self)

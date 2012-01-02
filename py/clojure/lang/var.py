@@ -102,8 +102,21 @@ class Var(ARef, Settable, IFn, IRef ):
     def isDynamic(self):
         return self.dynamic
 
+    def set(self, val):
+        self.validate(self.getValidator(), val);
+        b = self.getThreadBinding()
+        if b is not None:
+            if currentThread() != b.thread:
+                raise IllegalStateException("Can't set!: " + str(sym) + " from non-binding thread")
+            b.val = val
+            return self
+
+        raise IllegalStateException(str("Can't change/establish root binding of: "+ str(sym) +" with set"))
+
+    def hasRoot(self):
+        return not isinstance(self.root, Var.Unbound)
     @staticmethod
-    def intern(ns, sym, root, replaceRoot = True):
+    def internWithRoot(ns, sym, root, replaceRoot = True):
         dvout = ns.intern(sym)
         if not dvout.hasRoot() or replaceRoot:
             dvout.bindRoot(root)

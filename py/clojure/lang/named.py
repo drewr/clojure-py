@@ -1,7 +1,7 @@
 from py.clojure.lang.cljexceptions import AbstractMethodCall
 
-class Named():
+class Named(object):
     def getNamespace(self):
-        raise AbstractMethodCall()
+        raise AbstractMethodCall(self)
     def getName(self):
-        raise AbstractMethodCall()
+        raise AbstractMethodCall(self)

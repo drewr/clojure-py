@@ -2,7 +2,7 @@ from py.clojure.lang.cljexceptions import AbstractMethodCall, InvalidArgumentExc
 from py.clojure.lang.threadutil import AtomicInteger
 
 def seq(obj):
-    raise AbstractMethodCall()
+    raise AbstractMethodCall(self)
 
 def applyTo(fn, args):
     return apply(fn, tuple(args.interator()))
@@ -84,4 +84,8 @@ id = AtomicInteger()
 def nextID():
     return id.getAndIncrement()
 
-#DEFAULT_IMPORTS = map(getDefaultImports())
+def init():
+    global DEFAULT_IMPORTS
+    DEFAULT_IMPORTS = map(getDefaultImports())
+
+DEFAULT_IMPORTS = None

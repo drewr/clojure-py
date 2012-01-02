@@ -15,6 +15,7 @@ def read1(rdr):
 
 _AMP_ = Symbol.intern("&")
 _FN_ = Symbol.intern("fn")
+_VAR_ = Symbol.intern("var")
 
 ARG_ENV = Var.create(None).setDynamic()
 
@@ -69,7 +70,7 @@ def read(rdr, eofIsError, eofValue, isRecursive):
             ch = read1(rdr)
 
         if ch == "":
-            raise ReaderException("EOF while reading")
+            raise ReaderException("EOF while reading", rdr)
 
         if isDigit(ch):
             return readNumber(rdr, ch)
@@ -268,15 +269,16 @@ def readDelimitedList(delim, rdr, isRecursive):
 
 def regexReader(rdr, doubleQuote):
     s = []
-    ch = read1(rdr)
+    ch = -1
     while ch != '\"':
+        ch = read1(rdr)
         if ch == "":
-            raise ReaderException("EOF while reading string")
+            raise ReaderException("EOF while reading string", rdr)
         s.append(ch)
         if ch == "\\":
             ch = read1(rdr)
             if ch == "":
-                raise ReaderException("EOF while reading regex")
+                raise ReaderException("EOF while reading regex", rdr)
             s.append(ch)
 
     return re.compile("".join(s))
@@ -324,17 +326,22 @@ def setReader(rdr, leftbrace):
 
 def argReader(rdr, perc):
     if ARG_ENV.deref() is None:
-        return interpretToken(readToken(r, '%'))
+        return interpretToken(readToken(rdr, '%'))
     ch = read1(rdr)
     rdr.back()
     if ch == "" or isWhitespace(ch) or isTerminatingMacro(ch):
         return registerArg(1)
     n = read(rdr, True, None, True)
-    if n == _AMP_:
+    if isinstance(n, Symbol) and n == _AMP_:
         return registerArg(-1)
     if not isinstance(n, Integer):
         raise IllegalStateException("arg literal must be %, %& or %integer")
     return registerArg(n)
+
+def varQuoteReader(rdr, singlequote):
+    line = rdr.lineCol()[0]
+    form = read(rdr, True, None, True)
+    return RT.list(_VAR_, form).withMeta(RT.map(LINE_KEY, line))
 
 def registerArg(arg):
     argsyms = ARG_ENV.deref()
@@ -343,7 +350,7 @@ def registerArg(arg):
     ret = argsyms[arg]
     if ret is None:
         ret = garg(arg)
-        ARG_ENV.set(argsyms.assoc(n, ret))
+        ARG_ENV.set(argsyms.assoc(arg, ret))
     return ret
 
 def fnReader(rdr, lparen):
@@ -357,10 +364,10 @@ def fnReader(rdr, lparen):
     rdr.back()
     form = read(rdr, True, None, True)
     drefed = ARG_ENV.deref()
-    sargs = sorted(filter(lambda x: x != -1, drefed))
+    sargs = sorted(list(filter(lambda x: x != -1, drefed)))
     args = []
     if len(sargs):
-        for x in range(sargs[-1]):
+        for x in range(int(str(sargs[-1]))):
             if x in drefed:
                 args.append(drefed[x])
             else:
@@ -382,7 +389,7 @@ def fnReader(rdr, lparen):
 
 def garg(n):
     from symbol import Symbol
-    return Symbol.intern(null,  "rest" if n == -1 else  ("p" + n) + "__" + RT.nextID() + "#")
+    return Symbol.intern(None,  "rest" if n == -1 else  ("p" + str(n)) + "__" + str(RT.nextID()) + "#")
 
 macros = {'\"': stringReader,
           "(": listReader,
@@ -400,7 +407,9 @@ dispatchMacros = {"\"": regexReader,
                   "{": setReader,
                   "!": commentReader,
                   "_": discardReader,
-                  "(": fnReader}
+                  "(": fnReader,
+                  "'": varQuoteReader,
+                  "^": metaReader}
 
 
 if __name__ == '__main__':

@@ -5,17 +5,17 @@ import py.clojure.lang.rt as RT
 
 class ATransientMap(IFn, ITransientMap):
     def ensureEditable(self):
-        raise AbstractMethodCall()
+        raise AbstractMethodCall(self)
     def doAssoc(self, key, val):
-        raise AbstractMethodCall()
+        raise AbstractMethodCall(self)
     def doWithout(self, key):
-        raise AbstractMethodCall()
+        raise AbstractMethodCall(self)
     def doValAt(self, key, notFound = None):
-        raise AbstractMethodCall()
+        raise AbstractMethodCall(self)
     def doCount(self):
-        raise AbstractMethodCall()
+        raise AbstractMethodCall(self)
     def doPersistent(self):
-        raise AbstractMethodCall()
+        raise AbstractMethodCall(self)
 
     def conj(self, val):
         self.ensureEditable()

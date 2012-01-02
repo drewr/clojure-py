@@ -54,7 +54,7 @@ class ASeq(Obj, Sequential, ISeq, IHashEq, Interable):
         return True
 
     def first(self):
-        raise AbstractMethodCall()
+        raise AbstractMethodCall(self)
 
     def __iter__(self):
         s = self.seq()

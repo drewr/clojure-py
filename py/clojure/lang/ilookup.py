@@ -1,7 +1,7 @@
 from py.clojure.lang.cljexceptions import AbstractMethodCall
 
-class ILookup(object):
+class ILookup():
     def valAt(self, key, notFound = None):
-        raise AbstractMethodCall()
+        raise AbstractMethodCall(self)
 
 

@@ -109,6 +109,10 @@ class PersistentHashMap(APersistentMap, IEditableCollection, IObj):
             return self.noneValue if self.hasNull else notFound
         return self.root.find(0, hash(key), key, notFound) if self.root is not None else notFound
 
+    def entryAt(self, key, notFound = None):
+        val = self.root.find(0, hash(key), key, notFound) if self.root is not None else notFound
+        return MapEntry(key, val)
+
     def seq(self):
         s =  self.root.nodeSeq() if self.root is not None else None
         return Cons(MapEntry(None, self.noneValue), s) if self.hasNull else s
@@ -130,22 +134,22 @@ class PersistentHashMap(APersistentMap, IEditableCollection, IObj):
 
     class INode(object):
         def assoc(self, shift,  hsh, key, val, addedLeaf):
-            raise AbstractMethodCall()
+            raise AbstractMethodCall(self)
 
         def without(self,  shift,  hsh, key):
-            raise AbstractMethodCall()
+            raise AbstractMethodCall(self)
 
         def find(self,  shift,  hsh, key, notFound = None):
-            raise AbstractMethodCall()
+            raise AbstractMethodCall(self)
 
         def nodeSeq(self):
-            raise AbstractMethodCall()
+            raise AbstractMethodCall(self)
 
         def assocEd(self, edit,  shift, hsh, key, val, addedLeaf):
-            raise AbstractMethodCall()
+            raise AbstractMethodCall(self)
 
         def withoutEd(self,  edit,  shift,  hsh,  key,  removedLeaf):
-            raise AbstractMethodCall()
+            raise AbstractMethodCall(self)
 
     class ArrayNode(INode):
         def __init__(self, edit, count, array):

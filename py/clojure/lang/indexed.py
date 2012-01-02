@@ -3,4 +3,4 @@ from py.clojure.lang.counted import Counted
 
 class Indexed(Counted):
     def nth(self, i, notFound = None):
-        raise AbstractMethodCall()
+        raise AbstractMethodCall(self)
