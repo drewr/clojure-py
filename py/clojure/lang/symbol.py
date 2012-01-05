@@ -5,7 +5,7 @@ from py.clojure.lang.cljexceptions import ArityException
 class Symbol(object, IObj):
     def __init__(self, *args):
         if len(args) == 2:
-            self.ns = args[0]
+            self.ns = args[0].name if isinstance(args[0], Symbol) else args[0]
             self.name = args[1]
             self._meta = None
         elif len(args) == 3:
@@ -14,6 +14,9 @@ class Symbol(object, IObj):
             self.name = args[2]
         else:
             raise ArityException()
+        from namespace import Namespace
+        if isinstance(self.ns, Namespace):
+            pass
 
     def withMeta(self, meta):
         if meta is self.meta():
@@ -43,6 +46,8 @@ class Symbol(object, IObj):
     def intern(*args):
         if len(args) == 1:
             a = args[0]
+            if isinstance(a, Symbol):
+                return a
             idx = a.rfind("/")
             if idx == -1 or a == "/":
                 return Symbol(None, intern(a))

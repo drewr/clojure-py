@@ -9,7 +9,8 @@ from py.clojure.lang.symbol import Symbol
 from py.clojure.lang.cljkeyword import Keyword
 from persistentarraymap import PersistentArrayMap
 
-privateKey = Keyword.intern(Symbol.intern(":private"))
+privateKey = Keyword.intern(Symbol.intern("private"))
+macrokey = Keyword.intern(Symbol.intern("macro"))
 dvals = ThreadLocal()
 privateMeta = PersistentArrayMap.create([privateKey, True])
 UKNOWN = Symbol.intern("UNKNOWN")
@@ -115,6 +116,16 @@ class Var(ARef, Settable, IFn, IRef ):
 
     def hasRoot(self):
         return not isinstance(self.root, Var.Unbound)
+
+    def bindRoot(self, root):
+        import rt as RT
+        self.validate(self.getValidator(), root)
+        oldroot = self.root
+        self.root = root
+        self.rev += 1
+        #self.alterMeta(lambda o, k: o.dissoc(k), RT.list(macrokey))
+        #self.notifyWatches(oldroot, self.root)
+
     @staticmethod
     def internWithRoot(ns, sym, root, replaceRoot = True):
         dvout = ns.intern(sym)
@@ -129,9 +140,10 @@ class Var(ARef, Settable, IFn, IRef ):
 
     @staticmethod
     def find(sym):
+        from py.clojure.lang.namespace import find as findNamespace
         if sym.ns is None:
             raise InvalidArgumentException("Symbol must be namespace-qualified")
-        ns = Namespace.find(Symbol.intern(sym.ns))
+        ns = findNamespace(Symbol.intern(sym.ns))
         if ns is None:
             raise InvalidArgumentException("No such namespace " + str(sym.ns))
         return ns.findInternedVar(Symbol.intern(sym.name))

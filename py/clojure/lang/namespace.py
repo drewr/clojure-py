@@ -10,6 +10,9 @@ def areDifferentInstancesOfSameClassName(o1, o2):
     return o1.__class__ is o2.__class__
 
 def findOrCreate(name):
+    from py.clojure.lang.symbol import Symbol
+    if isinstance(name, str):
+        name = Symbol.intern(name)
     ns = namespaces.get()[name]
     if ns is not None:
         return ns
@@ -164,7 +167,7 @@ class Namespace(AReference):
         return mappings.get()[name]
 
     def findInternedVar(self, symbol):
-        o = mappings.get().valAt(symbol)
+        o = self.mappings.get().valAt(symbol)
         if o is not None and isinstance(o, Var) and o.ns is self:
             return o
         return None

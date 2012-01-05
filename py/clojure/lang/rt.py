@@ -5,7 +5,7 @@ def seq(obj):
     raise AbstractMethodCall(self)
 
 def applyTo(fn, args):
-    return apply(fn, tuple(args.interator()))
+    return apply(fn, tuple(map(lambda x: x.first(),args)))
 
 def booleanCast(obj):
     if isinstance(obj, bool):
@@ -61,7 +61,7 @@ def map(*args):
             for x in args[0]:
                 if x in m:
                     raise InvalidArgumentException("Duplicate key")
-                m.assoc(x, args[0][x])
+                m = m.assoc(x, args[0][x])
             return m
         if fulfillsIndexable(args[0]):
             args = args[0]
@@ -74,10 +74,12 @@ def map(*args):
 
 def getDefaultImports():
     from py.clojure.lang.symbol import Symbol
+    from py.clojure.lang.persistentlist import PersistentList
     import math
     return {Symbol.intern("String"): str,
             Symbol.intern("Integer"): int,
-            Symbol.intern("Math"): math
+            Symbol.intern("Math"): math,
+            Symbol.intern("clojure.lang.PersistentList"): PersistentList
             }
 
 id = AtomicInteger()

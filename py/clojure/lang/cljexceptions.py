@@ -34,5 +34,8 @@ class ReaderException(Exception):
 class CompilerException(Exception):
     def __init__(self, reason, form):
         from lispreader import LINE_KEY
-        msg = "Compiler Exception " + reason + " at " + str(form.meta()[LINE_KEY])
+        if hasattr(form, "meta"):
+            msg = "Compiler Exception " + reason + " at " + str(form.meta()[LINE_KEY])
+        else:
+            msg = "Compiler Exception " + reason
         Exception.__init__(self, msg)

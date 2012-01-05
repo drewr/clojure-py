@@ -28,6 +28,7 @@ for x in range(10):
             s = read(r, True, None, True)
             print s
             res = comp.compileForm(s)
+            comp.executeCode(res)
             print res
 
             #print '-' ,len(s), '-', oldl, r.lineCol()
