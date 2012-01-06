@@ -6,6 +6,7 @@ from py.clojure.lang.var import Var
 from py.clojure.util.byteplay import *
 import new
 import py.clojure.lang.rt as RT
+from py.clojure.lang.lispreader import _AMP_
 
 
 def compileNS(comp, form):
@@ -66,11 +67,25 @@ def compileDot(comp, form):
 
     return code
 
+def compileQuote(comp, form):
+    if len(form) != 2:
+        raise CompilerException("Quote must only have one argument", form)
+    return [(LOAD_CONST, form.next().first())]
+
 
 def compileFn(comp, name, form):
     locals = {}
     args = []
+    lastisargs = False
+    argsname = None
     for x in form.first():
+        if x == _AMP_:
+            lastisargs = True
+            continue
+        if lastisargs and argsname is not None:
+            raise CompilerException("variable length argument must be the last in the function")
+        if lastisargs:
+            argsname = x
         if not isinstance(x, Symbol) or x.ns is not None:
             raise CompilerException("fn* arguments must be non namespaced symbols", form)
         locals[x] = RT.list(x)
@@ -83,10 +98,9 @@ def compileFn(comp, name, form):
 
     code.append((RETURN_VALUE,None))
 
-    c = Code(code, [], args, False, False, False, "<string>", "<string>", 0, None)
+    c = Code(code, [], args, lastisargs, False, False, "<string>", "<string>", 0, None)
 
     fn = new.function(c.to_code(), {}, name.name)
-    fn(1, None)
 
     return [(LOAD_CONST, fn)]
 
@@ -104,7 +118,8 @@ def compileFNStar(comp, form):
 builtins = {Symbol.intern("ns"): compileNS,
             Symbol.intern("def"): compileDef,
             Symbol.intern("."): compileDot,
-            Symbol.intern("fn*"): compileFNStar}
+            Symbol.intern("fn*"): compileFNStar,
+            Symbol.intern("quote"): compileQuote}
 
 
 
@@ -116,6 +131,16 @@ class Compiler():
     def compileForm(self, form):
         if form.first() in builtins:
             return builtins[form.first()](self, form)
+        c = self.compile(form.first())
+        f = form.next()
+        acount = 0
+        while f is not None:
+            c.extend(self.compile(f.first()))
+            acount += 1
+            f = f.next()
+        c.append((CALL_FUNCTION, acount))
+        return c
+
         raise CompilerException("Unknown function " + str(form.first()), form)
     def compileSymbol(self, sym):
         from py.clojure.lang.namespace import findItem

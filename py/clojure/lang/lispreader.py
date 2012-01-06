@@ -16,6 +16,7 @@ def read1(rdr):
 _AMP_ = Symbol.intern("&")
 _FN_ = Symbol.intern("fn")
 _VAR_ = Symbol.intern("var")
+_QUOTE_ = Symbol.intern("quote")
 
 ARG_ENV = Var.create(None).setDynamic()
 
@@ -392,6 +393,7 @@ def garg(n):
     return Symbol.intern(None,  "rest" if n == -1 else  ("p" + str(n)) + "__" + str(RT.nextID()) + "#")
 
 macros = {'\"': stringReader,
+          "\'": wrappingReader(_QUOTE_),
           "(": listReader,
           ")": unmatchedDelimiterReader,
           "[": vectorReader,
