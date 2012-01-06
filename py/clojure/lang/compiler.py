@@ -1,8 +1,11 @@
 from py.clojure.lang.symbol import Symbol
 from py.clojure.lang.namespace import findOrCreate as findOrCreateNamespace
 from py.clojure.lang.cljexceptions import CompilerException
+from py.clojure.lang.persistentvector import PersistentVector
 from py.clojure.lang.var import Var
 from py.clojure.util.byteplay import *
+import new
+import py.clojure.lang.rt as RT
 
 
 def compileNS(comp, form):
@@ -64,27 +67,71 @@ def compileDot(comp, form):
     return code
 
 
+def compileFn(comp, name, form):
+    locals = {}
+    args = []
+    for x in form.first():
+        if not isinstance(x, Symbol) or x.ns is not None:
+            raise CompilerException("fn* arguments must be non namespaced symbols", form)
+        locals[x] = RT.list(x)
+        args.append(x.name)
+
+    comp.setLocals(locals)
+    code = []
+    for x in form.next():
+        code.extend(comp.compile(x.first()))
+
+    code.append((RETURN_VALUE,None))
+
+    c = Code(code, [], args, False, False, False, "<string>", "<string>", 0, None)
+
+    fn = new.function(c.to_code(), {}, name.name)
+    fn(1, None)
+
+    return [(LOAD_CONST, fn)]
+
+def compileFNStar(comp, form):
+    if len(form) < 3:
+        raise CompilerException("more than 3 arguments to fn* required")
+    form = form.next()
+    name = form.first()
+    if not isinstance(name, Symbol):
+        raise CompilerException("fn* name must be a symbol")
+    form = form.next()
+    if isinstance(form.first(), PersistentVector):
+        return compileFn(comp, name, form)
 
 builtins = {Symbol.intern("ns"): compileNS,
             Symbol.intern("def"): compileDef,
-            Symbol.intern("."): compileDot}
+            Symbol.intern("."): compileDot,
+            Symbol.intern("fn*"): compileFNStar}
 
 
 
 
 class Compiler():
+    def __init__(self):
+        self.locals = {}
+
     def compileForm(self, form):
         if form.first() in builtins:
             return builtins[form.first()](self, form)
         raise CompilerException("Unknown function " + str(form.first()), form)
     def compileSymbol(self, sym):
+        from py.clojure.lang.namespace import findItem
+        if sym in self.locals:
+            return self.compileLocal(sym)
         if sym.ns is None:
             sym = Symbol.intern(self.getNS().name.name, sym.name)
-        loc = Var.find(sym)
+        loc = findItem(sym)
         if loc is None:
             raise CompilerException("Can't find " + str(sym), None)
 
         return [(LOAD_CONST, loc)]
+
+    def compileLocal(self, sym):
+        return [(LOAD_FAST, self.locals[sym].first().name)]
+
     def compile(self, itm):
         from py.clojure.lang.persistentlist import PersistentList
         if isinstance(itm, Symbol):
@@ -94,6 +141,9 @@ class Compiler():
         if itm is None:
             return self.compileNone(itm)
         raise CompilerException("Don't know how to compile", itm)
+
+    def setLocals(self, locals):
+        self.locals = locals
 
     def compileNone(self, itm):
         return [(LOAD_CONST, None)]

@@ -1,8 +1,21 @@
 from py.clojure.lang.cljexceptions import AbstractMethodCall, InvalidArgumentException
 from py.clojure.lang.threadutil import AtomicInteger
 
+def cons(x, s):
+    from py.clojure.lang.cons import Cons
+    from py.clojure.lang.persistentlist import PersistentList, EMPTY as EMPTY_LIST
+    from py.clojure.lang.aseq import ASeq
+    if isinstance(s, PersistentList):
+        return s.cons(x)
+    if isinstance(s, ASeq):
+        return Cons(x, s)
+    if s is None:
+        return EMPTY_LIST.cons(x)
+
+    return Cons(x, seq(s))
+
 def seq(obj):
-    raise AbstractMethodCall(self)
+    return obj.seq()
 
 def applyTo(fn, args):
     return apply(fn, tuple(map(lambda x: x.first(),args)))
@@ -75,11 +88,13 @@ def map(*args):
 def getDefaultImports():
     from py.clojure.lang.symbol import Symbol
     from py.clojure.lang.persistentlist import PersistentList
+    import sys
     import math
     return {Symbol.intern("String"): str,
             Symbol.intern("Integer"): int,
             Symbol.intern("Math"): math,
-            Symbol.intern("clojure.lang.PersistentList"): PersistentList
+            Symbol.intern("clojure.lang.PersistentList"): PersistentList,
+            Symbol.intern("clojure.lang.RT"): sys.modules[__name__]
             }
 
 id = AtomicInteger()

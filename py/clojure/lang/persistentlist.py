@@ -32,6 +32,13 @@ class PersistentList(ASeq, IPersistentList, IReduce, Counted):
             ret = ret.cons(c)
         return ret
 
+    @staticmethod
+    def creator(*args):
+        ret = EMPTY
+        for x in args:
+            ret = ret.cons(x)
+        return ret
+
     def next(self):
         if self._count == 1:
             return None
@@ -50,6 +57,12 @@ class PersistentList(ASeq, IPersistentList, IReduce, Counted):
 
     def __len__(self):
         return self._count
+
+    def __iter__(self):
+        x = self
+        while x is not None:
+            yield x
+            x = x.next()
 
     def cons(self, o):
         return PersistentList(self.meta(), o, self, self._count + 1)

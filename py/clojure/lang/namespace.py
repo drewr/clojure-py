@@ -35,6 +35,10 @@ def remove(name):
 def find(name):
     return namespaces.get()[name]
 
+def findItem(sym):
+    from py.clojure.lang.symbol import Symbol
+    return find(Symbol.intern(sym.ns)).getMappings().get()[Symbol.intern(sym.name)]
+
 
 
 class Namespace(AReference):
