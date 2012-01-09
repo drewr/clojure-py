@@ -82,7 +82,7 @@ def compileQuote(comp, form):
     return [(LOAD_CONST, form.next().first())]
 
 
-def compileFn(comp, name, form):
+def compileFn(comp, name, form, orgform):
     locals = {}
     args = []
     lastisargs = False
@@ -101,8 +101,8 @@ def compileFn(comp, name, form):
         args.append(x.name)
 
     comp.setLocals(locals)
-    if form.meta() is not None:
-        line = form.meta()[LINE_KEY]
+    if orgform.meta() is not None:
+        line = orgform.meta()[LINE_KEY]
     else:
         line = 0
     code = [(SetLineno,line)]
@@ -118,6 +118,7 @@ def compileFn(comp, name, form):
     return [(LOAD_CONST, fn)]
 
 def compileFNStar(comp, form):
+    orgform = form
     if len(form) < 3:
         raise CompilerException("more than 3 arguments to fn* required")
     form = form.next()
@@ -126,7 +127,7 @@ def compileFNStar(comp, form):
         raise CompilerException("fn* name must be a symbol")
     form = form.next()
     if isinstance(form.first(), PersistentVector):
-        return compileFn(comp, name, form)
+        return compileFn(comp, name, form, orgform)
 
 builtins = {Symbol.intern("ns"): compileNS,
             Symbol.intern("def"): compileDef,
