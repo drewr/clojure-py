@@ -32,9 +32,14 @@ def compileDef(comp, form):
             (LOAD_CONST, ns),
             (LOAD_CONST, sym)]
     code.extend(comp.compile(value))
-    code.append((CALL_FUNCTION, 3));
+    code.append((CALL_FUNCTION, 3))
 
+    if sym.meta() is not None:
+        code.extend([(LOAD_ATTR, 'setMeta'),
+                    (LOAD_CONST, sym.meta()),
+                    (CALL_FUNCTION, 1)])
     return code
+
 
 
 def compileDot(comp, form):
@@ -128,10 +133,28 @@ class Compiler():
     def __init__(self):
         self.locals = {}
 
+    def compileMethodAccess(self, form):
+        attrname = form.first().name
+        if len(form) < 2:
+            raise CompilerException("Method access must have at least one argument", form)
+        c = self.compile(form.next().first())
+        c.append((LOAD_ATTR, attrname))
+        s = form.next().next()
+        while s is not None:
+            c.extend(self.compile(s.first()))
+            s = s.next()
+        c.append((CALL_FUNCTION, (len(form) - 2)))
+        return c
+
     def compileForm(self, form):
         if form.first() in builtins:
             return builtins[form.first()](self, form)
-        c = self.compile(form.first())
+        c = None
+        if isinstance(form.first(), Symbol):
+            if form.first().name.startswith(".") and form.first().ns is None:
+                c = self.compileMethodAccess(form)
+        if c is None:
+            c = self.compile(form.first())
         f = form.next()
         acount = 0
         while f is not None:
@@ -144,11 +167,12 @@ class Compiler():
         raise CompilerException("Unknown function " + str(form.first()), form)
     def compileSymbol(self, sym):
         from py.clojure.lang.namespace import findItem
+
         if sym in self.locals:
             return self.compileLocal(sym)
         if sym.ns is None:
-            sym = Symbol.intern(self.getNS().name.name, sym.name)
-        loc = findItem(sym)
+            sym = Symbol.intern(self.getNS().__name__, sym.name)
+        loc = findItem(self.getNS(), sym)
         if loc is None:
             raise CompilerException("Can't find " + str(sym), None)
 

@@ -128,7 +128,8 @@ class Var(ARef, Settable, IFn, IRef ):
 
     @staticmethod
     def internWithRoot(ns, sym, root, replaceRoot = True):
-        dvout = ns.intern(sym)
+        from namespace import intern as namespaceIntern
+        dvout = namespaceIntern(ns, sym)
         if not dvout.hasRoot() or replaceRoot:
             dvout.bindRoot(root)
         return dvout
@@ -176,6 +177,8 @@ class Var(ARef, Settable, IFn, IRef ):
                 return e.getValue()
         return None
 
+    def setMeta(self, meta):
+        self._meta = meta
 
 
 

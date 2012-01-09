@@ -90,12 +90,13 @@ def getDefaultImports():
     from py.clojure.lang.persistentlist import PersistentList
     import sys
     import math
-    return {Symbol.intern("String"): str,
-            Symbol.intern("Integer"): int,
-            Symbol.intern("Math"): math,
-            Symbol.intern("clojure.lang.PersistentList"): PersistentList,
-            Symbol.intern("clojure.lang.RT"): sys.modules[__name__]
+    d = {"String": str,
+            "Integer": int,
+            "Math": math,
+            "clojure.lang.PersistentList": PersistentList,
+            "clojure.lang.RT": sys.modules[__name__]
             }
+    return d
 
 id = AtomicInteger()
 def nextID():

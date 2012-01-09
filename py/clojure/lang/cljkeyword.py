@@ -50,6 +50,8 @@ class Keyword(IFn, Named):
         if len(args) == 2:
             return Keyword.find(Symbol.intern(*args))
         raise ArityException()
+    def __repr__(self):
+        return str(self.sym)
 
 LINE_KEY = Keyword.intern(None, "line")
 TAG_KEY = Keyword.intern(None, "tag")

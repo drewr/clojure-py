@@ -14,8 +14,8 @@ class Symbol(object, IObj):
             self.name = args[2]
         else:
             raise ArityException()
-        from namespace import Namespace
-        if isinstance(self.ns, Namespace):
+        import types
+        if isinstance(self.ns, types.ModuleType):
             pass
 
     def withMeta(self, meta):
