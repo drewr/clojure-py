@@ -180,6 +180,9 @@ class Var(ARef, Settable, IFn, IRef ):
     def setMeta(self, meta):
         self._meta = meta
 
+    def __call__(self, *args):
+        return apply(self.deref(), args)
+
 
 
 

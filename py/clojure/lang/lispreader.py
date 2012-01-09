@@ -1,7 +1,7 @@
 from py.clojure.lang.fileseq import FileSeq, MutatableFileSeq
 from var import Var
 from py.clojure.lang.cljexceptions import ReaderException, IllegalStateException
-from py.clojure.lang.gmp import Integer, Rational, Float
+#from py.clojure.lang.gmp import Integer, Rational, Float
 import py.clojure.lang.rt as RT
 from py.clojure.lang.cljkeyword import LINE_KEY
 from py.clojure.lang.symbol import Symbol
@@ -170,9 +170,9 @@ def matchNumber(s):
     m = intPat.match(s)
     if m is not None:
         #TODO add radix
-        i = Integer()
-        i.set(s)
-        return i
+        #i = Integer()
+        #i.set(s)
+        return int(i)
     m = floatPat.match(s)
     if m is not None:
         f = Float()
@@ -335,7 +335,7 @@ def argReader(rdr, perc):
     n = read(rdr, True, None, True)
     if isinstance(n, Symbol) and n == _AMP_:
         return registerArg(-1)
-    if not isinstance(n, Integer):
+    if not isinstance(n, int):
         raise IllegalStateException("arg literal must be %, %& or %integer")
     return registerArg(n)
 

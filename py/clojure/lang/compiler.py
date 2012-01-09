@@ -4,10 +4,14 @@ from py.clojure.lang.cljexceptions import CompilerException
 from py.clojure.lang.persistentvector import PersistentVector
 from py.clojure.lang.var import Var
 from py.clojure.util.byteplay import *
+from py.clojure.lang.cljkeyword import Keyword
 import new
 import py.clojure.lang.rt as RT
 from py.clojure.lang.lispreader import _AMP_
+from py.clojure.lang.namespace import findItem
+from py.clojure.lang.lispreader import LINE_KEY
 
+_MACRO_ = Keyword.intern(Symbol.intern(":macro"))
 
 def compileNS(comp, form):
     rest = form.next()
@@ -97,13 +101,17 @@ def compileFn(comp, name, form):
         args.append(x.name)
 
     comp.setLocals(locals)
-    code = []
+    if form.meta() is not None:
+        line = form.meta()[LINE_KEY]
+    else:
+        line = 0
+    code = [(SetLineno,line)]
     for x in form.next():
         code.extend(comp.compile(x.first()))
 
     code.append((RETURN_VALUE,None))
 
-    c = Code(code, [], args, lastisargs, False, False, "<string>", "<string>", 0, None)
+    c = Code(code, [], args, lastisargs, False, False, str(Symbol.intern(comp.getNS().__name__, name.name)), "./clj/clojure/core.clj", 0, None)
 
     fn = new.function(c.to_code(), {}, name.name)
 
@@ -134,7 +142,7 @@ class Compiler():
         self.locals = {}
 
     def compileMethodAccess(self, form):
-        attrname = form.first().name
+        attrname = form.first().name[1:]
         if len(form) < 2:
             raise CompilerException("Method access must have at least one argument", form)
         c = self.compile(form.next().first())
@@ -149,6 +157,12 @@ class Compiler():
     def compileForm(self, form):
         if form.first() in builtins:
             return builtins[form.first()](self, form)
+        if isinstance(form.first(), Symbol):
+            macro = findItem(self.getNS(), form.first())
+            if macro is not None:
+                if macro.meta()[_MACRO_]:
+                    mresult = macro(form, self, macro)
+                    return self.compile(mresult)
         c = None
         if isinstance(form.first(), Symbol):
             if form.first().name.startswith(".") and form.first().ns is None:
@@ -166,7 +180,7 @@ class Compiler():
 
         raise CompilerException("Unknown function " + str(form.first()), form)
     def compileSymbol(self, sym):
-        from py.clojure.lang.namespace import findItem
+
 
         if sym in self.locals:
             return self.compileLocal(sym)

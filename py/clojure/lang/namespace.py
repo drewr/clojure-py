@@ -44,7 +44,11 @@ def findItem(ns, sym):
     from py.clojure.lang.symbol import Symbol
     if isinstance(sym, Symbol):
         if sym.ns == ns.__name__:
+            if not hasattr(ns, sym.name):
+                return None
             return getattr(ns, sym.name)
+        if not hasattr(ns, str(sym)):
+            return None
         return getattr(ns, str(sym))
     return getattr(ns, sym)
 

@@ -7,7 +7,7 @@ def rdr(s):
     return StringReader(s)
 
 
-fl = open("/home/tim/core.clj")
+fl = open("./clj/clojure/core.clj")
 data = fl.read()
 fl.close()
 import sys
@@ -18,11 +18,11 @@ from py.clojure.lang.compiler import Compiler
 RT.init()
 comp = Compiler()
 
-for x in range(10):
+for x in range(1):
     #r = rdr("["+data +"]")
     r = rdr(data)
     try:
-        for x in range(6):
+        for x in range(10):
             c += 1
             oldl = r.lineCol()
             s = read(r, True, None, True)

@@ -1,6 +1,7 @@
 from py.clojure.lang.cljexceptions import AbstractMethodCall, InvalidArgumentException
 from py.clojure.lang.threadutil import AtomicInteger
 
+
 def cons(x, s):
     from py.clojure.lang.cons import Cons
     from py.clojure.lang.persistentlist import PersistentList, EMPTY as EMPTY_LIST
@@ -15,6 +16,9 @@ def cons(x, s):
     return Cons(x, seq(s))
 
 def seq(obj):
+    from py.clojure.lang.indexableseq import IndexableSeq
+    if isinstance(obj, tuple) or isinstance(obj, list):
+        return IndexableSeq(obj, 0)
     return obj.seq()
 
 def applyTo(fn, args):
