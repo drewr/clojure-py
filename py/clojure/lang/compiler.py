@@ -105,7 +105,7 @@ def compileFn(comp, name, form, orgform):
         line = orgform.meta()[LINE_KEY]
     else:
         line = 0
-    code = [(SetLineno,line)]
+    code = [(SetLineno,line if line is not None else 0)]
     for x in form.next():
         code.extend(comp.compile(x.first()))
 
@@ -169,6 +169,7 @@ class Compiler():
         if isinstance(form.first(), Symbol):
             if form.first().name.startswith(".") and form.first().ns is None:
                 c = self.compileMethodAccess(form)
+                return c
         if c is None:
             c = self.compile(form.first())
         f = form.next()
