@@ -6,6 +6,7 @@ import py.clojure.lang.rt as RT
 class Cons(ASeq):
     def __init__(self, *args):
         if len(args) == 2:
+            self._meta = None
             self._first = args[0]
             self._more = args[1]
         elif len(args) == 3:
@@ -26,3 +27,20 @@ class Cons(ASeq):
         return 1 + RT.count(self._more)
     def withMeta(self, meta):
         return Cons(meta, self._first, self._more)
+
+    def __len__(self):
+        s = self.next()
+        c = 1
+        while s is not None:
+            if hasattr(s, "__len__"):
+                return c + len(s)
+            c += 1
+            s = s.next()
+
+    def __repr__(self):
+        s = self
+        strs = []
+        while s is not None:
+            strs.append(repr(s.first()))
+            s = s.next()
+        return "(" + " ".join(strs) + ")"

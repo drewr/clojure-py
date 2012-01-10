@@ -120,7 +120,7 @@ def compileFn(comp, name, form, orgform):
 def compileFNStar(comp, form):
     orgform = form
     if len(form) < 3:
-        raise CompilerException("more than 3 arguments to fn* required")
+        raise CompilerException("3 or more arguments to fn* required", form)
     form = form.next()
     name = form.first()
     if not isinstance(name, Symbol):
@@ -162,7 +162,8 @@ class Compiler():
             macro = findItem(self.getNS(), form.first())
             if macro is not None:
                 if macro.meta()[_MACRO_]:
-                    mresult = macro(form, self, macro)
+                    mresult = macro(macro, self, *RT.seqToTuple(form.next()))
+                    s = repr(mresult)
                     return self.compile(mresult)
         c = None
         if isinstance(form.first(), Symbol):
@@ -177,6 +178,8 @@ class Compiler():
             acount += 1
             f = f.next()
         c.append((CALL_FUNCTION, acount))
+
+        print c
         return c
 
         raise CompilerException("Unknown function " + str(form.first()), form)
@@ -198,13 +201,16 @@ class Compiler():
 
     def compile(self, itm):
         from py.clojure.lang.persistentlist import PersistentList
+        from py.clojure.lang.cons import Cons
+
         if isinstance(itm, Symbol):
             return self.compileSymbol(itm)
-        if isinstance(itm, PersistentList):
+        if isinstance(itm, PersistentList) or isinstance(itm, Cons):
             return self.compileForm(itm)
         if itm is None:
             return self.compileNone(itm)
-        raise CompilerException("Don't know how to compile", itm)
+        raise CompilerException("Don't know how to compile" + str(itm.__class__))
+
 
     def setLocals(self, locals):
         self.locals = locals
@@ -222,5 +228,5 @@ class Compiler():
             return None
         newcode = code[:]
         newcode.append((RETURN_VALUE, None))
-        c = Code(newcode, [], [], False, False, False, "<string>", "<string>", 0, None)
+        c = Code(newcode, [], [], False, False, False, str(Symbol.intern(self.getNS().__name__, "<string>")), "./clj/clojure/core.clj", 0, None)
         exec(c.to_code(), dict())

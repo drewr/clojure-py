@@ -1,6 +1,7 @@
 from py.clojure.lang.cljexceptions import AbstractMethodCall, InvalidArgumentException
 from py.clojure.lang.threadutil import AtomicInteger
 
+mapInter = map
 
 def cons(x, s):
     from py.clojure.lang.cons import Cons
@@ -14,6 +15,9 @@ def cons(x, s):
         return EMPTY_LIST.cons(x)
 
     return Cons(x, seq(s))
+
+def seqToTuple(s):
+    return tuple(mapInter(lambda x: x.first(),s))
 
 def seq(obj):
     from py.clojure.lang.indexableseq import IndexableSeq
