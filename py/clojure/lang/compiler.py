@@ -81,13 +81,31 @@ def compileQuote(comp, form):
         raise CompilerException("Quote must only have one argument", form)
     return [(LOAD_CONST, form.next().first())]
 
+def compileIf(comp, form):
+    if len(form) != 3 and len(form) != 4:
+        raise CompilerException("if takes 2 or 3 args", form)
+    cmp = comp.compile(form.next().first())
+    body = comp.compile(form.next().next().first())
+    if len(form) == 3:
+        body2 = [(LOAD_CONST, None)]
+    else:
+        body2 = comp.compile(form.next().next().next().first())
 
-def compileFn(comp, name, form, orgform):
+    label = Label()
+    endlabel = Label()
+    code = cmp
+    code.append((JUMP_ABSOLUTE, endlabel))
+    code.append((POP_JUMP_IF_FALSE, label))
+    code.extend(body2)
+    code.append((endlabel, None))
+    return
+
+def unpackArgs(form):
     locals = {}
     args = []
     lastisargs = False
     argsname = None
-    for x in form.first():
+    for x in form:
         if x == _AMP_:
             lastisargs = True
             continue
@@ -99,6 +117,11 @@ def compileFn(comp, name, form, orgform):
             raise CompilerException("fn* arguments must be non namespaced symbols", form)
         locals[x] = RT.list(x)
         args.append(x.name)
+
+    return locals, args, lastisargs, argsname
+
+def compileFn(comp, name, form, orgform):
+    locals, args, lastisargs, argsname = unpackArgs(form.first())
 
     comp.setLocals(locals)
     if orgform.meta() is not None:
@@ -117,6 +140,52 @@ def compileFn(comp, name, form, orgform):
 
     return [(LOAD_CONST, fn)]
 
+class MultiFn(object):
+    def __init__(self, comp, form):
+        if len(form) < 2:
+            raise CompilerException("FN defs must have at least two vars", form)
+        argv = form.first()
+        if not isinstance(argv, PersistentVector):
+            raise CompilerException("FN arg list must be a vector", form)
+        body = form.next()
+
+        self.locals, self.args, self.lastisargs, self.argsname = unpackArgs(argv)
+        endLabel = Label()
+        code = [(LOAD_FAST, '__argsv__'),
+                (LOAD_ATTR, '__len__'),
+                (LOAD_CONST, len(self.args)),
+                (COMPARE_OP, ">=" if self.lastisargs else "=="),
+                (POP_JUMP_IF_FALSE, endLabel)]
+        for x in range(len(self.args)):
+            if self.lastisargs and x == len(self.args) - 1:
+                offset = len(self.args) - 1
+                code.extend([(LOAD_FAST, '__argsv__'),
+                             (LOAD_CONST, offset),
+                             (SLICE_1, None),
+                             (STORE_FAST, self.argsname)])
+            else:
+                code.extend([(LOAD_FAST, '__argsv__'),
+                             (LOAD_CONST, x),
+                             (BINARY_SUBSCR, None),
+                             (STORE_FAST, self.args[x])])
+
+        comp.pushLocals(self.locals)
+        s = body
+        while s is not None:
+            code.extend(comp.compile(s.first()))
+            s = s.next()
+        code.extend((endLabel, None))
+        comp.popLocals(self.locals)
+        pass
+
+def compileMultiFn(comp, form):
+    s = form
+    argdefs = []
+    while s is not None:
+        argdefs.append(MultiFn(comp, s.first()))
+        s = s.next()
+    pass
+
 def compileFNStar(comp, form):
     orgform = form
     if len(form) < 3:
@@ -128,12 +197,14 @@ def compileFNStar(comp, form):
     form = form.next()
     if isinstance(form.first(), PersistentVector):
         return compileFn(comp, name, form, orgform)
+    return compileMultiFn(comp, form)
 
 builtins = {Symbol.intern("ns"): compileNS,
             Symbol.intern("def"): compileDef,
             Symbol.intern("."): compileDot,
             Symbol.intern("fn*"): compileFNStar,
-            Symbol.intern("quote"): compileQuote}
+            Symbol.intern("quote"): compileQuote,
+            Symbol.intern("if"): compileIf}
 
 
 
@@ -221,9 +292,11 @@ class Compiler():
 
     def setNS(self, ns):
         self.ns = findOrCreateNamespace(ns)
+
     def getNS(self):
         if self.ns is not None:
             return self.ns
+
     def executeCode(self, code):
         if code == []:
             return None
@@ -231,3 +304,14 @@ class Compiler():
         newcode.append((RETURN_VALUE, None))
         c = Code(newcode, [], [], False, False, False, str(Symbol.intern(self.getNS().__name__, "<string>")), "./clj/clojure/core.clj", 0, None)
         exec(c.to_code(), dict())
+
+    def pushLocals(self, locals):
+        for x in locals:
+            if x in self.locals:
+                self.locals[x] = RT.cons(x, self.locals[x])
+            else:
+                self.locals[x] = RT.cons(x, None)
+
+    def popLocals(self, locals):
+        for x in locals:
+            self.locals[x] = self.locals[x].next()
