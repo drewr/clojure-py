@@ -167,12 +167,13 @@ def readNumber(rdr, initch):
     return n
 
 def matchNumber(s):
+    return int(float(s))
     m = intPat.match(s)
     if m is not None:
         #TODO add radix
         #i = Integer()
         #i.set(s)
-        return int(i)
+        return int(str(float(s)))
     m = floatPat.match(s)
     if m is not None:
         f = Float()

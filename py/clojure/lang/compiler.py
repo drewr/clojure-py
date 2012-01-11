@@ -95,14 +95,14 @@ def compileIf(comp, form):
     else:
         body2 = comp.compile(form.next().next().next().first())
 
-    label = Label()
-    endlabel = Label()
+    label = Label("IfElse")
+    endlabel = Label("IfEnd")
     code = cmp
     code.append((JUMP_ABSOLUTE, endlabel))
     code.append((POP_JUMP_IF_FALSE, label))
     code.extend(body2)
     code.append((endlabel, None))
-    return
+    return code
 
 def unpackArgs(form):
     locals = {}
@@ -183,8 +183,11 @@ class MultiFn(object):
         while s is not None:
             code.extend(comp.compile(s.first()))
             s = s.next()
+        code.append((RETURN_VALUE, None))
         code.extend((endLabel, None))
         comp.popLocals(self.locals)
+
+        self.code = code
         pass
 
 def compileMultiFn(comp, form):
@@ -193,7 +196,15 @@ def compileMultiFn(comp, form):
     while s is not None:
         argdefs.append(MultiFn(comp, s.first()))
         s = s.next()
+    argdefs = sorted(argdefs, lambda x, y: len(x.args) < len(y.args))
+    if len(filter(lambda x: x.lastisargs, argdefs)) > 1:
+        raise CompilerException("Only one function overload may have variable number of arguments", form)
+    code = []
+    for x in argdefs:
+        code.extend(x.code)
     pass
+
+
 
 def compileFNStar(comp, form):
     orgform = form

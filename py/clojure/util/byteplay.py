@@ -226,7 +226,10 @@ class SetLinenoType(object):
 SetLineno = SetLinenoType()
 
 class Label(object):
-    pass
+    def __init__(self, name = None):
+        self.name = name
+    def __repr__(self):
+        return "Label: " + self.name
 
 def isopcode(obj):
     """Return whether obj is an opcode - not SetLineno or Label"""
