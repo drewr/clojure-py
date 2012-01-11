@@ -1,6 +1,6 @@
 from py.clojure.lang.symbol import Symbol
 from py.clojure.lang.namespace import findOrCreate as findOrCreateNamespace
-from py.clojure.lang.cljexceptions import CompilerException
+from py.clojure.lang.cljexceptions import CompilerException, AbstractMethodCall
 from py.clojure.lang.persistentvector import PersistentVector
 from py.clojure.lang.var import Var
 from py.clojure.util.byteplay import *
@@ -32,6 +32,10 @@ def compileDef(comp, form):
     else:
         ns = sym.ns
 
+    def UndefinedMethod():
+        raise AbstractMethodCall("Undefined Method")
+
+    setattr(ns, sym.name, UndefinedMethod)
     code = [(LOAD_CONST, Var.internWithRoot),
             (LOAD_CONST, ns),
             (LOAD_CONST, sym)]
@@ -171,6 +175,11 @@ class MultiFn(object):
 
         comp.pushLocals(self.locals)
         s = body
+        recurlabel = Label()
+        recur = {"label": recurlabel,
+                 "args": self.args}
+        code.append((recurlabel, None))
+        comp.recurPoint = recur
         while s is not None:
             code.extend(comp.compile(s.first()))
             s = s.next()
@@ -199,12 +208,24 @@ def compileFNStar(comp, form):
         return compileFn(comp, name, form, orgform)
     return compileMultiFn(comp, form)
 
+def compileRecur(comp, form):
+    s = form.next()
+    idx = 0
+    code = []
+    while s is not None:
+        code.extend(comp.compile(s.first()))
+        code.append((STORE_FAST, comp.recurPoint["args"][idx]))
+        idx += 1
+        s = s.next()
+    code.append((JUMP_ABSOLUTE, comp.recurPoint["label"]))
+    return code
 builtins = {Symbol.intern("ns"): compileNS,
             Symbol.intern("def"): compileDef,
             Symbol.intern("."): compileDot,
             Symbol.intern("fn*"): compileFNStar,
             Symbol.intern("quote"): compileQuote,
-            Symbol.intern("if"): compileIf}
+            Symbol.intern("if"): compileIf,
+            Symbol.intern("recur"): compileRecur}
 
 
 
@@ -212,6 +233,7 @@ builtins = {Symbol.intern("ns"): compileNS,
 class Compiler():
     def __init__(self):
         self.locals = {}
+        self.recurPoint = None
 
     def compileMethodAccess(self, form):
         attrname = form.first().name[1:]
@@ -232,7 +254,8 @@ class Compiler():
         if isinstance(form.first(), Symbol):
             macro = findItem(self.getNS(), form.first())
             if macro is not None:
-                if macro.meta()[_MACRO_]:
+
+                if hasattr(macro, "meta") and macro.meta()[_MACRO_]:
                     mresult = macro(macro, self, *RT.seqToTuple(form.next()))
                     s = repr(mresult)
                     return self.compile(mresult)
