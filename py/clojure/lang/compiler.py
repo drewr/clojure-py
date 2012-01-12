@@ -35,10 +35,6 @@ def compileDef(comp, form):
     else:
         ns = sym.ns
 
-    def UndefinedMethod():
-        raise AbstractMethodCall("Undefined Method")
-
-    setattr(ns, sym.name, UndefinedMethod)
     code = [(LOAD_GLOBAL, "Var"),
             (LOAD_ATTR, "internWithRoot"),
             (LOAD_GLOBAL, "sys"),
@@ -369,12 +365,19 @@ class Compiler():
             return self.ns
 
     def executeCode(self, code):
+        import sys
         if code == []:
             return None
         newcode = code[:]
         newcode.append((RETURN_VALUE, None))
         c = Code(newcode, [], [], False, False, False, str(Symbol.intern(self.getNS().__name__, "<string>")), "./clj/clojure/core.clj", 0, None)
-        return eval(c.to_code(), dict())
+        globs = {}
+        for x in dir(self.ns):
+            globs[x] = getattr(self.ns, x)
+        retval = eval(c.to_code(), globs)
+        for x in globs:
+            setattr(self.ns, x, globs[x])
+        return retval
 
     def pushLocals(self, locals):
         for x in locals:

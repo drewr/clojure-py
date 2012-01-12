@@ -25,13 +25,16 @@ while True:
     oldl = r.lineCol()
     s = read(r, True, None, True)
     try:
+        print s
         res = comp.compile(s)
+
+        comp.executeCode(res)
         code.extend(res)
     except IOError as exp:
         print s
         raise exp
 
-    if c > 1:
+    if c > 7:
         break
 
     while True:
@@ -42,18 +45,14 @@ while True:
             r.back()
             break
 
-comp.executeModule(code)
+#comp.executeModule(code)
 
 
 while(True):
     line = raw_input(comp.getNS().__name__ + "=>")
     r = rdr(line)
     s = read(r, True, None, True)
-    try:
-        res = comp.compile(s)
-    except Exception as exp:
-        print s
-        raise exp
+    res = comp.compile(s)
     print comp.executeCode(res)
 
 print x

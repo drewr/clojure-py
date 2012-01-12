@@ -12,8 +12,11 @@ def areDifferentInstancesOfSameClassName(o1, o2):
 
 def addDefaultImports(mod):
     import py.clojure.lang.rt as RT
-    for i in RT.DEFAULT_IMPORTS:
-        setattr(mod, i, RT.DEFAULT_IMPORTS[i])
+    import py.clojure.standardimports as stdimps
+    for i in dir(stdimps):
+        if i.startswith("_"):
+            continue
+        setattr(mod, i, getattr(stdimps, i))
     return mod
 
 def findOrCreate(name):

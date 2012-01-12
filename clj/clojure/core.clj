@@ -17,7 +17,7 @@
  ^{:arglists '([& items])
    :doc "Creates a new list containing the items."
    :added "1.0"}
-  list (. clojure.lang.PersistentList creator))
+  list (. clojure.lang.persistentlist.PersistentList creator))
 
 (def
  ^{:arglists '([x seq])
