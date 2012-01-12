@@ -145,7 +145,7 @@ def compileFn(comp, name, form, orgform):
 
     c = Code(code, [], args, lastisargs, False, True, str(Symbol.intern(comp.getNS().__name__, name.name)), "./clj/clojure/core.clj", 0, None)
 
-    fn = new.function(c.to_code(), {}, name.name)
+    fn = new.function(c.to_code(), comp.ns.__dict__, name.name)
 
     return [(LOAD_CONST, fn)]
 
@@ -224,7 +224,7 @@ def compileMultiFn(comp, name, form):
 
     c = Code(code, [], ["__argsv__"], True, False, True, str(Symbol.intern(comp.getNS().__name__, name.name)), "./clj/clojure/core.clj", 0, None)
 
-    fn = new.function(c.to_code(), {}, name.name)
+    fn = new.function(c.to_code(), comp.ns.__dict__, name.name)
 
     return [(LOAD_CONST, fn)]
 
@@ -291,6 +291,8 @@ class Compiler():
             if macro is not None:
 
                 if hasattr(macro, "meta") and macro.meta()[_MACRO_]:
+                    import dis, sys
+                    dis.dis(macro)
                     mresult = macro(macro, self, *RT.seqToTuple(form.next()))
                     s = repr(mresult)
                     return self.compile(mresult)
