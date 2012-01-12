@@ -10,6 +10,9 @@ import py.clojure.lang.rt as RT
 from py.clojure.lang.lispreader import _AMP_
 from py.clojure.lang.namespace import findItem
 from py.clojure.lang.lispreader import LINE_KEY
+import re
+
+
 
 _MACRO_ = Keyword.intern(Symbol.intern(":macro"))
 
@@ -36,8 +39,12 @@ def compileDef(comp, form):
         raise AbstractMethodCall("Undefined Method")
 
     setattr(ns, sym.name, UndefinedMethod)
-    code = [(LOAD_CONST, Var.internWithRoot),
-            (LOAD_CONST, ns),
+    code = [(LOAD_GLOBAL, "Var"),
+            (LOAD_ATTR, "internWithRoot"),
+            (LOAD_GLOBAL, "sys"),
+            (LOAD_ATTR, "modules"),
+            (LOAD_GLOBAL, "__name__"),
+            (BINARY_SUBSCR, None),
             (LOAD_CONST, sym)]
     code.extend(comp.compile(value))
     code.append((CALL_FUNCTION, 3))
@@ -95,11 +102,13 @@ def compileIf(comp, form):
     else:
         body2 = comp.compile(form.next().next().next().first())
 
-    label = Label("IfElse")
+    elseLabel = Label("IfElse")
     endlabel = Label("IfEnd")
     code = cmp
+    code.append((POP_JUMP_IF_FALSE, elseLabel))
+    code.extend(body)
     code.append((JUMP_ABSOLUTE, endlabel))
-    code.append((POP_JUMP_IF_FALSE, label))
+    code.append((elseLabel, None))
     code.extend(body2)
     code.append((endlabel, None))
     return code
@@ -138,7 +147,7 @@ def compileFn(comp, name, form, orgform):
 
     code.append((RETURN_VALUE,None))
 
-    c = Code(code, [], args, lastisargs, False, False, str(Symbol.intern(comp.getNS().__name__, name.name)), "./clj/clojure/core.clj", 0, None)
+    c = Code(code, [], args, lastisargs, False, True, str(Symbol.intern(comp.getNS().__name__, name.name)), "./clj/clojure/core.clj", 0, None)
 
     fn = new.function(c.to_code(), {}, name.name)
 
@@ -154,9 +163,10 @@ class MultiFn(object):
         body = form.next()
 
         self.locals, self.args, self.lastisargs, self.argsname = unpackArgs(argv)
-        endLabel = Label()
+        endLabel = Label("endLabel")
         code = [(LOAD_FAST, '__argsv__'),
                 (LOAD_ATTR, '__len__'),
+                (CALL_FUNCTION, 0),
                 (LOAD_CONST, len(self.args)),
                 (COMPARE_OP, ">=" if self.lastisargs else "=="),
                 (POP_JUMP_IF_FALSE, endLabel)]
@@ -175,7 +185,7 @@ class MultiFn(object):
 
         comp.pushLocals(self.locals)
         s = body
-        recurlabel = Label()
+        recurlabel = Label("recurLabel")
         recur = {"label": recurlabel,
                  "args": self.args}
         code.append((recurlabel, None))
@@ -184,13 +194,16 @@ class MultiFn(object):
             code.extend(comp.compile(s.first()))
             s = s.next()
         code.append((RETURN_VALUE, None))
-        code.extend((endLabel, None))
+        code.append((endLabel, None))
         comp.popLocals(self.locals)
 
-        self.code = code
-        pass
 
-def compileMultiFn(comp, form):
+
+
+        self.code = code
+
+
+def compileMultiFn(comp, name, form):
     s = form
     argdefs = []
     while s is not None:
@@ -199,10 +212,25 @@ def compileMultiFn(comp, form):
     argdefs = sorted(argdefs, lambda x, y: len(x.args) < len(y.args))
     if len(filter(lambda x: x.lastisargs, argdefs)) > 1:
         raise CompilerException("Only one function overload may have variable number of arguments", form)
+
+
     code = []
+    args = []
     for x in argdefs:
         code.extend(x.code)
-    pass
+        for x in x.args:
+            if x not in args:
+                args.append(x)
+
+    code.append((LOAD_CONST, Exception))
+    code.append((CALL_FUNCTION, 0))
+    code.append((RAISE_VARARGS, 1))
+
+    c = Code(code, [], ["__argsv__"], True, False, True, str(Symbol.intern(comp.getNS().__name__, name.name)), "./clj/clojure/core.clj", 0, None)
+
+    fn = new.function(c.to_code(), {}, name.name)
+
+    return [(LOAD_CONST, fn)]
 
 
 
@@ -217,7 +245,7 @@ def compileFNStar(comp, form):
     form = form.next()
     if isinstance(form.first(), PersistentVector):
         return compileFn(comp, name, form, orgform)
-    return compileMultiFn(comp, form)
+    return compileMultiFn(comp, name, form)
 
 def compileRecur(comp, form):
     s = form.next()
@@ -285,22 +313,29 @@ class Compiler():
             f = f.next()
         c.append((CALL_FUNCTION, acount))
 
-        print c
         return c
 
-        raise CompilerException("Unknown function " + str(form.first()), form)
+    def compileAccessList(self, sym):
+        c = []
+        first = True
+        for x in self.getAccessList(sym):
+            if first:
+                c.append((LOAD_GLOBAL, x))
+                first = False
+            else:
+                c.append((LOAD_ATTR, x))
+        return c
+
+    def getAccessList(self, sym):
+        return re.split('[\./]', str(sym))
+
+
     def compileSymbol(self, sym):
 
 
         if sym in self.locals:
             return self.compileLocal(sym)
-        if sym.ns is None:
-            sym = Symbol.intern(self.getNS().__name__, sym.name)
-        loc = findItem(self.getNS(), sym)
-        if loc is None:
-            raise CompilerException("Can't find " + str(sym), None)
-
-        return [(LOAD_CONST, loc)]
+        return self.compileAccessList(sym)
 
     def compileLocal(self, sym):
         return [(LOAD_FAST, self.locals[sym].first().name)]
@@ -315,7 +350,9 @@ class Compiler():
             return self.compileForm(itm)
         if itm is None:
             return self.compileNone(itm)
-        raise CompilerException("Don't know how to compile" + str(itm.__class__))
+        if itm.__class__ in [str, int]:
+            return [(LOAD_CONST, itm)]
+        raise CompilerException("Don't know how to compile" + str(itm.__class__), None)
 
 
     def setLocals(self, locals):
@@ -337,7 +374,7 @@ class Compiler():
         newcode = code[:]
         newcode.append((RETURN_VALUE, None))
         c = Code(newcode, [], [], False, False, False, str(Symbol.intern(self.getNS().__name__, "<string>")), "./clj/clojure/core.clj", 0, None)
-        exec(c.to_code(), dict())
+        return eval(c.to_code(), dict())
 
     def pushLocals(self, locals):
         for x in locals:
@@ -349,3 +386,28 @@ class Compiler():
     def popLocals(self, locals):
         for x in locals:
             self.locals[x] = self.locals[x].next()
+
+    def standardImports(self):
+        return [(LOAD_CONST, -1),
+                (LOAD_CONST, None),
+                (IMPORT_NAME, "py.clojure.standardimports"),
+                (IMPORT_STAR, None)]
+
+    def executeModule(self, code):
+        code.append((RETURN_VALUE, None))
+        c = Code(code, [], [], False, False, False, str(Symbol.intern(self.getNS().__name__, "<string>")), "./clj/clojure/core.clj", 0, None)
+        import marshal
+        import py_compile
+        import time
+        import dis
+
+        c = compile("1", "s", "exec")
+        dis.dis(c)
+
+        codeobject = c.to_code()
+
+        with open('output.pyc', 'wb') as fc:
+            fc.write(py_compile.MAGIC)
+            py_compile.wr_long(fc, long(time.time()))
+            marshal.dump(codeobject, fc)
+
