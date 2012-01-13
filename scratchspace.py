@@ -26,6 +26,7 @@ while True:
     s = read(r, True, None, True)
     try:
         print s
+        print c
         res = comp.compile(s)
 
         comp.executeCode(res)
@@ -34,7 +35,7 @@ while True:
         print s
         raise exp
 
-    if c > 7:
+    if c > 24:
         break
 
     while True:
