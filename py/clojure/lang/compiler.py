@@ -52,6 +52,45 @@ def compileDef(comp, form):
     return code
 
 
+def compileLetStar(comp, form):
+    if len(form) < 3:
+        raise CompilerException("let* takes at least two args")
+    form = form.next()
+    if not isinstance(form.first(), PersistentVector):
+        raise CompilerException("let* takes a vector as it's first argument")
+    s = form.first()
+    args = []
+    code = []
+    idx = 0
+    while idx < len(s):
+        if len(s) - idx < 2:
+            raise CompilerException("let* takes a even number of bindings")
+        local = s[idx]
+        if not isinstance(local, Symbol) or local.ns is not None:
+            raise CompilerException("bindings must be non-namespaced symbols")
+
+        idx += 1
+
+        body = s[idx]
+        if local in comp.locals:
+            newlocal = Symbol.intern(str(local)+"_"+str(RT.nextID()))
+            comp.locals[local] = comp.locals[local].cons(newlocal)
+            args.append(local)
+            local = newlocal
+
+        code.extend(comp.compile(body))
+        code.append((STORE_FAST, str(local)))
+
+        idx += 1
+
+    form = form.next()
+
+    code.extend(compileImplcitDo(comp, form))
+    comp.popLocals(args)
+    return code;
+
+
+
 
 def compileDot(comp, form):
     from py.clojure.lang.persistentlist import PersistentList
@@ -129,6 +168,11 @@ def unpackArgs(form):
 
     return locals, args, lastisargs, argsname
 
+def compileDo(comp, form):
+    if len(form) < 2:
+        raise CompilerException("at least 1 arg to do required")
+    return compileImplcitDo(comp, form.next())
+
 def compileFn(comp, name, form, orgform):
     locals, args, lastisargs, argsname = unpackArgs(form.first())
 
@@ -138,8 +182,7 @@ def compileFn(comp, name, form, orgform):
     else:
         line = 0
     code = [(SetLineno,line if line is not None else 0)]
-    for x in form.next():
-        code.extend(comp.compile(x.first()))
+    code.extend(compileImplcitDo(comp, form.next()))
 
     code.append((RETURN_VALUE,None))
 
@@ -172,7 +215,7 @@ class MultiFn(object):
                 code.extend([(LOAD_FAST, '__argsv__'),
                              (LOAD_CONST, offset),
                              (SLICE_1, None),
-                             (STORE_FAST, self.argsname)])
+                             (STORE_FAST, self.argsname.name)])
             else:
                 code.extend([(LOAD_FAST, '__argsv__'),
                              (LOAD_CONST, x),
@@ -180,15 +223,12 @@ class MultiFn(object):
                              (STORE_FAST, self.args[x])])
 
         comp.pushLocals(self.locals)
-        s = body
         recurlabel = Label("recurLabel")
         recur = {"label": recurlabel,
                  "args": self.args}
         code.append((recurlabel, None))
         comp.recurPoint = recur
-        while s is not None:
-            code.extend(comp.compile(s.first()))
-            s = s.next()
+        code.extend(compileImplcitDo(comp, body))
         code.append((RETURN_VALUE, None))
         code.append((endLabel, None))
         comp.popLocals(self.locals)
@@ -228,20 +268,40 @@ def compileMultiFn(comp, name, form):
 
     return [(LOAD_CONST, fn)]
 
+def compileImplcitDo(comp, form):
+    code = []
+    s = form
+    while s is not None:
+        code.extend(comp.compile(s.first()))
+        s = s.next()
+        if s is not None:
+            code.append((POP_VALUE, None))
+    return code
 
 
 def compileFNStar(comp, form):
     orgform = form
-    if len(form) < 3:
-        raise CompilerException("3 or more arguments to fn* required", form)
+    if len(form) < 2:
+        raise CompilerException("2 or more arguments to fn* required", form)
     form = form.next()
     name = form.first()
+    pushed = False
     if not isinstance(name, Symbol):
-        raise CompilerException("fn* name must be a symbol")
-    form = form.next()
+        comp.pushName(name)
+        pushed = True
+        name = Symbol.intern(comp.getNamesString() + "fn" + str(RT.nextID()))
+    else:
+        form = form.next()
+
     if isinstance(form.first(), PersistentVector):
-        return compileFn(comp, name, form, orgform)
-    return compileMultiFn(comp, name, form)
+        code = compileFn(comp, name, form, orgform)
+    else:
+        code = compileMultiFn(comp, name, form)
+
+    if pushed:
+        comp.popName()
+
+    return code
 
 def compileRecur(comp, form):
     s = form.next()
@@ -260,7 +320,9 @@ builtins = {Symbol.intern("ns"): compileNS,
             Symbol.intern("fn*"): compileFNStar,
             Symbol.intern("quote"): compileQuote,
             Symbol.intern("if"): compileIf,
-            Symbol.intern("recur"): compileRecur}
+            Symbol.intern("recur"): compileRecur,
+            Symbol.intern("do"): compileDo,
+            Symbol.intern("let*"): compileLetStar}
 
 
 
@@ -269,6 +331,21 @@ class Compiler():
     def __init__(self):
         self.locals = {}
         self.recurPoint = None
+        self.names = RT.list()
+
+    def pushName(self, name):
+        if self.names is None:
+            self.names = RT.list((name))
+        self.names = self.names.cons(name)
+
+    def popName(self):
+        self.names = self.names.next()
+
+    def getNamesString(self):
+        n = []
+        for x in self.names:
+            n.append(str(x.first()))
+        return "_".join(n)
 
     def compileMethodAccess(self, form):
         attrname = form.first().name[1:]
@@ -291,8 +368,6 @@ class Compiler():
             if macro is not None:
 
                 if hasattr(macro, "meta") and macro.meta()[_MACRO_]:
-                    import dis, sys
-                    dis.dis(macro)
                     mresult = macro(macro, self, *RT.seqToTuple(form.next()))
                     s = repr(mresult)
                     return self.compile(mresult)
@@ -350,6 +425,7 @@ class Compiler():
             return self.compileNone(itm)
         if itm.__class__ in [str, int]:
             return [(LOAD_CONST, itm)]
+
         raise CompilerException("Don't know how to compile" + str(itm.__class__), None)
 
 

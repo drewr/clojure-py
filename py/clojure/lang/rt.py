@@ -1,7 +1,9 @@
 from py.clojure.lang.cljexceptions import AbstractMethodCall, InvalidArgumentException
 from py.clojure.lang.threadutil import AtomicInteger
+from py.clojure.lang.iseq import ISeq
 
 mapInter = map
+_list = list
 
 def cons(x, s):
     from py.clojure.lang.cons import Cons
@@ -21,9 +23,17 @@ def seqToTuple(s):
 
 def seq(obj):
     from py.clojure.lang.indexableseq import IndexableSeq
-    if isinstance(obj, tuple) or isinstance(obj, list):
+    if isinstance(obj, ISeq):
+        return obj
+    if isinstance(obj, (tuple, _list, str)):
         return IndexableSeq(obj, 0)
     return obj.seq()
+
+def fluffalicious():
+    return "cat"
+
+def first(obj):
+    return seq(obj).first()
 
 def applyTo(fn, args):
     return apply(fn, tuple(map(lambda x: x.first(),args)))
