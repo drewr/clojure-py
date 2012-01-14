@@ -51,6 +51,15 @@ def compileDef(comp, form):
                     (CALL_FUNCTION, 1)])
     return code
 
+def compileGet(comp, form):
+    if len(form) != 3:
+        raise CompilerException("get requires 2 arguments", form)
+    col = form.next().first()
+    itm = form.next().next().first()
+    code = comp.compile(col)
+    code.extend(comp.compile(itm))
+    code.append((BINARY_SUBSCR, None))
+    return code
 
 def compileLetStar(comp, form):
     if len(form) < 3:
@@ -74,11 +83,16 @@ def compileLetStar(comp, form):
         body = s[idx]
         if local in comp.locals:
             newlocal = Symbol.intern(str(local)+"_"+str(RT.nextID()))
+            code.extend(comp.compile(body))
             comp.locals[local] = comp.locals[local].cons(newlocal)
             args.append(local)
             local = newlocal
+        else:
+            comp.locals[local] = RT.list(local)
+            args.append(local)
+            code.extend(comp.compile(body))
 
-        code.extend(comp.compile(body))
+
         code.append((STORE_FAST, str(local)))
 
         idx += 1
@@ -87,7 +101,7 @@ def compileLetStar(comp, form):
 
     code.extend(compileImplcitDo(comp, form))
     comp.popLocals(args)
-    return code;
+    return code
 
 
 
@@ -182,7 +196,13 @@ def compileFn(comp, name, form, orgform):
     else:
         line = 0
     code = [(SetLineno,line if line is not None else 0)]
+    recurlabel = Label("recurLabel")
+    recur = {"label": recurlabel,
+             "args": args}
+    code.append((recurlabel, None))
+    comp.pushRecur(recur)
     code.extend(compileImplcitDo(comp, form.next()))
+    comp.popRecur()
 
     code.append((RETURN_VALUE,None))
 
@@ -227,11 +247,13 @@ class MultiFn(object):
         recur = {"label": recurlabel,
                  "args": self.args}
         code.append((recurlabel, None))
-        comp.recurPoint = recur
+        comp.pushRecur(recur)
         code.extend(compileImplcitDo(comp, body))
         code.append((RETURN_VALUE, None))
         code.append((endLabel, None))
+        comp.popRecur()
         comp.popLocals(self.locals)
+
 
 
 
@@ -303,16 +325,24 @@ def compileFNStar(comp, form):
 
     return code
 
+def compileVector(comp, form):
+    code = []
+    code.extend(comp.compile(Symbol.intern("clojure.lang.rt.vector")))
+    for x in form:
+        code.extend(comp.compile(x))
+    code.append((CALL_FUNCTION, len(form)))
+    return code
+
 def compileRecur(comp, form):
     s = form.next()
     idx = 0
     code = []
     while s is not None:
         code.extend(comp.compile(s.first()))
-        code.append((STORE_FAST, comp.recurPoint["args"][idx]))
+        code.append((STORE_FAST, comp.recurPoint.first()["args"][idx]))
         idx += 1
         s = s.next()
-    code.append((JUMP_ABSOLUTE, comp.recurPoint["label"]))
+    code.append((JUMP_ABSOLUTE, comp.recurPoint.first()["label"]))
     return code
 builtins = {Symbol.intern("ns"): compileNS,
             Symbol.intern("def"): compileDef,
@@ -322,7 +352,8 @@ builtins = {Symbol.intern("ns"): compileNS,
             Symbol.intern("if"): compileIf,
             Symbol.intern("recur"): compileRecur,
             Symbol.intern("do"): compileDo,
-            Symbol.intern("let*"): compileLetStar}
+            Symbol.intern("let*"): compileLetStar,
+            Symbol.intern("get"): compileGet}
 
 
 
@@ -330,8 +361,13 @@ builtins = {Symbol.intern("ns"): compileNS,
 class Compiler():
     def __init__(self):
         self.locals = {}
-        self.recurPoint = None
+        self.recurPoint = RT.list()
         self.names = RT.list()
+
+    def pushRecur(self, label):
+        self.recurPoint = RT.cons(label, self.recurPoint)
+    def popRecur(self):
+        self.recurPoint = self.recurPoint.next()
 
     def pushName(self, name):
         if self.names is None:
@@ -426,6 +462,9 @@ class Compiler():
         if itm.__class__ in [str, int]:
             return [(LOAD_CONST, itm)]
 
+        if isinstance(itm, PersistentVector):
+            return compileVector(self, itm)
+
         raise CompilerException("Don't know how to compile" + str(itm.__class__), None)
 
 
@@ -478,17 +517,17 @@ class Compiler():
         code.append((RETURN_VALUE, None))
         c = Code(code, [], [], False, False, False, str(Symbol.intern(self.getNS().__name__, "<string>")), "./clj/clojure/core.clj", 0, None)
         import marshal
+        import pickle
         import py_compile
         import time
         import dis
 
-        c = compile("1", "s", "exec")
         dis.dis(c)
-
         codeobject = c.to_code()
+        print codeobject.__class__ is compileDef.__class__
 
         with open('output.pyc', 'wb') as fc:
             fc.write(py_compile.MAGIC)
             py_compile.wr_long(fc, long(time.time()))
-            marshal.dump(codeobject, fc)
+            marshal.dump(c, fc)
 

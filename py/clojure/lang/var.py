@@ -184,6 +184,9 @@ class Var(ARef, Settable, IFn, IRef ):
     def __call__(self, *args):
         return self.deref()(*args)
 
+    def __getitem__(self, item):
+        return self.deref().__getitem__(item)
+
 
 
 

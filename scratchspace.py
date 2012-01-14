@@ -20,31 +20,34 @@ comp = Compiler()
 from py.clojure.util.byteplay import PRINT_ITEM
 r = rdr(data)
 code = comp.standardImports()
-while True:
-    c += 1
-    oldl = r.lineCol()
-    s = read(r, True, None, True)
-    try:
-        print s
-        print c
-        res = comp.compile(s)
-
-        comp.executeCode(res)
-        code.extend(res)
-    except IOError as exp:
-        print s
-        raise exp
-
-    if c > 24:
-        break
-
+try:
     while True:
-        ch = r.read()
-        if ch == "":
-            raise IOError()
-        if ch not in [" ", "\t", "\n", "\r"]:
-            r.back()
-            break
+        c += 1
+        oldl = r.lineCol()
+        s = read(r, True, None, True)
+        try:
+            print s
+            print c
+            res = comp.compile(s)
+
+            comp.executeCode(res)
+            code.extend(res)
+        except IOError as exp:
+            print s
+            raise exp
+
+        #if c > 0:
+        #    break
+
+        while True:
+            ch = r.read()
+            if ch == "":
+                raise IOError()
+            if ch not in [" ", "\t", "\n", "\r"]:
+                r.back()
+                break
+except IOError as e:
+    pass
 
 #comp.executeModule(code)
 
