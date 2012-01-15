@@ -61,6 +61,53 @@ def compileGet(comp, form):
     code.append((BINARY_SUBSCR, None))
     return code
 
+def compileLoopStar(comp, form):
+    if len(form) < 3:
+        raise CompilerException("loop* takes at least two args")
+    form = form.next()
+    if not isinstance(form.first(), PersistentVector):
+        raise CompilerException("loop* takes a vector as it's first argument")
+    s = form.first()
+    args = []
+    code = []
+    idx = 0
+    while idx < len(s):
+        if len(s) - idx < 2:
+            raise CompilerException("loop* takes a even number of bindings")
+        local = s[idx]
+        if not isinstance(local, Symbol) or local.ns is not None:
+            raise CompilerException("bindings must be non-namespaced symbols")
+
+        idx += 1
+
+        body = s[idx]
+        if local in comp.locals:
+            newlocal = Symbol.intern(str(local)+"_"+str(RT.nextID()))
+            code.extend(comp.compile(body))
+            comp.locals[local] = comp.locals[local].cons(newlocal)
+            args.append(local)
+            local = newlocal
+        else:
+            comp.locals[local] = RT.list(local)
+            args.append(local)
+            code.extend(comp.compile(body))
+
+
+        code.append((STORE_FAST, str(local)))
+
+        idx += 1
+
+    form = form.next()
+    recurlabel = Label("recurLabel")
+    recur = {"label": recurlabel,
+             "args": map(lambda x: x.name, args)}
+    code.append((recurlabel, None))
+    comp.pushRecur(recur)
+    code.extend(compileImplcitDo(comp, form))
+    comp.popRecur()
+    comp.popLocals(args)
+    return code
+
 def compileLetStar(comp, form):
     if len(form) < 3:
         raise CompilerException("let* takes at least two args")
@@ -339,11 +386,27 @@ def compileRecur(comp, form):
     code = []
     while s is not None:
         code.extend(comp.compile(s.first()))
-        code.append((STORE_FAST, comp.recurPoint.first()["args"][idx]))
+        if idx >= len(comp.recurPoint.first()["args"]):
+            raise CompilerException("to many arguments to recur", form)
+        local = comp.recurPoint.first()["args"][idx]
+        local = comp.locals[Symbol.intern(local)].first()
+        code.append((STORE_FAST, local.name ))
         idx += 1
         s = s.next()
     code.append((JUMP_ABSOLUTE, comp.recurPoint.first()["label"]))
     return code
+
+def compileIs(comp, form):
+    if len(form) != 3:
+        raise CompilerException("is requires 2 arguments", form)
+    fst = form.next().first()
+    itm = form.next().next().first()
+    code = comp.compile(fst)
+    code.extend(comp.compile(itm))
+    code.append((COMPARE_OP, "is"))
+    return code
+
+
 builtins = {Symbol.intern("ns"): compileNS,
             Symbol.intern("def"): compileDef,
             Symbol.intern("."): compileDot,
@@ -353,7 +416,9 @@ builtins = {Symbol.intern("ns"): compileNS,
             Symbol.intern("recur"): compileRecur,
             Symbol.intern("do"): compileDo,
             Symbol.intern("let*"): compileLetStar,
-            Symbol.intern("get"): compileGet}
+            Symbol.intern("get"): compileGet,
+            Symbol.intern("loop*"): compileLoopStar,
+            Symbol.intern("is?"): compileIs}
 
 
 

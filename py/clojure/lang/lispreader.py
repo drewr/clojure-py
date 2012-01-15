@@ -17,6 +17,9 @@ _AMP_ = Symbol.intern("&")
 _FN_ = Symbol.intern("fn")
 _VAR_ = Symbol.intern("var")
 _QUOTE_ = Symbol.intern("quote")
+_SYNTAX_QUOTE_ = Symbol.intern("`")
+_UNQUOTE_ = Symbol.intern("~")
+_UNQUOTE_SPLICING_ = Symbol.intern("~@")
 
 ARG_ENV = Var.create(None).setDynamic()
 
@@ -93,6 +96,19 @@ def read(rdr, eofIsError, eofValue, isRecursive):
 
         token = readToken(rdr, ch)
         return interpretToken(token)
+
+
+def syntaxQuoteReader(rdr, backtick):
+    form = read(rdr, True, None, True)
+    return RT.list(_SYNTAX_QUOTE_, form)
+
+def unquoteReader(rdr, tilde):
+    s = read1(rdr)
+    if s == "@":
+        return RT.list(_UNQUOTE_SPLICING_, read(rdr, True, None, True))
+    else:
+        rdr.back()
+        return RT.list(_UNQUOTE_,reat(rdr, True, None, True))
 
 
 def stringReader(rdr, doublequote):

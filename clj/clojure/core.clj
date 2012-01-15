@@ -135,13 +135,6 @@
                            (if seq
                                (.more seq)
                                clojure.lang.persistentlist.EMPTY)))))
-(def
- ^{:arglists '([& args])
-   :doc "Clojure version of RT.conj"
-   :added "1.0"}
- _conj (fn _conj [coll x] (if coll
-                            (.cons coll x)
-                             clojure.lang.persistentlist.EMPTY)))
 
 (def
  ^{:doc "Same as (first (next x))"
@@ -243,13 +236,45 @@
           (recur (next s))
           (first s))))
 
+(def nil?
+ ^{:tag Boolean
+   :doc "Returns true if x is nil, false otherwise."
+   :added "1.0"
+   :static true}
+  (fn nil? [x] (is? x nil)))
+
+(def
+ ^{:arglists '([& args])
+   :doc "Clojure version of RT.conj"
+   :added "1.0"}
+ _conj (fn _conj [coll x] (if (nil? coll)
+                            clojure.lang.persistentlist.EMPTY
+                            (.cons coll x))))
+
+
+(def
+ ^{:arglists '([coll x] [coll x & xs])
+   :doc "conj[oin]. Returns a new collection with the xs
+    'added'. (conj nil item) returns (item).  The 'addition' may
+    happen at different 'places' depending on the concrete type."
+   :added "1.0"}
+ conj (fn conj 
+        ([coll x] (_conj coll x))
+        ([coll x & xs]
+         (if (nil? xs)
+             (conj coll x)
+             (recur (conj coll x) (first xs) (next xs))))))
+
+
+
 (def 
  ^{:arglists '([coll])
    :doc "Return a seq of all but the last item in coll, in linear time"
    :added "1.0"}
  butlast (fn butlast [s]
            (loop [ret [] s s]
-             (if (next s)
-               (recur (conj ret (first s)) (next s))
-               (seq ret)))))
+             (if (nil? (next s))
+               (seq ret)  
+               (recur (conj ret (first s)) (next s))))))
+
 

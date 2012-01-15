@@ -130,6 +130,8 @@ class EmptyList(Obj, IPersistentList, ISeq, Counted):
         return None
     def __repr__(self):
         return "()"
+    def __len__(self):
+        return 0
 
 EMPTY = EmptyList()
 
