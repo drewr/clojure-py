@@ -418,7 +418,7 @@ def compileMap(comp, form):
         code.extend(comp.compile(kvp.getValue()))
         c += 2
         s = s.next()
-    code.append([LOAD_CONST, RT.map()])
+    code.append([LOAD_CONST, RT.map])
     code.append([CALL_FUNCTION, c])
     return code
 
@@ -542,27 +542,40 @@ class Compiler():
         from py.clojure.lang.persistentlist import PersistentList
         from py.clojure.lang.cons import Cons
 
+        c = []
+        lineset = False
+        if hasattr(itm, "meta") and itm.meta() is not None:
+            line = itm.meta()[LINE_KEY]
+            if line is not None:
+                lineset = True
+                c.append([SetLineno, line])
+
+
         if isinstance(itm, Symbol):
-            return self.compileSymbol(itm)
-        if isinstance(itm, PersistentList) or isinstance(itm, Cons):
-            return self.compileForm(itm)
-        if itm is None:
-            return self.compileNone(itm)
-        if itm.__class__ in [str, int]:
-            return [(LOAD_CONST, itm)]
+            c.extend(self.compileSymbol(itm))
+        elif isinstance(itm, PersistentList) or isinstance(itm, Cons):
+            c.extend(self.compileForm(itm))
+        elif itm is None:
+            c.extend(self.compileNone(itm))
+        elif itm.__class__ in [str, int]:
+            c.extend([(LOAD_CONST, itm)])
 
-        if isinstance(itm, IPersistentVector):
-            return compileVector(self, itm)
+        elif isinstance(itm, IPersistentVector):
+            c.extend(compileVector(self, itm))
 
-        if isinstance(itm, IPersistentMap):
-            return compileMap(self, itm)
+        elif isinstance(itm, IPersistentMap):
+            c.extend(compileMap(self, itm))
 
-        if isinstance(itm, Keyword):
-            return compileKeyword(self, itm)
-        if isinstance(itm, bool):
-            return compileBool(self, itm)
+        elif isinstance(itm, Keyword):
+            c.extend(compileKeyword(self, itm))
+        elif isinstance(itm, bool):
+            c.extend(compileBool(self, itm))
+        else:
+            raise CompilerException("Don't know how to compile" + str(itm.__class__), None)
 
-        raise CompilerException("Don't know how to compile" + str(itm.__class__), None)
+        if len(c) < 2 and lineset:
+            return []
+        return c
 
 
     def setLocals(self, locals):
