@@ -3,6 +3,8 @@ import sys
 sys.path.append("/home/tim/clojure-py")
 from py.clojure.lang.lispreader import *
 from py.clojure.lang.fileseq import StringReader
+from py.clojure.lang.globals import currentCompiler
+
 import py.clojure.lang.rt as RT
 
 def rdr(s):
@@ -17,6 +19,7 @@ c = 0
 from py.clojure.lang.compiler import Compiler
 RT.init()
 comp = Compiler()
+currentCompiler.set(comp)
 from py.clojure.util.byteplay import PRINT_ITEM
 r = rdr(data)
 code = comp.standardImports()

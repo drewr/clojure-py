@@ -31,7 +31,7 @@ def pushThreadBindings(bindings):
     dvals.set(Var.Frame(bmap, f))
 
 def popThreadBindings():
-    f = dvals.get(Var.Frame())
+    f = dvals.get(lambda: Var.Frame())
     if f.prev is None:
         raise IllegalStateException("Pop without matching push")
     dvals.set(f.prev)

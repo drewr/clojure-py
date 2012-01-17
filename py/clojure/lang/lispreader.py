@@ -1,10 +1,20 @@
 from py.clojure.lang.fileseq import FileSeq, MutatableFileSeq
-from var import Var
+from py.clojure.lang.var import Var, pushThreadBindings, popThreadBindings
+from py.clojure.lang.ipersistentlist import IPersistentList
+from py.clojure.lang.ipersistentvector import IPersistentVector
+from py.clojure.lang.iseq import ISeq
+from py.clojure.lang.ipersistentmap import IPersistentMap
+from py.clojure.lang.ipersistentset import IPersistentSet
+from py.clojure.lang.ipersistentcollection import IPersistentCollection
+from py.clojure.lang.persistenthashmap import EMPTY as EMPTY_MAP
 from py.clojure.lang.cljexceptions import ReaderException, IllegalStateException
 #from py.clojure.lang.gmp import Integer, Rational, Float
 import py.clojure.lang.rt as RT
 from py.clojure.lang.cljkeyword import LINE_KEY
 from py.clojure.lang.symbol import Symbol
+from py.clojure.lang.persistentvector import EMPTY as EMPTY_VECTOR
+from py.clojure.lang.globals import currentCompiler
+from py.clojure.lang.cljkeyword import Keyword
 import re
 
 def read1(rdr):
@@ -16,12 +26,19 @@ def read1(rdr):
 _AMP_ = Symbol.intern("&")
 _FN_ = Symbol.intern("fn")
 _VAR_ = Symbol.intern("var")
+_APPLY_ = Symbol.intern("apply")
+_HASHMAP_ = Symbol.intern("clojure.core", "hashmap")
+_CONCAT_ = Symbol.intern("clojure.core", "concat")
+_LIST_ = Symbol.intern("clojure.core", "list")
+_SEQ_ = Symbol.intern("clojure.core", "seq")
+_VECTOR_ = Symbol.intern("clojure.core", "vector")
 _QUOTE_ = Symbol.intern("quote")
 _SYNTAX_QUOTE_ = Symbol.intern("`")
 _UNQUOTE_ = Symbol.intern("~")
 _UNQUOTE_SPLICING_ = Symbol.intern("~@")
 
 ARG_ENV = Var.create(None).setDynamic()
+GENSYM_ENV = Var.create(None).setDynamic()
 
 WHITESPACE = [',', '\n', '\t', '\r', ' ']
 
@@ -98,17 +115,17 @@ def read(rdr, eofIsError, eofValue, isRecursive):
         return interpretToken(token)
 
 
-def syntaxQuoteReader(rdr, backtick):
-    form = read(rdr, True, None, True)
-    return RT.list(_SYNTAX_QUOTE_, form)
-
 def unquoteReader(rdr, tilde):
     s = read1(rdr)
+    if s == "":
+        raise ReaderException("EOF reading unquote", rdr)
     if s == "@":
-        return RT.list(_UNQUOTE_SPLICING_, read(rdr, True, None, True))
+        o = read(rdr, True, None, True)
+        return RT.list(_UNQUOTE_SPLICING_, o)
     else:
         rdr.back()
-        return RT.list(_UNQUOTE_,reat(rdr, True, None, True))
+        o = read(rdr, True, None, True)
+        return RT.list(_UNQUOTE_, o)
 
 
 def stringReader(rdr, doublequote):
@@ -325,8 +342,8 @@ def matchSymbol(s):
     if m is not None:
         ns = m.group(1)
         name = m.group(2)
-        if ns is not None and ns.endswith(":/") or name.endswith(":") \
-            or s.find("::") != -1:
+        if ns is not None and ns.endswith(":/") or name.endswith(":")\
+        or s.find("::") != -1:
             return None
         if s.startswith("::"):
             return "FIX"
@@ -377,7 +394,7 @@ def fnReader(rdr, lparen):
 
     if ARG_ENV.deref() is not None:
         raise IllegalStateException("Nested #()s are not allowed")
-    #try:
+        #try:
     pushThreadBindings(RT.map(ARG_ENV, EMPTY))
     rdr.back()
     form = read(rdr, True, None, True)
@@ -400,6 +417,104 @@ def fnReader(rdr, lparen):
     return RT.list(_FN_, vargs, form)
     #finally:
 
+def isUnquote(form):
+    return isinstance(form, ISeq) and form.first() == _UNQUOTE_
+
+def isUnquoteSplicing(form):
+    return isinstance(form, ISeq) and form.first() == _UNQUOTE_SPLICING_
+
+class SyntaxQuoteReader():
+    def __call__(self, r, backquote):
+        pushThreadBindings(RT.map(GENSYM_ENV, EMPTY_MAP))
+        try:
+            self.rdr = r
+            form = read(r, True, None, True)
+            return self.syntaxQuote(form)
+        finally:
+            popThreadBindings()
+    def syntaxQuote(self, form):
+        from py.clojure.lang.compiler import builtins as compilerbuiltins
+        if form in compilerbuiltins:
+            ret = RT.list(_QUOTE_, form)
+        elif isinstance(form, Symbol):
+            sym = form
+            if sym.ns is None and sym.name.endswith("#"):
+                gmap = GENSYM_ENV.deref()
+                if gmap == None:
+                    raise ReaderException("Gensym literal not in syntax-quote, before", self.rdr)
+                gs = gmap[sym]
+                if gs is None:
+                    gs = Symbol.intern(None, sym.name[:-1] + "__" + str(RT.nextID()) + "__auto__")
+                    GENSYM_ENV.set(gmap.assoc(sym, gs))
+                sym = gs
+
+            elif sym.ns is None and sym.name.endswith("."):
+                ret = sym
+            elif sym.ns is None and sym.name.startswith("."):
+                ret = sym
+            else:
+                comp = currentCompiler.get(lambda: None)
+                if comp is None:
+                    raise IllegalStateException("No Compiler found in syntax quote!")
+                ns = comp.getNS()
+                if ns is None:
+                    raise IllegalStateException("No ns in reader")
+                sym = Symbol.intern(ns.__name__, sym.name)
+            ret = RT.list(_QUOTE_, sym)
+        else:
+            if isUnquote(form):
+                return form.next().first()
+            elif isUnquoteSplicing(form):
+                raise IllegalStateException("splice not in list")
+            elif isinstance(form, IPersistentCollection):
+                if isinstance(form, IPersistentMap):
+                    keyvals = flattenMap(form)
+                    ret = RT.list(_APPLY_, _HASHMAP_, RT.list(RT.cons(_CONCAT_, self.sqExpandList(keyvals.seq()))))
+                elif isinstance(form, (IPersistentVector, IPersistentSet)):
+                    ret = RT.list(_APPLY_, _VECTOR_, RT.list(_SEQ_, RT.cons(_CONCAT_, sqExpandList(form.seq()))))
+                elif isinstance(form, (ISeq, IPersistentList)):
+                    seq = form.seq()
+                    if seq is None:
+                        ret = RT.cons(_LIST_, None)
+                    else:
+                        ret = RT.list(_SEQ_, RT.cons(_CONCAT_, self.sqExpandList(seq)))
+                else:
+                    raise IllegalStateException("Unknown collection type")
+            elif isinstance(form, (int, float, str, Keyword)):
+                ret = form
+            else:
+                ret = RT.list(_QUOTE_, form)
+        if hasattr(form, "meta") and form.meta() is not None:
+            newMeta = form.meta().without(LINE_KEY)
+            if len(newMeta) > 0:
+                return RT.list(_WITH_META_, ret, self.syntaxQuote(form.meta()))
+        return ret
+
+    def sqExpandList(self, seq):
+        ret = EMPTY_VECTOR
+        while seq is not None:
+            item = seq.first()
+            if isUnquote(item):
+                ret = ret.cons(RT.list(_LIST_, item.next().first()))
+            elif isUnquoteSplicing(item):
+                ret = ret.cons(item.next().first())
+            else:
+                ret = ret.cons(RT.list(_LIST_, self.syntaxQuote(item)))
+            seq = seq.next()
+        return ret.seq()
+
+    def flattenMap(self, m):
+        keyvals = EMPTY_VECTOR
+        s = form.seq()
+        while s is not None:
+            e = s.first()
+            keyvals = keyvals.cons(e.getKey())
+            keyvals = keyvals.cons(e.getVal())
+            s = s.next()
+        return keyvals
+
+
+
 
 
 
@@ -420,7 +535,9 @@ macros = {'\"': stringReader,
           ";": commentReader,
           "#": dispatchReader,
           "^": metaReader,
-          "%": argReader}
+          "%": argReader,
+          "`": SyntaxQuoteReader(),
+          "~": unquoteReader}
 
 dispatchMacros = {"\"": regexReader,
                   "{": setReader,
