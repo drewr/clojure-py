@@ -10,7 +10,7 @@ from py.clojure.lang.cljkeyword import Keyword
 from persistentarraymap import PersistentArrayMap
 
 privateKey = Keyword.intern(Symbol.intern("private"))
-macrokey = Keyword.intern(Symbol.intern("macro"))
+macrokey = Keyword.intern(Symbol.intern(":macro"))
 dvals = ThreadLocal()
 privateMeta = PersistentArrayMap.create([privateKey, True])
 UKNOWN = Symbol.intern("UNKNOWN")
@@ -180,6 +180,9 @@ class Var(ARef, Settable, IFn, IRef ):
     def setMeta(self, meta):
         self._meta = meta
         return self
+
+    def setMacro(self):
+        self.alterMeta(lambda x, y, z: x.assoc(y, z), macrokey, True)
 
     def __call__(self, *args):
         return self.deref()(*args)

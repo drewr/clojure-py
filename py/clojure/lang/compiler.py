@@ -2,6 +2,8 @@ from py.clojure.lang.symbol import Symbol
 from py.clojure.lang.namespace import findOrCreate as findOrCreateNamespace
 from py.clojure.lang.cljexceptions import CompilerException, AbstractMethodCall
 from py.clojure.lang.persistentvector import PersistentVector
+from py.clojure.lang.ipersistentvector import IPersistentVector
+from py.clojure.lang.ipersistentmap import IPersistentMap
 from py.clojure.lang.var import Var
 from py.clojure.util.byteplay import *
 from py.clojure.lang.cljkeyword import Keyword
@@ -406,6 +408,28 @@ def compileIs(comp, form):
     code.append((COMPARE_OP, "is"))
     return code
 
+def compileMap(comp, form):
+    s = form.seq()
+    c = 0
+    code = []
+    while s is not None:
+        kvp = s.first()
+        code.extend(comp.compile(kvp.getKey()))
+        code.extend(comp.compile(kvp.getValue()))
+        c += 2
+        s = s.next()
+    code.append([LOAD_CONST, RT.map()])
+    code.append([CALL_FUNCTION, c])
+    return code
+
+def compileKeyword(comp, kw):
+    return [(LOAD_CONST, kw)]
+
+def compileBool(comp, b):
+    return [(LOAD_CONST, b)]
+
+
+
 
 builtins = {Symbol.intern("ns"): compileNS,
             Symbol.intern("def"): compileDef,
@@ -527,8 +551,16 @@ class Compiler():
         if itm.__class__ in [str, int]:
             return [(LOAD_CONST, itm)]
 
-        if isinstance(itm, PersistentVector):
+        if isinstance(itm, IPersistentVector):
             return compileVector(self, itm)
+
+        if isinstance(itm, IPersistentMap):
+            return compileMap(self, itm)
+
+        if isinstance(itm, Keyword):
+            return compileKeyword(self, itm)
+        if isinstance(itm, bool):
+            return compileBool(self, itm)
 
         raise CompilerException("Don't know how to compile" + str(itm.__class__), None)
 

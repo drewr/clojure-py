@@ -293,7 +293,7 @@ def readDelimitedList(delim, rdr, isRecursive):
         macrofn = getMacro(ch)
         if macrofn is not None:
             mret = macrofn(rdr, ch)
-            if mret is not None:
+            if mret is not None and mret is not rdr:
                 a.append(mret)
         else:
             rdr.back()
@@ -471,7 +471,7 @@ class SyntaxQuoteReader():
                     keyvals = flattenMap(form)
                     ret = RT.list(_APPLY_, _HASHMAP_, RT.list(RT.cons(_CONCAT_, self.sqExpandList(keyvals.seq()))))
                 elif isinstance(form, (IPersistentVector, IPersistentSet)):
-                    ret = RT.list(_APPLY_, _VECTOR_, RT.list(_SEQ_, RT.cons(_CONCAT_, sqExpandList(form.seq()))))
+                    ret = RT.list(_APPLY_, _VECTOR_, RT.list(_SEQ_, RT.cons(_CONCAT_, self.sqExpandList(form.seq()))))
                 elif isinstance(form, (ISeq, IPersistentList)):
                     seq = form.seq()
                     if seq is None:

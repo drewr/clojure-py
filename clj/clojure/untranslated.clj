@@ -1,25 +1,4 @@
 (def 
- ^{:arglists '([coll])
-   :doc "Return the last item in coll, in linear time"
-   :added "1.0"
-   :static true}
- last (fn ^:static last [s]
-        (if (next s)
-          (recur (next s))
-          (first s))))
-
-(def 
- ^{:arglists '([coll])
-   :doc "Return a seq of all but the last item in coll, in linear time"
-   :added "1.0"
-   :static true}
- butlast (fn ^:static butlast [s]
-           (loop [ret [] s s]
-             (if (next s)
-               (recur (conj ret (first s)) (next s))
-               (seq ret)))))
-
-(def 
 
  ^{:doc "Same as (def name (fn [params* ] exprs*)) or (def
     name (fn ([params* ] exprs*)+)) with any doc-string or attrs added
@@ -67,7 +46,7 @@
                 ;;must figure out how to convey primitive hints to self calls first
                 (cons `fn fdecl) ))))
 
-(. (var defn) (setMacro))
+(.setMacro defn)
 
 (defn cast
   "Throws a ClassCastException if x is not a c, else returns x."
@@ -154,13 +133,7 @@
 
  
 ;;;;;;;;;;;;;;;;;;;;
-(defn nil?
-  "Returns true if x is nil, false otherwise."
-  {:tag Boolean
-   :added "1.0"
-   :static true
-   :inline (fn [x] (list 'clojure.lang.Util/identical x nil))}
-  [x] (clojure.lang.Util/identical x nil))
+
 
 (def
 

@@ -7,7 +7,7 @@ class AReference(object, IReference):
         self._meta = meta
     def meta(self):
         return self._meta
-    def alterMeta(self, fn, args):
-        RT.applyTo(fn, Cons(self._meta, args))
+    def alterMeta(self, fn, x, y):
+        self._meta = fn(self._meta, x, y)
     def resetMeta(self, meta):
         self._meta = meta
