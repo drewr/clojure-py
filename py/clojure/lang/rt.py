@@ -1,5 +1,6 @@
 from py.clojure.lang.cljexceptions import AbstractMethodCall, InvalidArgumentException
 from py.clojure.lang.threadutil import AtomicInteger
+
 from py.clojure.lang.iseq import ISeq
 
 mapInter = map
@@ -119,6 +120,16 @@ def getDefaultImports():
 id = AtomicInteger()
 def nextID():
     return id.getAndIncrement()
+
+def subvec(v, start, end):
+    from py.clojure.lang.persistentvector import EMPTY as EMPTY_VECTOR
+    from py.clojure.lang.apersistentvector import SubVector
+    if end < start or start < 0 or end > len(v):
+        raise Exception("Index out of range")
+    if start == end:
+        return EMPTY_VECTOR
+    return SubVector(None, v, start, end)
+
 
 def init():
     global DEFAULT_IMPORTS

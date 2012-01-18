@@ -18,13 +18,13 @@
  ^{:arglists '([& items])
    :doc "Creates a new list containing the items."
    :added "1.0"}
-  list (. clojure.lang.persistentlist.PersistentList creator))
+  list clojure.lang.persistentlist.PersistentList.creator)
 
 (def
  ^{:arglists '([& items])
    :doc "Creates a new vector containing the items."
    :added "1.0"}
-  vector (. clojure.lang.rt vector))
+  vector clojure.lang.rt.vector)
 
 (def
  #^{:arglists '([x seq])
@@ -276,6 +276,40 @@
              (if (nil? (next s))
                (seq ret)  
                (recur (conj ret (first s)) (next s))))))
+
+ 		
+	 
+ 	 
+ 	 
+(def ^{:private true :dynamic true}
+  assert-valid-fdecl (fn [fdecl]))
+
+(def
+ ^{:private true}
+ sigs
+ (fn [fdecl]
+   (assert-valid-fdecl fdecl)
+   (let [asig 
+         (fn [fdecl]
+           (let [arglist (first fdecl)
+                 ;elide implicit macro args
+                 arglist (if (.__eq__ '&form (first arglist)) 
+                           (clojure.lang.rt/subvec arglist 2 (len arglist))
+                           arglist)
+                 body (next fdecl)]
+             (if (map? (first body))
+               (if (next body)
+                 (with-meta arglist (conj (if (meta arglist) (meta arglist) {}) (first body)))
+                 arglist)
+               arglist)))]
+     (if (seq? (first fdecl))
+       (loop [ret [] fdecls fdecl]
+         (if fdecls
+           (recur (conj ret (asig (first fdecls))) (next fdecls))
+           (seq ret)))
+       (list (asig fdecl))))))
+
+
 
 (def 
 

@@ -239,7 +239,7 @@ def compileDo(comp, form):
 def compileFn(comp, name, form, orgform):
     locals, args, lastisargs, argsname = unpackArgs(form.first())
 
-    comp.setLocals(locals)
+    comp.pushLocals(locals)
     if orgform.meta() is not None:
         line = orgform.meta()[LINE_KEY]
     else:
@@ -254,7 +254,7 @@ def compileFn(comp, name, form, orgform):
     comp.popRecur()
 
     code.append((RETURN_VALUE,None))
-
+    comp.popLocals(locals)
     c = Code(code, [], args, lastisargs, False, True, str(Symbol.intern(comp.getNS().__name__, name.name)), "./clj/clojure/core.clj", 0, None)
 
     fn = new.function(c.to_code(), comp.ns.__dict__, name.name)
@@ -346,11 +346,16 @@ def compileImplcitDo(comp, form):
         code.extend(comp.compile(s.first()))
         s = s.next()
         if s is not None:
-            code.append((POP_VALUE, None))
+            code.append((POP_TOP, None))
     return code
 
 
 def compileFNStar(comp, form):
+    haslocalcaptures = False
+    if len(comp.locals) > 0: # we got a closure to deal with
+        comp.pushLocalCaptures()
+        haslocalcaptures = True
+
     orgform = form
     if len(form) < 2:
         raise CompilerException("2 or more arguments to fn* required", form)
@@ -371,6 +376,9 @@ def compileFNStar(comp, form):
 
     if pushed:
         comp.popName()
+
+    if haslocalcaptures:
+        comp.popLocalCaptures()
 
     return code
 
@@ -412,13 +420,13 @@ def compileMap(comp, form):
     s = form.seq()
     c = 0
     code = []
+    code.extend(comp.compile(Symbol.intern("clojure.lang.rt.map")))
     while s is not None:
         kvp = s.first()
         code.extend(comp.compile(kvp.getKey()))
         code.extend(comp.compile(kvp.getValue()))
         c += 2
         s = s.next()
-    code.append([LOAD_CONST, RT.map])
     code.append([CALL_FUNCTION, c])
     return code
 
@@ -452,11 +460,28 @@ class Compiler():
         self.locals = {}
         self.recurPoint = RT.list()
         self.names = RT.list()
+        self.usedClosures = RT.list()
 
     def pushRecur(self, label):
         self.recurPoint = RT.cons(label, self.recurPoint)
     def popRecur(self):
         self.recurPoint = self.recurPoint.next()
+
+    def pushLocalCaptures(self):
+        for x in self.locals:
+            self.locals[x] = self.locals[x].cons(Symbol.intern("__closure__" + self.locals[x].first().name))
+        self.usedClosures = self.usedClosures.cons([])
+
+    def pushClosure(self, sym):
+        if sym in self.usedClosures.first():
+            return
+        self.usedClosures.first().append(sym)
+
+    def popLocalCaptures(self):
+        for x in self.locals:
+            self.locals[x] = self.locals[x].next()
+        self.usedClosures.pop()
+
 
     def pushName(self, name):
         if self.names is None:
@@ -531,12 +556,19 @@ class Compiler():
     def compileSymbol(self, sym):
 
 
-        if sym in self.locals:
+        if sym in self.locals or Symbol.intern("__closure__" + str(sym)) in self.locals:
             return self.compileLocal(sym)
         return self.compileAccessList(sym)
 
     def compileLocal(self, sym):
-        return [(LOAD_FAST, self.locals[sym].first().name)]
+        if sym in self.locals:
+            return [(LOAD_FAST, self.locals[sym].first().name)]
+        elif Symbol.intern("__closure__" + str(sym)) in self.locals:
+            comp.pushClosure(sym)
+            return [(LOAD_CLOSURE, sym.name)]
+        else:
+            raise CompilerException("Unknown local")
+
 
     def compile(self, itm):
         from py.clojure.lang.persistentlist import PersistentList
@@ -578,9 +610,6 @@ class Compiler():
         return c
 
 
-    def setLocals(self, locals):
-        self.locals = locals
-
     def compileNone(self, itm):
         return [(LOAD_CONST, None)]
 
@@ -614,8 +643,13 @@ class Compiler():
                 self.locals[x] = RT.cons(x, None)
 
     def popLocals(self, locals):
+        dellist = []
         for x in locals:
             self.locals[x] = self.locals[x].next()
+            if self.locals[x] is None:
+                dellist.append(x)
+        for x in dellist:
+            del self.locals[x]
 
     def standardImports(self):
         return [(LOAD_CONST, -1),
