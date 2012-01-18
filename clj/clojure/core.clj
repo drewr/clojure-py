@@ -104,10 +104,12 @@
    :added "1.0"
    :static true}
  first (fn first [s]
-                 (if (instance? ISeq s)
-                     (.first s)
-                     (let [s (seq s)]
-                          (.first s)))))
+ 	 			 (if (is? nil s)
+ 	 			 	 nil
+					 (if (instance? ISeq s)
+						 (.first s)
+						 (let [s (seq s)]
+							  (.first s))))))
 
 (def
  ^{:arglists '([coll])

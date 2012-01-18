@@ -24,6 +24,8 @@ def seqToTuple(s):
 
 def seq(obj):
     from py.clojure.lang.indexableseq import IndexableSeq
+    if obj is None:
+        return None
     if isinstance(obj, ISeq):
         return obj
     if isinstance(obj, (tuple, _list, str)):
