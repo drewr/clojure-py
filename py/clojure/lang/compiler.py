@@ -4,6 +4,7 @@ from py.clojure.lang.cljexceptions import CompilerException, AbstractMethodCall
 from py.clojure.lang.persistentvector import PersistentVector
 from py.clojure.lang.ipersistentvector import IPersistentVector
 from py.clojure.lang.ipersistentmap import IPersistentMap
+from py.clojure.lang.ipersistentlist import IPersistentList
 from py.clojure.lang.var import Var
 from py.clojure.util.byteplay import *
 from py.clojure.lang.cljkeyword import Keyword
@@ -263,6 +264,7 @@ def compileFn(comp, name, form, orgform):
 
 class MultiFn(object):
     def __init__(self, comp, form):
+        form = RT.seq(form)
         if len(form) < 2:
             raise CompilerException("FN defs must have at least two vars", form)
         argv = form.first()
@@ -365,11 +367,11 @@ def compileFNStar(comp, form):
     if not isinstance(name, Symbol):
         comp.pushName(name)
         pushed = True
-        name = Symbol.intern(comp.getNamesString() + "fn" + str(RT.nextID()))
+        name = Symbol.intern("fn" + str(RT.nextID()))
     else:
         form = form.next()
 
-    if isinstance(form.first(), PersistentVector):
+    if isinstance(form.first(), IPersistentVector):
         code = compileFn(comp, name, form, orgform)
     else:
         code = compileMultiFn(comp, name, form)

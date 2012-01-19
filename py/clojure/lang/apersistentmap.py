@@ -1,4 +1,5 @@
 from py.clojure.lang.ipersistentmap import IPersistentMap
+from py.clojure.lang.ipersistentvector import IPersistentVector
 from py.clojure.lang.mapentry import MapEntry
 from py.clojure.lang.cljexceptions import AbstractMethodCall, ArityException, InvalidArgumentException
 from py.clojure.lang.aseq import ASeq
@@ -6,7 +7,21 @@ import py.clojure.lang.rt as RT
 
 class APersistentMap(IPersistentMap):
     def cons(self, o):
-        return RT.conjToAssoc(self, o)
+        if isinstance(o, MapEntry):
+            return self.assoc(o.getKey(), o.getValue())
+        if isinstance(o, IPersistentVector):
+            if len(o) != 2:
+                raise InvalidArgumentException("Vector arg to map conj must be a pair")
+            return self.assoc(v[0], v[1])
+        ret = self
+        s = o.seq()
+        while s is not None:
+            e = s.first()
+            ret = ret.assoc(e.getKey(), e.getValue())
+            s = s.next()
+        return ret
+
+
     def __eq__(self, other):
         return APersistentMap.mapEquals(self, other)
 

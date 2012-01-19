@@ -119,10 +119,12 @@
    :added "1.0"
    :static true}  
  next (fn next [s]
-                 (if (instance? ISeq s)
-                     (.next s)
-                     (let [s (seq s)]
-                          (.next s)))))
+ 	 			 (if (is? nil s)
+ 	 			 	 nil
+					 (if (instance? ISeq s)
+						 (.next s)
+						 (let [s (seq s)]
+							  (.next s))))))
 
 (def
  ^{:arglists '([coll])
@@ -344,18 +346,19 @@
               fdecl (if (map? (last fdecl))
                       (butlast fdecl)
                       fdecl)
-              m (conj {:arglists (list 'quote (sigs fdecl))} m)
+              ;m (conj {:arglists (list 'quote (sigs fdecl))} m)
               m (let [inline (:inline m)
                       ifn (first inline)
                       iname (second inline)]
                   ;; same as: (if (and (= 'fn ifn) (not (symbol? iname))) ...)
-                  (if (if (clojure.lang.Util/equiv 'fn ifn)
-                        (if (instance? clojure.lang.Symbol iname) false true))
+                  (if (if (.__eq__ 'fn ifn)
+                        (if (instance? clojure.lang.symbol.Symbol iname) false true))
                     ;; inserts the same fn name to the inline fn if it does not have one
-                    (assoc m :inline (cons ifn (cons (clojure.lang.Symbol/intern (.concat (.getName ^clojure.lang.Symbol name) "__inliner"))
+                    (assoc m :inline (cons ifn (cons (clojure.lang.symbol.Symbol/intern (.concat (.getName name) "__inliner"))
                                                      (next inline))))
                     m))
-              m (conj (if (meta name) (meta name) {}) m)]
+              ;m (conj (if (meta name) (meta name) {}) m)
+              ]
           (list 'def (with-meta name m)
                 ;;todo - restore propagation of fn name
                 ;;must figure out how to convey primitive hints to self calls first

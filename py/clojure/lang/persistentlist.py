@@ -35,8 +35,8 @@ class PersistentList(ASeq, IPersistentList, IReduce, Counted):
     @staticmethod
     def creator(*args):
         ret = EMPTY
-        for x in args:
-            ret = ret.cons(x)
+        for x in range(len(args) - 1, -1, -1):
+            ret = ret.cons(args[x])
         return ret
 
     def next(self):
