@@ -187,6 +187,18 @@ def doAssoc(level, node, i, val):
         ret.array[subidx] = doAssoc(level - 5, node.array[subidx], i, val)
     return ret
 
+def vec(seq):
+    if isinstance(seq, APersistentVector):
+        return seq
+    s = seq.seq()
+    v = EMPTY
+    while s is not None:
+        v = v.cons(s.first())
+        s = s.next()
+    return v
+
+
+
 NOEDIT = AtomicReference()
 EMPTY_NODE = PersistentVector.Node(NOEDIT)
 EMPTY = PersistentVector(0, 5, EMPTY_NODE, [])
