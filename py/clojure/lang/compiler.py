@@ -256,11 +256,13 @@ def compileFn(comp, name, form, orgform):
 
     code.append((RETURN_VALUE,None))
     comp.popLocals(locals)
-    c = Code(code, [], args, lastisargs, False, True, str(Symbol.intern(comp.getNS().__name__, name.name)), "./clj/clojure/core.clj", 0, None)
+    clist = comp.closureList()
 
-    fn = new.function(c.to_code(), comp.ns.__dict__, name.name)
+    c = Code(code, comp.closureList(), args, lastisargs, False, True, str(Symbol.intern(comp.getNS().__name__, name.name)), "./clj/clojure/core.clj", 0, None)
+    if not clist:
+        c = new.function(c.to_code(), comp.ns.__dict__, name.name)
 
-    return [(LOAD_CONST, fn)]
+    return [(LOAD_CONST, c)]
 
 class MultiFn(object):
     def __init__(self, comp, form):
@@ -335,7 +337,7 @@ def compileMultiFn(comp, name, form):
     code.append((CALL_FUNCTION, 0))
     code.append((RAISE_VARARGS, 1))
 
-    c = Code(code, [], ["__argsv__"], True, False, True, str(Symbol.intern(comp.getNS().__name__, name.name)), "./clj/clojure/core.clj", 0, None)
+    c = Code(code, comp.closureList(), ["__argsv__"], True, False, True, str(Symbol.intern(comp.getNS().__name__, name.name)), "./clj/clojure/core.clj", 0, None)
 
     fn = new.function(c.to_code(), comp.ns.__dict__, name.name)
 
@@ -376,11 +378,29 @@ def compileFNStar(comp, form):
     else:
         code = compileMultiFn(comp, name, form)
 
+
+
     if pushed:
         comp.popName()
+    clist = comp.closureList()
+    fcode = []
+
 
     if haslocalcaptures:
         comp.popLocalCaptures()
+
+    if clist:
+        for x in clist:
+            fcode.extend(comp.compile(Symbol.intern(x)))
+            fcode.append((STORE_DEREF, x))
+            fcode.append((LOAD_CLOSURE, x))
+        fcode.append((BUILD_TUPLE, len(clist)))
+        fcode.extend(code)
+        fcode.append((MAKE_CLOSURE, 0))
+        code = fcode
+
+
+
 
     return code
 
@@ -478,11 +498,30 @@ class Compiler():
         if sym in self.usedClosures.first():
             return
         self.usedClosures.first().append(sym)
+    def closureList(self):
+        lst = self.usedClosures.first()
+        if lst is None:
+            return []
+        return map(str, lst)
+
+    def cellList(self):
+        if (self.closureList()) == 0:
+            return None
+        def makecell():
+            x = None
+            cell = (lambda: x).func_closure[0]
+            return cell
+        return tuple(map(lambda x: makecell(), range(len(self.closureList()))))
+
+    def hasClosures(self):
+        return self.usedClosures is not None and \
+               self.usedClosures.first() is not None \
+                and len(self.usedClosures.first())
 
     def popLocalCaptures(self):
         for x in self.locals:
             self.locals[x] = self.locals[x].next()
-        self.usedClosures.pop()
+        self.usedClosures = self.usedClosures.pop()
 
 
     def pushName(self, name):
@@ -564,10 +603,13 @@ class Compiler():
 
     def compileLocal(self, sym):
         if sym in self.locals:
-            return [(LOAD_FAST, self.locals[sym].first().name)]
-        elif Symbol.intern("__closure__" + str(sym)) in self.locals:
-            comp.pushClosure(sym)
-            return [(LOAD_CLOSURE, sym.name)]
+            arg = self.locals[sym].first().name
+            if str(arg).startswith("__closure__"):
+                arg = self.locals[sym].next().first().name
+                self.pushClosure(sym)
+                return [(LOAD_DEREF, str(arg))]
+            else:
+                return [(LOAD_FAST, str(arg))]
         else:
             raise CompilerException("Unknown local")
 
