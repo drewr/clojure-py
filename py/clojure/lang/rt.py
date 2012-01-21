@@ -128,12 +128,12 @@ def nextID():
 
 def subvec(v, start, end):
     from py.clojure.lang.persistentvector import EMPTY as EMPTY_VECTOR
-    from py.clojure.lang.apersistentvector import SubVector
+    from py.clojure.lang.apersistentvector import SubVec
     if end < start or start < 0 or end > len(v):
         raise Exception("Index out of range")
     if start == end:
         return EMPTY_VECTOR
-    return SubVector(None, v, start, end)
+    return SubVec(None, v, start, end)
 
 
 def init():

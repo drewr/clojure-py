@@ -134,6 +134,9 @@ class Var(ARef, Settable, IFn, IRef ):
             dvout.bindRoot(root)
         return dvout
 
+    def __str__(self):
+        return str(self.deref())
+
     def __repr__(self):
         if self.ns is not None:
             return "#" + str(self.ns.__name__) + "/" + str(self.sym)

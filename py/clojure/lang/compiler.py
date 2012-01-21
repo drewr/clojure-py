@@ -47,6 +47,8 @@ def compileDef(comp, form):
             (LOAD_CONST, sym)]
     code.extend(comp.compile(value))
     code.append((CALL_FUNCTION, 3))
+    code.append((DUP_TOP, 0))
+    code.append((STORE_GLOBAL, sym.name))
 
     if sym.meta() is not None:
         code.extend([(LOAD_ATTR, 'setMeta'),
@@ -416,15 +418,18 @@ def compileRecur(comp, form):
     s = form.next()
     idx = 0
     code = []
+    locals = []
     while s is not None:
         code.extend(comp.compile(s.first()))
         if idx >= len(comp.recurPoint.first()["args"]):
             raise CompilerException("to many arguments to recur", form)
         local = comp.recurPoint.first()["args"][idx]
         local = comp.locals[Symbol.intern(local)].first()
-        code.append((STORE_FAST, local.name ))
+        locals.append(local.name)
         idx += 1
         s = s.next()
+    locals.reverse()
+    code.extend(map(lambda x: (STORE_FAST, x), locals))
     code.append((JUMP_ABSOLUTE, comp.recurPoint.first()["label"]))
     return code
 

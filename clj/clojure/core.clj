@@ -55,7 +55,7 @@
       :doc "Returns a new python list from args"
       :added "1.0"}
  native-list (fn native-list [& args]
-                            ((get __builtins__ "list") 
+                            ((getattr __builtins__ "list")
                                 args)))
 (def
     ^{:arglists '([& args])
@@ -104,12 +104,12 @@
    :added "1.0"
    :static true}
  first (fn first [s]
- 	 			 (if (is? nil s)
- 	 			 	 nil
+ 	 			 (if s
 					 (if (instance? ISeq s)
 						 (.first s)
 						 (let [s (seq s)]
-							  (.first s))))))
+							  (.first s)))
+					 nil)))
 
 (def
  ^{:arglists '([coll])
@@ -175,12 +175,15 @@
    :static true}
  nnext (fn nnext [x] (next (next x))))
 
+(def builtin
+    (fn builtin [x] (getattr __builtins__ x)))
+
 (def
  ^{:arglists '([x])
    :doc "Return true if x is a String"
    :added "1.0"
    :static true}
- string? (fn string? [x] (instance? str x)))
+ string? (fn string? [x] (instance? (builtin "str") x)))
 
 (def
  ^{:arglists '([x])
@@ -298,7 +301,7 @@
            (let [arglist (first fdecl)
                  ;elide implicit macro args
                  arglist (if (.__eq__ '&form (first arglist)) 
-                           (clojure.lang.rt/subvec arglist 2 (len arglist))
+                           (clojure.lang.rt.subvec arglist 2 (len arglist))
                            arglist)
                  body (next fdecl)]
              (if (map? (first body))
@@ -346,7 +349,7 @@
               fdecl (if (map? (last fdecl))
                       (butlast fdecl)
                       fdecl)
-              ;m (conj {:arglists (list 'quote (sigs fdecl))} m)
+              m (conj {:arglists (list 'quote (sigs fdecl))} m)
               m (let [inline (:inline m)
                       ifn (first inline)
                       iname (second inline)]
@@ -357,7 +360,7 @@
                     (assoc m :inline (cons ifn (cons (clojure.lang.symbol.Symbol/intern (.concat (.getName name) "__inliner"))
                                                      (next inline))))
                     m))
-              ;m (conj (if (meta name) (meta name) {}) m)
+              m (conj (if (meta name) (meta name) {}) m)
               ]
           (list 'def (with-meta name m)
                 ;;todo - restore propagation of fn name
@@ -424,10 +427,65 @@
 (.setMacro defmacro)
 
 
-;(defmacro when
-;  "Evaluates test. If logical true, evaluates body in an implicit do."
-;  {:added "1.0"}
-;  [test & body]
-;  (list 'if test (cons 'do body)))
-1
+(defmacro when
+  "Evaluates test. If logical true, evaluates body in an implicit do."
+  {:added "1.0"}
+  [test & body]
+  (list 'if test (cons 'do body)))
+
+(defmacro when-not
+  "Evaluates test. If logical false, evaluates body in an implicit do."
+  {:added "1.0"}
+  [test & body]
+    (list 'if test nil (cons 'do body)))
+
+(defn false?
+  "Returns true if x is the value false, false otherwise."
+  {:added "1.0"}
+  [x] (.__eq__ x false))
+
+(defn true?
+  "Returns true if x is the value true, false otherwise."
+  {:added "1.0"}
+  [x] (.__eq__ x true))
+
+(defn not
+  "Returns true if x is logical false, false otherwise."
+  {:added "1.0"}
+  [x] (if x false true))
+
+(defn str
+  "With no args, returns the empty string. With one arg x, returns
+  x.__str__().  (str nil) returns the empty string. With more than
+  one arg, returns the concatenation of the str values of the args."
+  {:added "1.0"}
+  ([] "")
+  ([x]
+   (if (nil? x) "" (.__str__ x)))
+  ([x & ys]
+     (let [lst (native-list (.__str__ x))
+           lst (loop [remain ys]
+                 (if remain
+                   (do (.append lst (.__str__ (first remain)))
+                       (recur (next remain)))
+                   lst))]
+           (.join "" lst))))
+
+(defn symbol?
+  "Return true if x is a Symbol"
+  {:added "1.0"}
+  [x] (instance? clojure.lang.symbol.Symbol x))
+
+(defn keyword?
+  "Return true if x is a Keyword"
+  {:added "1.0"}
+  [x] (instance? clojure.lang.cljkeyword.Keyword x))
+
+(defn symbol
+  "Returns a Symbol with the given namespace and name."
+  {:tag clojure.lang.Symbol
+   :added "1.0"}
+  ([name] (if (symbol? name) name (clojure.lang.symbol.Symbol.intern name)))
+  ([ns name] (clojure.lang.symbol.Symbol.intern ns name)))
+
 
