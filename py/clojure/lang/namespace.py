@@ -19,15 +19,31 @@ def addDefaultImports(mod):
         setattr(mod, i, getattr(stdimps, i))
     return mod
 
+def findOrCreateIn(module, parts):
+    if not parts:
+        return module
+    part = parts[0]
+    parts = parts[1:]
+    if hasattr(module, part):
+        return findOrCreateIn(getattr(module, part), parts)
+    mod = new.module(part)
+    setattr(module, part, mod)
+    return findOrCreateIn(mod, parts)
+
 def findOrCreate(name):
     from py.clojure.lang.symbol import Symbol
     if isinstance(name, Symbol) and name.name is not None:
         name = name.name
-    if name in sys.modules:
-        return sys.modules[name]
-    mod = new.module(name)
+    parts = name.split(".")
+
+    if parts[0] in sys.modules:
+        mod = sys.modules[parts[0]]
+    else:
+        mod = new.module(parts[0])
+        sys.modules[parts[0]] = mod
+
+    mod = findOrCreateIn(mod, parts[1:])
     addDefaultImports(mod)
-    sys.modules[name] = mod
 
     return mod
 

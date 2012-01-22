@@ -489,3 +489,48 @@
   ([ns name] (clojure.lang.symbol.Symbol.intern ns name)))
 
 
+(defn hash-map
+  "keyval => key val
+  Returns a new hash map with supplied mappings."
+  {:added "1.0"}
+  ([] {})
+  ([& keyvals]
+      (let [coll {}]
+          (loop [keyvals (seq keyvals) coll coll]
+              (if (nil? keyvals)
+                  coll
+                  (do (if (.__eq__ (len keyvals) 1)
+                          (throw (Exception "Even number of args required to hash-map")))
+                      (if (contains? coll (first keyvals))
+                          (throw (Exception "Duplicate keys found in hash-map")))
+                      (recur (nnext keyvals) 
+                             (.assoc coll 
+                                    (first keyvals)
+                                    (fnext keyvals)))))))))
+          
+      
+
+
+(defn gensym
+  "Returns a new symbol with a unique name. If a prefix string is
+  supplied, the name is prefix# where # is some unique number. If
+  prefix is not supplied, the prefix is 'G__'."
+  {:added "1.0"}
+  ([] (gensym "G__"))
+  ([prefix-string] (. clojure.lang.symbol.Symbol (intern (str prefix-string (str (. clojure.lang.rt (nextID))))))))
+
+
+(defmacro cond
+  "Takes a set of test/expr pairs. It evaluates each test one at a
+  time.  If a test returns logical true, cond evaluates and returns
+  the value of the corresponding expr and doesn't evaluate any of the
+  other tests or exprs. (cond) returns nil."
+  {:added "1.0"}
+  [& clauses]
+    (when clauses
+      (list 'if (first clauses)
+            (if (next clauses)
+                (second clauses)
+                (throw (IllegalArgumentException.
+                         "cond requires an even number of forms")))
+            (cons 'clojure.core.cond (next (next clauses))))))

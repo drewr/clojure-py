@@ -40,10 +40,11 @@ def compileDef(comp, form):
 
     code = [(LOAD_GLOBAL, "Var"),
             (LOAD_ATTR, "internWithRoot"),
-            (LOAD_GLOBAL, "sys"),
-            (LOAD_ATTR, "modules"),
-            (LOAD_GLOBAL, "__name__"),
-            (BINARY_SUBSCR, None),
+#            (LOAD_GLOBAL, "sys"),
+#            (LOAD_ATTR, "modules"),
+#            (LOAD_GLOBAL, "__name__"),
+#            (BINARY_SUBSCR, None),
+            (LOAD_CONST, comp.getNS()),
             (LOAD_CONST, sym)]
     code.extend(comp.compile(value))
     code.append((CALL_FUNCTION, 3))
@@ -435,12 +436,23 @@ def compileRecur(comp, form):
 
 def compileIs(comp, form):
     if len(form) != 3:
-        raise CompilerException("is requires 2 arguments", form)
+        raise CompilerException("is? requires 2 arguments", form)
     fst = form.next().first()
     itm = form.next().next().first()
     code = comp.compile(fst)
     code.extend(comp.compile(itm))
     code.append((COMPARE_OP, "is"))
+    return code
+
+
+def compileContains(comp, form):
+    if len(form) != 3:
+        raise CompilerException("contains? requires 2 arguments", form)
+    coll = form.next().first()
+    itm = form.next().next().first()
+    code = comp.compile(itm)
+    code.extend( comp.compile(coll))
+    code.append((COMPARE_OP, "in"))
     return code
 
 def compileMap(comp, form):
@@ -463,6 +475,13 @@ def compileKeyword(comp, kw):
 def compileBool(comp, b):
     return [(LOAD_CONST, b)]
 
+def compileThrow(comp, form):
+    if len(form) != 2:
+        raise CompilerException("throw requires two arguments")
+    code = comp.compile(form.next().first())
+    code.append((RAISE_VARARGS, 1))
+    return code
+
 
 
 
@@ -477,7 +496,9 @@ builtins = {Symbol.intern("ns"): compileNS,
             Symbol.intern("let*"): compileLetStar,
             Symbol.intern("get"): compileGet,
             Symbol.intern("loop*"): compileLoopStar,
-            Symbol.intern("is?"): compileIs}
+            Symbol.intern("is?"): compileIs,
+            Symbol.intern("contains?"): compileContains,
+            Symbol.intern("throw"): compileThrow}
 
 
 
@@ -677,11 +698,7 @@ class Compiler():
         newcode.append((RETURN_VALUE, None))
         c = Code(newcode, [], [], False, False, False, str(Symbol.intern(self.getNS().__name__, "<string>")), "./clj/clojure/core.clj", 0, None)
         globs = {}
-        for x in dir(self.ns):
-            globs[x] = getattr(self.ns, x)
-        retval = eval(c.to_code(), globs)
-        for x in globs:
-            setattr(self.ns, x, globs[x])
+        retval = eval(c.to_code(), self.getNS().__dict__)
         return retval
 
     def pushLocals(self, locals):

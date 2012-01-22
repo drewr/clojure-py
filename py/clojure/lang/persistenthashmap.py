@@ -48,8 +48,7 @@ def removePair(array, i):
     newArray = array[:2*i]
     newArray.extend(array[2*(i + 1):])
     return newArray
-
-
+    
 class PersistentHashMap(APersistentMap, IEditableCollection, IObj):
 
 
