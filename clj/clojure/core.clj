@@ -13,7 +13,6 @@
 (def unquote)
 (def unquote-splicing)
 
-
 (def
  ^{:arglists '([& items])
    :doc "Creates a new list containing the items."
@@ -175,9 +174,6 @@
    :static true}
  nnext (fn nnext [x] (next (next x))))
 
-(def builtin
-    (fn builtin [x] (getattr __builtins__ x)))
-
 (def
  ^{:arglists '([x])
    :doc "Return true if x is a String"
@@ -285,7 +281,10 @@
                (recur (conj ret (first s)) (next s))))))
 
  		
-	 
+(def set-macro 
+    (fn set-macro [f]
+        (setattr f "macro?" true)
+        f))	 
  	 
  	 
 (def ^{:private true :dynamic true}
@@ -367,7 +366,7 @@
                 ;;must figure out how to convey primitive hints to self calls first
                 (cons `fn fdecl) ))))
 
-(.setMacro defn)
+(set-macro defn)
 
 (defn vec
   "Creates a new vector containing the contents of coll."
@@ -420,11 +419,11 @@
                             d))]
                (list 'do
                      (cons `defn decl)
-                     (list '.setMacro name)
+                     (list 'set-macro name)
                      name))))
 
 
-(.setMacro defmacro)
+(set-macro defmacro)
 
 
 (defmacro when

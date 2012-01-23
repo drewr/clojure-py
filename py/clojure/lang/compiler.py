@@ -19,6 +19,8 @@ import re
 
 _MACRO_ = Keyword.intern(Symbol.intern(":macro"))
 
+
+
 def compileNS(comp, form):
     rest = form.next()
     if len(rest) != 1:
@@ -37,24 +39,16 @@ def compileDef(comp, form):
         ns = comp.getNS()
     else:
         ns = sym.ns
-
-    code = [(LOAD_GLOBAL, "Var"),
-            (LOAD_ATTR, "internWithRoot"),
-#            (LOAD_GLOBAL, "sys"),
-#            (LOAD_ATTR, "modules"),
-#            (LOAD_GLOBAL, "__name__"),
-#            (BINARY_SUBSCR, None),
-            (LOAD_CONST, comp.getNS()),
-            (LOAD_CONST, sym)]
+    code = []
     code.extend(comp.compile(value))
-    code.append((CALL_FUNCTION, 3))
     code.append((DUP_TOP, 0))
     code.append((STORE_GLOBAL, sym.name))
 
     if sym.meta() is not None:
-        code.extend([(LOAD_ATTR, 'setMeta'),
-                    (LOAD_CONST, sym.meta()),
-                    (CALL_FUNCTION, 1)])
+        code.extend(comp.compileAccessList(Symbol.intern("clojure.lang.rt.setMeta")))
+        code.append((ROT_TWO, 0))
+        code.append((LOAD_CONST, sym.meta()))
+        code.append((CALL_FUNCTION, 2))
     return code
 
 def compileGet(comp, form):
@@ -477,10 +471,19 @@ def compileBool(comp, b):
 
 def compileThrow(comp, form):
     if len(form) != 2:
-        raise CompilerException("throw requires two arguments")
+        raise CompilerException("throw requires two arguments", form)
     code = comp.compile(form.next().first())
     code.append((RAISE_VARARGS, 1))
     return code
+
+def compileBuiltin(comp, form):
+    if len(form) != 2:
+        raise CompilerException("throw requires two arguments", form)
+    name = str(form.next().first())
+    if hasattr(__builtins__, name):
+        return [(LOAD_CONST, getattr(__builtins__, name))]
+    raise CompilerException("Python builtin not found", form)
+
 
 
 
@@ -498,7 +501,8 @@ builtins = {Symbol.intern("ns"): compileNS,
             Symbol.intern("loop*"): compileLoopStar,
             Symbol.intern("is?"): compileIs,
             Symbol.intern("contains?"): compileContains,
-            Symbol.intern("throw"): compileThrow}
+            Symbol.intern("throw"): compileThrow,
+            Symbol.intern("builtin"): compileBuiltin}
 
 
 
@@ -582,9 +586,12 @@ class Compiler():
             return builtins[form.first()](self, form)
         if isinstance(form.first(), Symbol):
             macro = findItem(self.getNS(), form.first())
+            if form.first() == Symbol.intern("set-macro"):
+                pass
             if macro is not None:
 
-                if hasattr(macro, "meta") and macro.meta()[_MACRO_]:
+                if (hasattr(macro, "meta") and macro.meta()[_MACRO_])\
+                   or (hasattr(macro, "macro?") and getattr(macro, "macro?")):
                     mresult = macro(macro, self, *RT.seqToTuple(form.next()))
                     s = repr(mresult)
                     return self.compile(mresult)

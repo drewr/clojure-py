@@ -6,6 +6,10 @@ from py.clojure.lang.iseq import ISeq
 mapInter = map
 _list = list
 
+def setMeta(f, meta):
+    setattr(f, "meta", lambda: meta)
+    return f
+
 def cons(x, s):
     from py.clojure.lang.cons import Cons
     from py.clojure.lang.persistentlist import PersistentList, EMPTY as EMPTY_LIST
