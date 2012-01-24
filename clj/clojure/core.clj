@@ -364,7 +364,7 @@
           (list 'def (with-meta name m)
                 ;;todo - restore propagation of fn name
                 ;;must figure out how to convey primitive hints to self calls first
-                (cons `fn fdecl) ))))
+                (cons `fn fdecl)))))
 
 (set-macro defn)
 
@@ -533,3 +533,49 @@
                 (throw (IllegalArgumentException.
                          "cond requires an even number of forms")))
             (cons 'clojure.core/cond (next (next clauses))))))
+
+(defn =
+  "Equality. Returns true if x equals y, false if not. Same as
+  Java x.equals(y) except it also works for nil, and compares
+  numbers and collections in a type-independent manner.  Clojure's immutable data
+  structures define equals() (and thus =) as a value, not an identity,
+  comparison."
+  {:added "1.0"}
+  ([x] true)
+  ([x y] (.__eq__ x y))
+  ([x y & more]
+   (if (.__eq__ x y)
+     (if (next more)
+       (recur y (first more) (next more))
+       (.__eq__ y (first more)))
+     false)))
+
+
+(defn not=
+  "Same as (not (= obj1 obj2))"
+  {:added "1.0"}
+  ([x] false)
+  ([x y] (not (= x y)))
+  ([x y & more]
+   (not (apply = x y more))))
+
+(defmacro if-not
+  "Evaluates test. If logical false, evaluates and returns then expr, 
+  otherwise else expr, if supplied, else nil."
+  {:added "1.0"}
+  ([test then] `(if-not ~test ~then nil))
+  ([test then else]
+   `(if (not ~test) ~then ~else)))
+
+(defmacro and
+  "Evaluates exprs one at a time, from left to right. If a form
+  returns logical false (nil or false), and returns that value and
+  doesn't evaluate any of the other expressions, otherwise it returns
+  the value of the last expr. (and) returns true."
+  {:added "1.0"}
+  ([] true)
+  ([x] x)
+  ([x & next]
+   `(let [and# ~x]
+      (if and# (and ~@next) and#))))
+

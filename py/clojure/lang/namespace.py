@@ -26,7 +26,7 @@ def findOrCreateIn(module, parts):
     parts = parts[1:]
     if hasattr(module, part):
         return findOrCreateIn(getattr(module, part), parts)
-    mod = new.module(part)
+    mod = new.module(module.__name__ + "." + part)
     setattr(module, part, mod)
     return findOrCreateIn(mod, parts)
 

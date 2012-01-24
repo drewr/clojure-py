@@ -476,6 +476,19 @@ def compileThrow(comp, form):
     code.append((RAISE_VARARGS, 1))
     return code
 
+def compileApply(comp, form):
+    s = form.next()
+    code = []
+    while s is not None:
+        code.extend(comp.compile(s.first()))
+
+        s = s.next()
+    code.append((LOAD_CONST, RT.seqToTuple))
+    code.append((ROT_TWO, None))
+    code.append((CALL_FUNCTION, 1))
+    code.append((CALL_FUNCTION_VAR, len(form) - 3))
+    return code
+
 def compileBuiltin(comp, form):
     if len(form) != 2:
         raise CompilerException("throw requires two arguments", form)
@@ -502,7 +515,8 @@ builtins = {Symbol.intern("ns"): compileNS,
             Symbol.intern("is?"): compileIs,
             Symbol.intern("contains?"): compileContains,
             Symbol.intern("throw"): compileThrow,
-            Symbol.intern("builtin"): compileBuiltin}
+            Symbol.intern("builtin"): compileBuiltin,
+            Symbol.intern("apply"): compileApply}
 
 
 
