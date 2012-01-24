@@ -66,10 +66,35 @@ def findItem(ns, sym):
             if not hasattr(ns, sym.name):
                 return None
             return getattr(ns, sym.name)
+        if sym.ns is not None:
+            mod = findModule(sym.ns)
+            if hasattr(mod, sym.name):
+                return getattr(mod, sym.name)
+            return None
         if not hasattr(ns, str(sym)):
             return None
         return getattr(ns, str(sym))
     return getattr(ns, sym)
+
+def findModule(sym, module = None):
+    if module is None:
+        sym = sym.split(".")
+        parts = sym[1:]
+        name = sym[0]
+        if name not in sys.modules:
+            return None
+        if len(parts):
+            return findModule(parts, sys.modules[name])
+        return sys.modules[name]
+
+    name = sym[0]
+    parts = sym[1:]
+    if not hasattr(module, name):
+        return None
+    if len(parts):
+        return findModule(parts, getattr(module, name))
+    return getattr(module, name)
+
 
 def intern(ns, sym):
     from py.clojure.lang.var import Var

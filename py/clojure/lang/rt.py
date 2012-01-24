@@ -24,6 +24,8 @@ def cons(x, s):
     return Cons(x, seq(s))
 
 def seqToTuple(s):
+    if s is None:
+        return ()
     return tuple(mapInter(lambda x: x.first(),s))
 
 def seq(obj):

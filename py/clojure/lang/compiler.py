@@ -276,7 +276,7 @@ class MultiFn(object):
         code = [(LOAD_FAST, '__argsv__'),
                 (LOAD_ATTR, '__len__'),
                 (CALL_FUNCTION, 0),
-                (LOAD_CONST, len(self.args)),
+                (LOAD_CONST, len(self.args) - (1 if self.lastisargs else 0)),
                 (COMPARE_OP, ">=" if self.lastisargs else "=="),
                 (POP_JUMP_IF_FALSE, endLabel)]
         for x in range(len(self.args)):
@@ -507,12 +507,14 @@ builtins = {Symbol.intern("ns"): compileNS,
 
 
 
+
 class Compiler():
     def __init__(self):
         self.locals = {}
         self.recurPoint = RT.list()
         self.names = RT.list()
         self.usedClosures = RT.list()
+        self.ns = None
 
     def pushRecur(self, label):
         self.recurPoint = RT.cons(label, self.recurPoint)
@@ -581,13 +583,13 @@ class Compiler():
         c.append((CALL_FUNCTION, (len(form) - 2)))
         return c
 
+
     def compileForm(self, form):
         if form.first() in builtins:
             return builtins[form.first()](self, form)
         if isinstance(form.first(), Symbol):
             macro = findItem(self.getNS(), form.first())
-            if form.first() == Symbol.intern("set-macro"):
-                pass
+
             if macro is not None:
 
                 if (hasattr(macro, "meta") and macro.meta()[_MACRO_])\
@@ -624,6 +626,9 @@ class Compiler():
         return c
 
     def getAccessList(self, sym):
+        if sym.ns is not None \
+            and sym.ns == self.getNS().__name__:
+            return [sym.name]
         return re.split('[\./]', str(sym))
 
 

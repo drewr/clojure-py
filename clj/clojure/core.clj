@@ -1,4 +1,4 @@
-;; these are functions yet to be translated to clojure-py;   Copyright (c) Rich Hickey. All rights reserved.
+;   Copyright (c) Rich Hickey. All rights reserved.
 ;   The use and distribution terms for this software are covered by the
 ;   Eclipse Public License 1.0 (http://opensource.org/licenses/eclipse-1.0.php)
 ;   which can be found in the file epl-v10.html at the root of this distribution.
@@ -532,4 +532,4 @@
                 (second clauses)
                 (throw (IllegalArgumentException.
                          "cond requires an even number of forms")))
-            (cons 'clojure.core.cond (next (next clauses))))))
+            (cons 'clojure.core/cond (next (next clauses))))))

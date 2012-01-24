@@ -31,7 +31,7 @@ class Symbol(object, IObj):
             return True
         if not isinstance(other, Symbol):
             return False
-        return (self.ns is other.ns) and (self.name is other.name)
+        return (self.ns == other.ns) and (self.name == other.name)
 
     def __hash__(self):
         return hash(self.name) ^ hash(self.ns)

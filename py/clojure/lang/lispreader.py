@@ -174,12 +174,8 @@ INTERPRET_TOKENS = {"nil": None,
 def interpretToken(s):
     if s in INTERPRET_TOKENS:
         return INTERPRET_TOKENS[s]
-    if s == ":added":
-        pass
     ret = matchSymbol(s)
     if ret is None:
-        if s == ":added":
-            pass
         raise ReaderException("Unknown symbol " + str(s))
     return ret
 
@@ -343,12 +339,13 @@ def matchSymbol(s):
         ns = m.group(1)
         name = m.group(2)
         if ns is not None and ns.endswith(":/") or name.endswith(":")\
-        or s.find("::") != -1:
-            return None
+            or s.find("::") != -1:
+                return None
         if s.startswith("::"):
             return "FIX"
+        ns = ns if ns is None else ns[:-1]
         iskeyword = s.find(':') == 0
-        sym = Symbol.intern(s[(1 if iskeyword else 0):])
+        sym = Symbol.intern(ns, name[(1 if iskeyword else 0):])
         if iskeyword:
             return Keyword.intern(s)
         else:
