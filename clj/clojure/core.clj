@@ -534,6 +534,25 @@
                          "cond requires an even number of forms")))
             (cons 'clojure.core/cond (next (next clauses))))))
 
+
+(defn make-class
+    "Creates a new clas with the given name, that is inherited from
+    classes and has the given member functions."
+    [name classes members]
+    (new.classobj name (apply tuple classes) (.toDict members)))
+
+(defn make-init
+    "Creates a __init__ method for use in deftype"
+    [fields]
+    (loop [fields fields
+           args ['self]
+           body []]
+           (if (nil? fields)
+               (cons 'fn (cons "__init__" (cons args body)))
+               (let [newargs (conj args (first fields))
+                     newbody (conj body (list 'setattr 'self (first fields)))]
+                     (recur (next fields) newargs newbody)))))
+
 (defn =
   "Equality. Returns true if x equals y, false if not. Same as
   Java x.equals(y) except it also works for nil, and compares

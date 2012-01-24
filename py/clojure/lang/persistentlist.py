@@ -105,6 +105,11 @@ class EmptyList(Obj, IPersistentList, ISeq, Counted):
            or isinstance(other, list)
            or isinstance(other, tuple)) \
            and RT.seq(other) is None
+
+    def __iter__(self):
+        return
+        yield
+
     def withMeta(self, meta):
         if self._meta == meta:
             return self

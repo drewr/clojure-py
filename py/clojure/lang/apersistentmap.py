@@ -21,6 +21,14 @@ class APersistentMap(IPersistentMap):
             s = s.next()
         return ret
 
+    def toDict(self):
+        s = self.seq()
+        d = {}
+        while s is not None:
+            d[s.first().getKey()] = s.first().getValue()
+            s = s.next()
+        return d
+
 
     def __eq__(self, other):
         return APersistentMap.mapEquals(self, other)
