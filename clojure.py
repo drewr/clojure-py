@@ -44,7 +44,14 @@ def main():
 
     if not sys.argv[1:]:
         while True:
-            line = raw_input(comp.getNS().__name__ + "=>")
+            try:
+                line = raw_input(comp.getNS().__name__ + "=>")
+            except EOFError:
+                break
+
+            if not line:
+                continue
+
             r = StringReader(line)
             s = read(r, True, None, True)
 
