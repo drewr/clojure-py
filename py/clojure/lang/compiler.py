@@ -14,7 +14,7 @@ from py.clojure.lang.lispreader import _AMP_
 from py.clojure.lang.namespace import findItem
 from py.clojure.lang.lispreader import LINE_KEY
 import re
-
+import new
 
 
 _MACRO_ = Keyword.intern(Symbol.intern(":macro"))
@@ -597,6 +597,14 @@ class Compiler():
         c.append((CALL_FUNCTION, (len(form) - 2)))
         return c
 
+    def compilePropertyAccess(self, form):
+        attrname = form.first().name[2:]
+        if len(form) != 2:
+            raise CompilerException("Property access must have at only one argument", form)
+        c = self.compile(form.next().first())
+        c.append((LOAD_ATTR, attrname))
+        return c
+
 
     def compileForm(self, form):
         if form.first() in builtins:
@@ -613,6 +621,9 @@ class Compiler():
                     return self.compile(mresult)
         c = None
         if isinstance(form.first(), Symbol):
+            if form.first().name.startswith(".-"):
+                c = self.compilePropertyAccess(form)
+                return c
             if form.first().name.startswith(".") and form.first().ns is None:
                 c = self.compileMethodAccess(form)
                 return c
@@ -685,7 +696,7 @@ class Compiler():
             c.extend(self.compileForm(itm))
         elif itm is None:
             c.extend(self.compileNone(itm))
-        elif itm.__class__ in [str, int]:
+        elif type(itm) in [str, int, new.classobj]:
             c.extend([(LOAD_CONST, itm)])
 
         elif isinstance(itm, IPersistentVector):
@@ -699,7 +710,7 @@ class Compiler():
         elif isinstance(itm, bool):
             c.extend(compileBool(self, itm))
         else:
-            raise CompilerException("Don't know how to compile" + str(itm.__class__), None)
+            raise CompilerException("Don't know how to compile" + str(type(itm)), None)
 
         if len(c) < 2 and lineset:
             return []

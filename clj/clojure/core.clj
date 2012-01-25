@@ -548,10 +548,29 @@
            args ['self]
            body []]
            (if (nil? fields)
-               (cons 'fn (cons "__init__" (cons args body)))
+               (cons 'fn (cons '__init__ (cons args body)))
                (let [newargs (conj args (first fields))
-                     newbody (conj body (list 'setattr 'self (first fields)))]
+                     newbody (conj body (list 'setattr 
+                                              'self 
+                                              (str (first fields)) 
+                                              (first fields)))]
                      (recur (next fields) newargs newbody)))))
+
+(defmacro deftype
+    [name fields & specs]
+    (loop [specs (seq specs)
+           inherits []
+           fns {"__init__" (make-init fields)}]
+          (cond (nil? specs)
+                    (list 'make-class name (quote inherits) fns)
+                (symbol? (first specs))
+                    (recur (next specs) 
+                           (conj inherits (first specs))
+                           fns)
+                (instance? clojure.lang.ipersistentlist.IPersistentList (first specs))
+                    (recur (next specs)
+                           specs
+                           (assoc fns (first (first specs)) (cons 'fn (first specs)))))))
 
 (defn =
   "Equality. Returns true if x equals y, false if not. Same as
