@@ -28,6 +28,8 @@ def seqToTuple(s):
         return ()
     if isinstance(s, tuple):
         return s
+    if isinstance(s, IPersistentVector):
+        return tuple(s)
     return tuple(mapInter(lambda x: x.first(),s))
 
 def seq(obj):
@@ -111,7 +113,7 @@ def map(*args):
         if fulfillsIndexable(args[0]):
             args = args[0]
     m = EMPTY
-    for x in range(0, len(args) / 2, 2):
+    for x in range(0, len(args), 2):
         key = args[x]
         value = args[x + 1]
         m = m.assoc(key, value)
@@ -149,3 +151,5 @@ def init():
     DEFAULT_IMPORTS = map(getDefaultImports())
 
 DEFAULT_IMPORTS = None
+
+from py.clojure.lang.ipersistentvector import IPersistentVector
