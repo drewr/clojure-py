@@ -348,6 +348,8 @@ def compileImplcitDo(comp, form):
         s = s.next()
         if s is not None:
             code.append((POP_TOP, None))
+    if not code:
+        code.append((LOAD_CONST, None))
     return code
 
 
