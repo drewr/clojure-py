@@ -45,12 +45,22 @@ def main():
     if not sys.argv[1:]:
         while True:
             try:
-                line = raw_input(comp.getNS().__name__ + "=>")
+                line = raw_input(comp.getNS().__name__ + "=> ")
             except EOFError:
                 break
 
             if not line:
                 continue
+
+            while unbalanced(line):
+                try:
+                    line += raw_input('.' * len(comp.getNS().__name__) + '.. ')
+                except EOFError:
+                    break
+
+            # Propogate break from above loop.
+            if unbalanced(line):
+                break
 
             r = StringReader(line)
             s = read(r, True, None, True)
@@ -60,6 +70,13 @@ def main():
                 print comp.executeCode(res)
             except Exception:
                 import traceback; traceback.print_exc()
+
+
+def unbalanced(s):
+    return (s.count('(') != s.count(')')
+            or s.count('[') != s.count(']')
+            or s.count('{') != s.count('}'))
+
 
 
 if __name__ == "__main__":
