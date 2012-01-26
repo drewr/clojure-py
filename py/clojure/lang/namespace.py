@@ -17,6 +17,12 @@ def addDefaultImports(mod):
         if i.startswith("_"):
             continue
         setattr(mod, i, getattr(stdimps, i))
+    if "clojure" in sys.modules:
+        core = sys.modules["clojure"].core
+        for i in dir(core):
+            if i.startswith("_"):
+                continue
+            setattr(mod, i, getattr(core, i))
     return mod
 
 def findOrCreateIn(module, parts):

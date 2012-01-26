@@ -8,16 +8,16 @@ from py.clojure.lang.fileseq import StringReader
 from py.clojure.lang.globals import currentCompiler
 import py.clojure.lang.rt as RT
 from py.clojure.lang.compiler import Compiler
+from py.clojure.lang.symbol import Symbol
 
 
-def main():
-    with open("./clj/clojure/core.clj") as fl:
+def requireClj(filename):
+    with open(filename) as fl:
         r = StringReader(fl.read())
 
     RT.init()
     comp = Compiler()
     currentCompiler.set(comp)
-    code = comp.standardImports()
 
     try:
         while True:
@@ -41,6 +41,15 @@ def main():
                     break
     except IOError as e:
         pass
+
+
+def main():
+    requireClj("./clj/clojure/core.clj")
+
+    RT.init()
+    comp = Compiler()
+    currentCompiler.set(comp)
+    comp.setNS(Symbol.intern("user"))
 
     if not sys.argv[1:]:
         while True:
