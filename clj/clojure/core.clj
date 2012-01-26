@@ -348,7 +348,7 @@
               fdecl (if (map? (last fdecl))
                       (butlast fdecl)
                       fdecl)
-              m (conj {:arglists (list 'quote (sigs fdecl))} m)
+              ;m (conj {:arglists (list 'quote (sigs fdecl))} m)
               m (let [inline (:inline m)
                       ifn (first inline)
                       iname (second inline)]
@@ -367,6 +367,7 @@
                 (cons `fn fdecl)))))
 
 (set-macro defn)
+
 
 (defn vec
   "Creates a new vector containing the contents of coll."
@@ -539,7 +540,7 @@
     "Creates a new clas with the given name, that is inherited from
     classes and has the given member functions."
     [name classes members]
-    (new.classobj name (apply tuple classes) (.toDict members)))
+    (type (.-name name) (apply tuple classes) (.toDict members)))
 
 (defn make-init
     "Creates a __init__ method for use in deftype"
@@ -559,18 +560,19 @@
 (defmacro deftype
     [name fields & specs]
     (loop [specs (seq specs)
-           inherits []
+           inherits [object]
            fns {"__init__" (make-init fields)}]
-          (cond (nil? specs)
-                    (list 'make-class name (quote inherits) fns)
+          (cond (not specs)
+                    (list 'def name (list 'make-class (list 'quote name) inherits fns))
                 (symbol? (first specs))
                     (recur (next specs) 
                            (conj inherits (first specs))
                            fns)
                 (instance? clojure.lang.ipersistentlist.IPersistentList (first specs))
                     (recur (next specs)
-                           specs
-                           (assoc fns (first (first specs)) (cons 'fn (first specs)))))))
+                           inherits
+                           (assoc fns (str (first (first specs)))
+                           	   	      (cons 'fn (first specs)))))))
 
 (defn =
   "Equality. Returns true if x equals y, false if not. Same as
@@ -616,4 +618,5 @@
   ([x & next]
    `(let [and# ~x]
       (if and# (and ~@next) and#))))
+
 
