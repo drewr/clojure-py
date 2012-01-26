@@ -493,8 +493,17 @@ def compileBuiltin(comp, form):
     if len(form) != 2:
         raise CompilerException("throw requires two arguments", form)
     name = str(form.next().first())
-    if hasattr(__builtins__, name):
-        return [(LOAD_CONST, getattr(__builtins__, name))]
+
+    ## PyPy defines this as a module...CPython as a dict
+    ## see http://pypy.readthedocs.org/en/latest/cpython_differences.html#miscellaneous
+    ## for more info
+    if type(__builtins__) is dict:
+        if name in __builtins__:
+            return [(LOAD_CONST, __builtins__[name])]
+    else:
+        if hasattr(__builtins__, name):
+            return [(LOAD_CONST, getattr(__builtins__,name))]
+
     raise CompilerException("Python builtin not found", form)
 
 
