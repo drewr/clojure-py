@@ -548,7 +548,7 @@
     (loop [fields fields
            args ['self]
            body []]
-           (if (nil? fields)
+           (if (not fields)
                (cons 'fn (cons '__init__ (cons args body)))
                (let [newargs (conj args (first fields))
                      newbody (conj body (list 'setattr 
@@ -573,6 +573,26 @@
                            inherits
                            (assoc fns (str (first (first specs)))
                            	   	      (cons 'fn (first specs)))))))
+
+
+;;;;;;;;;;;;;;;;;Lazy Seq and Chunked Seq;;;;;;;;;;;;;;;;
+
+
+(deftype IPending [] 
+	(isRealized [self] 
+		(throw (AbstractMethodCall))))
+
+(deftype LazySeq [fnc sv s _meta]
+	(withMeta [self meta]
+		(LazySeq nil nil (.seq self) meta)))
+;	(sval [self]
+;		(if (not (nil? (.-fnc self)))
+;			(do (setattr 
+
+
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defn =
   "Equality. Returns true if x equals y, false if not. Same as
