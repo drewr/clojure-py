@@ -536,6 +536,26 @@
             (cons 'clojure.core/cond (next (next clauses))))))
 
 
+(defn spread
+  {:private true}
+  [arglist]
+  (cond
+   (nil? arglist) nil
+   (nil? (next arglist)) (seq (first arglist))
+   :else (cons (first arglist) (spread (next arglist)))))
+
+(defn list*
+  "Creates a new list containing the items prepended to the rest, the
+  last of which will be treated as a sequence."
+  {:added "1.0"}
+  ([args] (seq args))
+  ([a args] (cons a args))
+  ([a b args] (cons a (cons b args)))
+  ([a b c args] (cons a (cons b (cons c args))))
+  ([a b c d & more]
+     (cons a (cons b (cons c (cons d (spread more)))))))
+
+
 (defn make-class
     "Creates a new clas with the given name, that is inherited from
     classes and has the given member functions."
@@ -600,13 +620,41 @@
 
 (deftype LazySeq [fnc sv s _meta]
 	(withMeta [self meta]
-		(LazySeq nil nil (.seq self) meta)))
+		(LazySeq nil nil (.seq self) meta))
+	(sval [self]
+		(when (not (nil? sv))
+			  (setattr self 'sv' (fnc))
+			  (setattr self 'fnc' nil))
+		(if (not (nil? sv))
+			sv
+			s))
+	(seq [self]
+		(.sval self)
+		(when (not (nil? sv))
+			(let [ls sv]
+				 (setattr self 'sv' nil)
+        		 (setattr self 
+        		 	 	  's' 
+        		 	 	  (loop [ls sv]
+							    (if (instance? LazySeq ls)
+								    (recur (.sval ls))
+								    ls)))))
+		s))
+			
+		
 ;	(sval [self]
 ;		(if (not (nil? (.-fnc self)))
 ;			(do (setattr 
 
 
-
+(defmacro lazy-seq
+  "Takes a body of expressions that returns an ISeq or nil, and yields
+  a Seqable object that will invoke the body only the first time seq
+  is called, and will cache the result and return it on all subsequent
+  seq calls. See also - realized?"
+  {:added "1.0"}
+  [& body]
+  (list 'clojure.core.LazySeq (list* '^{:once true} fn* [] body) nil nil nil))    
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
