@@ -229,7 +229,9 @@ class Label(object):
     def __init__(self, name = None):
         self.name = name
     def __repr__(self):
-        return "Label: " + self.name
+        return "Label: " + str(self.name)
+    def __eq__(self, other):
+        return isinstance(other, Label) and self.name == other.name
 
 def isopcode(obj):
     """Return whether obj is an opcode - not SetLineno or Label"""

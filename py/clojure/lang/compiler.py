@@ -273,42 +273,39 @@ class MultiFn(object):
 
         self.locals, self.args, self.lastisargs, self.argsname = unpackArgs(argv)
         endLabel = Label("endLabel")
-        code = [(LOAD_FAST, '__argsv__'),
-                (LOAD_ATTR, '__len__'),
-                (CALL_FUNCTION, 0),
-                (LOAD_CONST, len(self.args) - (1 if self.lastisargs else 0)),
-                (COMPARE_OP, ">=" if self.lastisargs else "=="),
-                (POP_JUMP_IF_FALSE, endLabel)]
+        argcode = [(LOAD_FAST, '__argsv__'),
+                   (LOAD_ATTR, '__len__'),
+                   (CALL_FUNCTION, 0),
+                   (LOAD_CONST, len(self.args) - (1 if self.lastisargs else 0)),
+                   (COMPARE_OP, ">=" if self.lastisargs else "=="),
+                   (POP_JUMP_IF_FALSE, endLabel)]
         for x in range(len(self.args)):
             if self.lastisargs and x == len(self.args) - 1:
                 offset = len(self.args) - 1
-                code.extend([(LOAD_FAST, '__argsv__'),
-                             (LOAD_CONST, offset),
-                             (SLICE_1, None),
-                             (STORE_FAST, self.argsname.name)])
+                argcode.extend([(LOAD_FAST, '__argsv__'),
+                                (LOAD_CONST, offset),
+                                (SLICE_1, None),
+                                (STORE_FAST, self.argsname.name)])
             else:
-                code.extend([(LOAD_FAST, '__argsv__'),
-                             (LOAD_CONST, x),
-                             (BINARY_SUBSCR, None),
-                             (STORE_FAST, self.args[x])])
+                argcode.extend([(LOAD_FAST, '__argsv__'),
+                                (LOAD_CONST, x),
+                                (BINARY_SUBSCR, None),
+                                (STORE_FAST, self.args[x])])
 
         comp.pushLocals(self.locals)
         recurlabel = Label("recurLabel")
         recur = {"label": recurlabel,
                  "args": self.args}
-        code.append((recurlabel, None))
+        bodycode = [(recurlabel, None)]
         comp.pushRecur(recur)
-        code.extend(compileImplcitDo(comp, body))
-        code.append((RETURN_VALUE, None))
-        code.append((endLabel, None))
+        bodycode.extend(compileImplcitDo(comp, body))
+        bodycode.append((RETURN_VALUE, None))
+        bodycode.append((endLabel, None))
         comp.popRecur()
         comp.popLocals(self.locals)
 
-
-
-
-
-        self.code = code
+        self.argcode = argcode
+        self.bodycode = bodycode
 
 
 def compileMultiFn(comp, name, form):
@@ -321,23 +318,25 @@ def compileMultiFn(comp, name, form):
     if len(filter(lambda x: x.lastisargs, argdefs)) > 1:
         raise CompilerException("Only one function overload may have variable number of arguments", form)
 
-
     code = []
-    args = []
-    for x in argdefs:
-        code.extend(x.code)
-        for x in x.args:
-            if x not in args:
-                args.append(x)
+    if len(argdefs) == 1 and not argdefs[0].lastisargs:
+        hasvararg = False
+        argslist = argdefs[0].args
+        code.extend(argdefs[0].bodycode)
+    else:
+        hasvararg = True
+        argslist = ["__argsv__"]
+        for x in argdefs:
+            code.extend(x.argcode)
+            code.extend(x.bodycode)
 
-    code.append((LOAD_CONST, Exception))
-    code.append((CALL_FUNCTION, 0))
-    code.append((RAISE_VARARGS, 1))
+        code.append((LOAD_CONST, Exception))
+        code.append((CALL_FUNCTION, 0))
+        code.append((RAISE_VARARGS, 1))
 
-    c = Code(code, comp.closureList(), ["__argsv__"], True, False, True, str(Symbol.intern(comp.getNS().__name__, name.name)), "./clj/clojure/core.clj", 0, None)
+    c = Code(code, comp.closureList(), argslist, hasvararg, False, True, str(Symbol.intern(comp.getNS().__name__, name.name)), "./clj/clojure/core.clj", 0, None)
 
     fn = new.function(c.to_code(), comp.ns.__dict__, name.name)
-
     return [(LOAD_CONST, fn)]
 
 def compileImplcitDo(comp, form):
