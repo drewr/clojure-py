@@ -1,4 +1,4 @@
-= clojure-py =
+# clojure-py
 
 An implementation of Clojure in pure Python.
 
