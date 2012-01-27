@@ -557,6 +557,22 @@
                                               (first fields)))]
                      (recur (next fields) newargs newbody)))))
 
+(defn make-props
+    [fields self]
+    (loop [remain (seq fields)
+        props {}]
+       (if (nil? remain)
+           props
+           (recur (next remain) 
+                  (assoc props (first remain) self)))))
+
+(defn prop-wrap-fn
+    [members f]
+    (list 'alias-properties (make-props members (fnext f))
+                            (cons 'fn f)))
+
+
+
 (defmacro deftype
     [name fields & specs]
     (loop [specs (seq specs)
@@ -571,8 +587,8 @@
                 (instance? clojure.lang.ipersistentlist.IPersistentList (first specs))
                     (recur (next specs)
                            inherits
-                           (assoc fns (str (first (first specs)))
-                           	   	      (cons 'fn (first specs)))))))
+                           (assoc fns (str (ffirst specs))
+                           	   	      (prop-wrap-fn fields (first specs)))))))
 
 
 ;;;;;;;;;;;;;;;;;Lazy Seq and Chunked Seq;;;;;;;;;;;;;;;;

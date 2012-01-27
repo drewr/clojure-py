@@ -509,6 +509,20 @@ def compileBuiltin(comp, form):
     raise CompilerException("Python builtin not found", form)
 
 
+def compileAliasProperties(comp, form):
+    if len(form) < 3:
+        raise CompilerException("alias-properties takes at least two args", form)
+
+    form = form.next()
+
+    resolv = form.first()
+    form = form.next()
+    comp.pushPropertyAlias(resolv)
+
+    code = compileImplcitDo(comp, form)
+
+    comp.popPropertyAlias(resolv)
+    return code
 
 
 
@@ -527,7 +541,8 @@ builtins = {Symbol.intern("ns"): compileNS,
             Symbol.intern("contains?"): compileContains,
             Symbol.intern("throw"): compileThrow,
             Symbol.intern("builtin"): compileBuiltin,
-            Symbol.intern("apply"): compileApply}
+            Symbol.intern("apply"): compileApply,
+            Symbol.intern("alias-properties"): compileAliasProperties}
 
 
 
@@ -540,6 +555,7 @@ class Compiler():
         self.names = RT.list()
         self.usedClosures = RT.list()
         self.ns = None
+        self.aliasedProperties = {}
 
     def pushRecur(self, label):
         self.recurPoint = RT.cons(label, self.recurPoint)
@@ -548,7 +564,7 @@ class Compiler():
 
     def pushLocalCaptures(self):
         for x in self.locals:
-            self.locals[x] = self.locals[x].cons(Symbol.intern("__closure__" + self.locals[x].first().name))
+            self.locals[x] = self.locals[x].cons(Symbol.intern("__closure__" + x.name))
         self.usedClosures = self.usedClosures.cons([])
 
     def pushClosure(self, sym):
@@ -671,13 +687,22 @@ class Compiler():
     def compileSymbol(self, sym):
 
 
-        if sym in self.locals or Symbol.intern("__closure__" + str(sym)) in self.locals:
+        if sym in self.locals or \
+           Symbol.intern("__closure__" + str(sym)) in self.locals or\
+            sym in self.aliasedProperties:
             return self.compileLocal(sym)
         return self.compileAccessList(sym)
 
     def compileLocal(self, sym):
+
+        if sym in self.aliasedProperties:
+            code = self.compile(self.aliasedProperties[sym][-1])
+            code.append((LOAD_ATTR, sym.name))
+            return code
+
         if sym in self.locals:
-            arg = self.locals[sym].first().name
+            resolved = self.locals[sym].first()
+            arg = resolved.name
             if str(arg).startswith("__closure__"):
                 arg = self.locals[sym].next().first().name
                 self.pushClosure(sym)
@@ -755,6 +780,27 @@ class Compiler():
                 self.locals[x] = RT.cons(x, self.locals[x])
             else:
                 self.locals[x] = RT.cons(x, None)
+
+    def pushPropertyAlias(self, mappings):
+        locals = {}
+        for x in mappings:
+            if x in self.aliasedProperties:
+                self.aliasedProperties[x].append(mappings[x])
+            else:
+                self.aliasedProperties[x] = [mappings[x]]
+
+    def popPropertyAlias(self, mappings):
+        dellist = []
+        for x in mappings:
+            self.aliasedProperties[x].pop()
+            if not len(self.aliasedProperties[x]):
+                dellist.append(x)
+        for x in dellist:
+            del self.aliasedProperties[x]
+
+
+
+
 
     def popLocals(self, locals):
         dellist = []
