@@ -515,6 +515,7 @@ def compileAliasProperties(comp, form):
     form = form.next()
 
     resolv = form.first()
+
     form = form.next()
     comp.pushPropertyAlias(resolv)
 
@@ -555,6 +556,7 @@ class Compiler():
         self.usedClosures = RT.list()
         self.ns = None
         self.aliasedProperties = {}
+        self.lastlineno = -1
 
     def pushRecur(self, label):
         self.recurPoint = RT.cons(label, self.recurPoint)
@@ -720,8 +722,9 @@ class Compiler():
         lineset = False
         if hasattr(itm, "meta") and itm.meta() is not None:
             line = itm.meta()[LINE_KEY]
-            if line is not None:
+            if line is not None and line > self.lastlineno:
                 lineset = True
+                self.lastlineno = line
                 c.append([SetLineno, line])
 
 
