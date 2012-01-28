@@ -489,6 +489,15 @@
   ([ns name] (clojure.lang.symbol.Symbol.intern ns name)))
 
 
+(defn inc
+  "Returns a number one greater than num. Does not auto-promote
+  longs, will throw on overflow. See also: inc'"
+  {:added "1.2"}
+  [x] (.__add__ x 1))
+
+(defn +
+  [x y] (.__add__ x y))
+
 (defn hash-map
   "keyval => key val
   Returns a new hash map with supplied mappings."
@@ -588,7 +597,7 @@
 
 (defn prop-wrap-fn
     [members f]
-    (list 'alias-properties (make-props members (fnext f))
+    (list 'alias-properties (make-props members (first (fnext f)))
                             (cons 'fn f)))
 
 
@@ -622,9 +631,9 @@
 	(withMeta [self meta]
 		(LazySeq nil nil (.seq self) meta))
 	(sval [self]
-		(when (not (nil? sv))
-			  (setattr self 'sv' (fnc))
-			  (setattr self 'fnc' nil))
+		(when (not (nil? fnc))
+			  (setattr self "sv" (fnc))
+			  (setattr self "fnc" nil))
 		(if (not (nil? sv))
 			sv
 			s))
@@ -632,20 +641,40 @@
 		(.sval self)
 		(when (not (nil? sv))
 			(let [ls sv]
-				 (setattr self 'sv' nil)
+				 (setattr self "sv" nil)
         		 (setattr self 
-        		 	 	  's' 
+        		 	 	  "s" 
         		 	 	  (loop [ls sv]
 							    (if (instance? LazySeq ls)
 								    (recur (.sval ls))
-								    ls)))))
-		s))
-			
-		
-;	(sval [self]
-;		(if (not (nil? (.-fnc self)))
-;			(do (setattr 
-
+								    (.seq ls))))))
+		s)
+	
+	(__len__ [self]
+	    (loop [c 0
+	           s (.seq self)]
+	          (if (nil? s)
+	              c
+	              (recur (.__add__ c 1) (next s)))))
+	(first [self]
+	    (.seq self)
+	    (if (nil? s)
+	        nil
+	        (.first s)))
+	(next [self]
+	    (.seq self)
+	    (if (nil? s)
+	        nil
+	        (.next s)))
+	(more [self]
+	    (.seq self)
+	    (if (nil? s)
+	        (list)
+	        (.more self)))
+	(cons [self o]
+	    (cons o (.seq self)))
+	(empty [self]
+	    (list)))
 
 (defmacro lazy-seq
   "Takes a body of expressions that returns an ISeq or nil, and yields
@@ -655,6 +684,21 @@
   {:added "1.0"}
   [& body]
   (list 'clojure.core.LazySeq (list* '^{:once true} fn* [] body) nil nil nil))    
+
+
+(deftype ChunkBuffer [buffer end]
+    (add [self o]
+        (setattr self "end" (inc end))
+        (get buffer end))
+    (chunk [self]
+        (let [ret (ArrayChunk buffer 0 end)]
+             (setattr self "buffer" nil)
+             ret))
+    (count [self] end))
+
+(deftype ArrayChunk [array off end]
+    (nth [self i]
+        (get array (inc of
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
