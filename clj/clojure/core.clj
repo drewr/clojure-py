@@ -67,7 +67,7 @@
       :doc "Clojure version of RT.assoc"
       :added "1.0"}
  _assoc (fn* assoc [col k v]
-                   (if col
+                   (py/if col
                       (.assoc col k v)
                       (clojure.lang.rt.map k v))))
 
@@ -103,8 +103,8 @@
    :added "1.0"
    :static true}
  first (fn first [s]
- 	 			 (if s
-					 (if (instance? ISeq s)
+ 	 			 (py/if s
+					 (py/if (instance? ISeq s)
 						 (.first s)
 						 (let [s (seq s)]
 							  (.first s)))
@@ -118,9 +118,9 @@
    :added "1.0"
    :static true}  
  next (fn next [s]
- 	 			 (if (is? nil s)
+ 	 			 (py/if (is? nil s)
  	 			 	 nil
-					 (if (instance? ISeq s)
+					 (py/if (instance? ISeq s)
 						 (.next s)
 						 (let [s (seq s)]
 							  (.next s))))))
@@ -132,10 +132,10 @@
   argument."
    :added "1.0"
    :static true}  
- rest (fn rest [x] (if (isinstance? ISeq x)
+ rest (fn rest [x] (py/if (isinstance? ISeq x)
                        (.more x)
                        (let [s (.seq x)]
-                           (if seq
+                           (py/if seq
                                (.more seq)
                                clojure.lang.persistentlist.EMPTY)))))
 
@@ -207,7 +207,7 @@
    ([map key val] (_assoc map key val))
    ([map key val & kvs]
     (let [ret (assoc map key val)]
-      (if kvs
+      (py/if kvs
         (recur ret (first kvs) (second kvs) (nnext kvs))
         ret)))))
 
@@ -217,7 +217,7 @@
    :doc "Returns the metadata of obj, returns nil if there is no metadata."
    :added "1.0"}
  meta (fn meta [x]
-        (if (hasattr x "meta")
+        (py/if (hasattr x "meta")
           (.meta x))))
 
 (def
@@ -235,7 +235,7 @@
    :doc "Return the last item in coll, in linear time"
    :added "1.0"}
  last (fn last [s]
-        (if (next s)
+        (py/if (next s)
           (recur (next s))
           (first s))))
 
@@ -250,7 +250,7 @@
  ^{:arglists '([& args])
    :doc "Clojure version of RT.conj"
    :added "1.0"}
- _conj (fn _conj [coll x] (if (nil? coll)
+ _conj (fn _conj [coll x] (py/if (nil? coll)
                             clojure.lang.persistentlist.EMPTY
                             (.cons coll x))))
 
@@ -264,7 +264,7 @@
  conj (fn conj 
         ([coll x] (_conj coll x))
         ([coll x & xs]
-         (if (nil? xs)
+         (py/if (nil? xs)
              (conj coll x)
              (recur (conj coll x) (first xs) (next xs))))))
 
@@ -276,7 +276,7 @@
    :added "1.0"}
  butlast (fn butlast [s]
            (loop [ret [] s s]
-             (if (nil? (next s))
+             (py/if (nil? (next s))
                (seq ret)  
                (recur (conj ret (first s)) (next s))))))
 
@@ -299,18 +299,18 @@
          (fn [fdecl]
            (let [arglist (first fdecl)
                  ;elide implicit macro args
-                 arglist (if (.__eq__ '&form (first arglist)) 
+                 arglist (py/if (.__eq__ '&form (first arglist)) 
                            (clojure.lang.rt.subvec arglist 2 (len arglist))
                            arglist)
                  body (next fdecl)]
-             (if (map? (first body))
-               (if (next body)
-                 (with-meta arglist (conj (if (meta arglist) (meta arglist) {}) (first body)))
+             (py/if (map? (first body))
+               (py/if (next body)
+                 (with-meta arglist (conj (py/if (meta arglist) (meta arglist) {}) (first body)))
                  arglist)
                arglist)))]
-     (if (seq? (first fdecl))
+     (py/if (seq? (first fdecl))
        (loop [ret [] fdecls fdecl]
-         (if fdecls
+         (py/if fdecls
            (recur (conj ret (asig (first fdecls))) (next fdecls))
            (seq ret)))
        (list (asig fdecl))))))
@@ -327,39 +327,39 @@
                 [name doc-string? attr-map? ([params*] prepost-map? body)+ attr-map?])
    :added "1.0"}
  defn (fn defn [&form &env name & fdecl]
-        (let [m (if (string? (first fdecl))
+        (let [m (py/if (string? (first fdecl))
                   {:doc (first fdecl)}
                   {})
-              fdecl (if (string? (first fdecl))
+              fdecl (py/if (string? (first fdecl))
                       (next fdecl)
                       fdecl)
-              m (if (map? (first fdecl))
+              m (py/if (map? (first fdecl))
                   (conj m (first fdecl))
                   m)
-              fdecl (if (map? (first fdecl))
+              fdecl (py/if (map? (first fdecl))
                       (next fdecl)
                       fdecl)
-              fdecl (if (vector? (first fdecl))
+              fdecl (py/if (vector? (first fdecl))
                       (list fdecl)
                       fdecl)
-              m (if (map? (last fdecl))
+              m (py/if (map? (last fdecl))
                   (conj m (last fdecl))
                   m)
-              fdecl (if (map? (last fdecl))
+              fdecl (py/if (map? (last fdecl))
                       (butlast fdecl)
                       fdecl)
               m (conj {:arglists (list 'quote (sigs fdecl))} m)
               m (let [inline (:inline m)
                       ifn (first inline)
                       iname (second inline)]
-                  ;; same as: (if (and (= 'fn ifn) (not (symbol? iname))) ...)
-                  (if (if (.__eq__ 'fn ifn)
-                        (if (instance? clojure.lang.symbol.Symbol iname) false true))
+                  ;; same as: (py/if (and (= 'fn ifn) (not (symbol? iname))) ...)
+                  (py/if (py/if (.__eq__ 'fn ifn)
+                        (py/if (instance? clojure.lang.symbol.Symbol iname) false true))
                     ;; inserts the same fn name to the inline fn if it does not have one
                     (assoc m :inline (cons ifn (cons (clojure.lang.symbol.Symbol/intern (.concat (.getName name) "__inliner"))
                                                      (next inline))))
                     m))
-              m (conj (if (meta name) (meta name) {}) m)
+              m (conj (py/if (meta name) (meta name) {}) m)
               ]
           (list 'def (with-meta name m)
                 ;;todo - restore propagation of fn name
@@ -374,7 +374,7 @@
   {:added "1.0"
    :static true}
   ([coll]
-    (if (nil? coll)
+    (py/if (nil? coll)
         nil
         (clojure.lang.persistentvector.vec coll))))
 
@@ -389,33 +389,33 @@
                 name & args]
              (let [prefix (loop [p (list name) args args]
                             (let [f (first args)]
-                              (if (string? f)
+                              (py/if (string? f)
                                 (recur (cons f p) (next args))
-                                (if (map? f)
+                                (py/if (map? f)
                                   (recur (cons f p) (next args))
                                   p))))
                    fdecl (loop [fd args]
-                           (if (string? (first fd))
+                           (py/if (string? (first fd))
                              (recur (next fd))
-                             (if (map? (first fd))
+                             (py/if (map? (first fd))
                                (recur (next fd))
                                fd)))
-                   fdecl (if (vector? (first fdecl))
+                   fdecl (py/if (vector? (first fdecl))
                            (list fdecl)
                            fdecl)
                    add-implicit-args (fn [fd]
                              (let [args (first fd)]
                                (cons (vec (cons '&form (cons '&env args))) (next fd))))
                    add-args (fn [acc ds]
-                              (if (nil? ds)
+                              (py/if (nil? ds)
                                 acc
                                 (let [d (first ds)]
-                                  (if (map? d)
+                                  (py/if (map? d)
                                     (conj acc d)
                                     (recur (conj acc (add-implicit-args d)) (next ds))))))
                    fdecl (seq (add-args [] fdecl))
                    decl (loop [p prefix d fdecl]
-                          (if p
+                          (py/if p
                             (recur (next p) (cons (first p) d))
                             d))]
                (list 'do
@@ -452,7 +452,7 @@
 (defn not
   "Returns true if x is logical false, false otherwise."
   {:added "1.0"}
-  [x] (if x false true))
+  [x] (py/if x false true))
 
 (defn str
   "With no args, returns the empty string. With one arg x, returns
@@ -461,11 +461,11 @@
   {:added "1.0"}
   ([] "")
   ([x]
-   (if (nil? x) "" (.__str__ x)))
+   (py/if (nil? x) "" (.__str__ x)))
   ([x & ys]
      (let [lst (native-list (.__str__ x))
            lst (loop [remain ys]
-                 (if remain
+                 (py/if remain
                    (do (.append lst (.__str__ (first remain)))
                        (recur (next remain)))
                    lst))]
@@ -485,7 +485,7 @@
   "Returns a Symbol with the given namespace and name."
   {:tag clojure.lang.Symbol
    :added "1.0"}
-  ([name] (if (symbol? name) name (clojure.lang.symbol.Symbol.intern name)))
+  ([name] (py/if (symbol? name) name (clojure.lang.symbol.Symbol.intern name)))
   ([ns name] (clojure.lang.symbol.Symbol.intern ns name)))
 
 
@@ -506,11 +506,11 @@
   ([& keyvals]
       (let [coll {}]
           (loop [keyvals (seq keyvals) coll coll]
-              (if (nil? keyvals)
+              (py/if (nil? keyvals)
                   coll
-                  (do (if (.__eq__ (len keyvals) 1)
+                  (do (py/if (.__eq__ (len keyvals) 1)
                           (throw (Exception "Even number of args required to hash-map")))
-                      (if (contains? coll (first keyvals))
+                      (py/if (contains? coll (first keyvals))
                           (throw (Exception "Duplicate keys found in hash-map")))
                       (recur (nnext keyvals) 
                              (.assoc coll 
@@ -538,7 +538,7 @@
   [& clauses]
     (when clauses
       (list 'if (first clauses)
-            (if (next clauses)
+            (py/if (next clauses)
                 (second clauses)
                 (throw (IllegalArgumentException.
                          "cond requires an even number of forms")))
@@ -577,7 +577,7 @@
     (loop [fields fields
            args ['self]
            body []]
-           (if (not fields)
+           (py/if (not fields)
                (cons 'fn (cons '__init__ (cons args body)))
                (let [newargs (conj args (first fields))
                      newbody (conj body (list 'setattr 
@@ -590,7 +590,7 @@
     [fields self]
     (loop [remain (seq fields)
         props {}]
-       (if (nil? remain)
+       (py/if (nil? remain)
            props
            (recur (next remain) 
                   (assoc props (first remain) self)))))
@@ -634,7 +634,7 @@
 		(when (not (nil? fnc))
 			  (setattr self "sv" (fnc))
 			  (setattr self "fnc" nil))
-		(if (not (nil? sv))
+		(py/if (not (nil? sv))
 			sv
 			s))
 	(seq [self]
@@ -645,7 +645,7 @@
         		 (setattr self 
         		 	 	  "s" 
         		 	 	  (loop [ls sv]
-							    (if (instance? LazySeq ls)
+							    (py/if (instance? LazySeq ls)
 								    (recur (.sval ls))
 								    (.seq ls))))))
 		s)
@@ -653,22 +653,22 @@
 	(__len__ [self]
 	    (loop [c 0
 	           s (.seq self)]
-	          (if (nil? s)
+	          (py/if (nil? s)
 	              c
 	              (recur (.__add__ c 1) (next s)))))
 	(first [self]
 	    (.seq self)
-	    (if (nil? s)
+	    (py/if (nil? s)
 	        nil
 	        (.first s)))
 	(next [self]
 	    (.seq self)
-	    (if (nil? s)
+	    (py/if (nil? s)
 	        nil
 	        (.next s)))
 	(more [self]
 	    (.seq self)
-	    (if (nil? s)
+	    (py/if (nil? s)
 	        (list)
 	        (.more self)))
 	(cons [self o]
@@ -698,7 +698,7 @@
 
 (deftype ArrayChunk [array off end]
     (nth [self i]
-        (get array (inc of
+        (get array (inc of))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -712,8 +712,8 @@
   ([x] true)
   ([x y] (.__eq__ x y))
   ([x y & more]
-   (if (.__eq__ x y)
-     (if (next more)
+   (py/if (.__eq__ x y)
+     (py/if (next more)
        (recur y (first more) (next more))
        (.__eq__ y (first more)))
      false)))
@@ -733,7 +733,7 @@
   {:added "1.0"}
   ([test then] `(if-not ~test ~then nil))
   ([test then else]
-   `(if (not ~test) ~then ~else)))
+   `(py/if (not ~test) ~then ~else)))
 
 (defmacro and
   "Evaluates exprs one at a time, from left to right. If a form
@@ -745,6 +745,6 @@
   ([x] x)
   ([x & next]
    `(let [and# ~x]
-      (if and# (and ~@next) and#))))
+      (py/if and# (and ~@next) and#))))
 
 
