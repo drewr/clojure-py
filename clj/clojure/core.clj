@@ -431,13 +431,13 @@
   "Evaluates test. If logical true, evaluates body in an implicit do."
   {:added "1.0"}
   [test & body]
-  (list 'if test (cons 'do body)))
+  (list 'py/if test (cons 'do body)))
 
 (defmacro when-not
   "Evaluates test. If logical false, evaluates body in an implicit do."
   {:added "1.0"}
   [test & body]
-    (list 'if test nil (cons 'do body)))
+    (list 'py/if test nil (cons 'do body)))
 
 (defn false?
   "Returns true if x is the value false, false otherwise."
@@ -537,7 +537,7 @@
   {:added "1.0"}
   [& clauses]
     (when clauses
-      (list 'if (first clauses)
+      (list 'py/if (first clauses)
             (py/if (next clauses)
                 (second clauses)
                 (throw (IllegalArgumentException.
