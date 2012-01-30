@@ -116,7 +116,8 @@ class TruthinessTests(unittest.TestCase):
         self.assertTrue(self.eval('(if #{} true false)'))
         self.assertTrue(self.eval('(if #{1} true false)'))
 
-    def testNone(self):
+    def testNil(self):
+        self.assertFalse(self.eval('(if nil true false)'))
         self.assertFalse(self.eval('(if None true false)'))
 
     def testFalse(self):

@@ -12,7 +12,7 @@ import new
 import py.clojure.lang.rt as RT
 from py.clojure.lang.lispreader import _AMP_
 from py.clojure.lang.namespace import findItem
-from py.clojure.lang.lispreader import LINE_KEY
+from py.clojure.lang.lispreader import LINE_KEY, garg
 import re
 import new
 
@@ -188,7 +188,7 @@ def compileQuote(comp, form):
         raise CompilerException("Quote must only have one argument", form)
     return [(LOAD_CONST, form.next().first())]
 
-def compileIf(comp, form):
+def compilePyIf(comp, form):
     if len(form) != 3 and len(form) != 4:
         raise CompilerException("if takes 2 or 3 args", form)
     cmp = comp.compile(form.next().first())
@@ -201,6 +201,36 @@ def compileIf(comp, form):
     elseLabel = Label("IfElse")
     endlabel = Label("IfEnd")
     code = cmp
+    code.append((POP_JUMP_IF_FALSE, elseLabel))
+    code.extend(body)
+    code.append((JUMP_ABSOLUTE, endlabel))
+    code.append((elseLabel, None))
+    code.extend(body2)
+    code.append((endlabel, None))
+    return code
+
+def compileIf(comp, form):
+    if len(form) != 3 and len(form) != 4:
+        raise CompilerException("if takes 2 or 3 args", form)
+    cmp = comp.compile(form.next().first())
+    body = comp.compile(form.next().next().first())
+    if len(form) == 3:
+        body2 = [(LOAD_CONST, None)]
+    else:
+        body2 = comp.compile(form.next().next().next().first())
+
+    elseLabel = Label("IfElse")
+    endlabel = Label("IfEnd")
+    condition_name = garg(0).name
+    code = cmp
+    code.append((STORE_FAST, condition_name))
+    code.append((LOAD_FAST, condition_name))
+    code.append((LOAD_CONST, 'None'))
+    code.append((COMPARE_OP, 'is not'))
+    code.append((POP_JUMP_IF_FALSE, elseLabel))
+    code.append((LOAD_FAST, condition_name))
+    code.append((LOAD_GLOBAL, 'False'))
+    code.append((COMPARE_OP, '!='))
     code.append((POP_JUMP_IF_FALSE, elseLabel))
     code.extend(body)
     code.append((JUMP_ABSOLUTE, endlabel))
@@ -531,7 +561,8 @@ builtins = {Symbol.intern("ns"): compileNS,
             Symbol.intern("."): compileDot,
             Symbol.intern("fn*"): compileFNStar,
             Symbol.intern("quote"): compileQuote,
-            Symbol.intern("py", "if"): compileIf,
+            Symbol.intern("py", "if"): compilePyIf,
+            Symbol.intern("if"): compileIf,
             Symbol.intern("recur"): compileRecur,
             Symbol.intern("do"): compileDo,
             Symbol.intern("let*"): compileLetStar,
