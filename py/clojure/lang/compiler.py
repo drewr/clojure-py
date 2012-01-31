@@ -664,7 +664,6 @@ class Compiler():
         c.append((LOAD_ATTR, attrname))
         return c
 
-
     def compileForm(self, form):
         if form.first() in builtins:
             return builtins[form.first()](self, form)
@@ -672,22 +671,17 @@ class Compiler():
             macro = findItem(self.getNS(), form.first())
 
             if macro is not None:
-
                 if (hasattr(macro, "meta") and macro.meta()[_MACRO_])\
                    or (hasattr(macro, "macro?") and getattr(macro, "macro?")):
                     mresult = macro(macro, self, *RT.seqToTuple(form.next()))
                     s = repr(mresult)
                     return self.compile(mresult)
-        c = None
         if isinstance(form.first(), Symbol):
             if form.first().name.startswith(".-"):
-                c = self.compilePropertyAccess(form)
-                return c
+                return self.compilePropertyAccess(form)
             if form.first().name.startswith(".") and form.first().ns is None:
-                c = self.compileMethodAccess(form)
-                return c
-        if c is None:
-            c = self.compile(form.first())
+                return self.compileMethodAccess(form)
+        c = self.compile(form.first())
         f = form.next()
         acount = 0
         while f is not None:
