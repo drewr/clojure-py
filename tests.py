@@ -87,3 +87,44 @@ class NonOverloadedFunctions(unittest.TestCase):
         globs = {}
         result = eval(codeobject, {}, globs)
         return [c for c in Code.from_code(globs['abc'].func_code).code[:] if c[0] is not SetLineno]
+
+
+class TruthinessTests(unittest.TestCase):
+    def setUp(self):
+        RT.init()
+        self.comp = Compiler()
+        currentCompiler.set(self.comp)
+        self.comp.setNS(Symbol.intern('clojure.core'))
+
+    def testTrue(self):
+        self.assertTrue(self.eval('(if true true false)'))
+
+    def testList(self):
+        self.assertTrue(self.eval('(if \'() true false)'))
+        self.assertTrue(self.eval('(if \'(1) true false)'))
+
+    def testVector(self):
+        self.assertTrue(self.eval('(if [] true false)'))
+        self.assertTrue(self.eval('(if [1] true false)'))
+
+    def testMap(self):
+        self.assertTrue(self.eval('(if {} true false)'))
+        self.assertTrue(self.eval('(if {1 2} true false)'))
+
+    @unittest.skip # hash sets aren't implemented yet
+    def testSet(self):
+        self.assertTrue(self.eval('(if #{} true false)'))
+        self.assertTrue(self.eval('(if #{1} true false)'))
+
+    def testNil(self):
+        self.assertFalse(self.eval('(if nil true false)'))
+        self.assertFalse(self.eval('(if None true false)'))
+
+    def testFalse(self):
+        self.assertFalse(self.eval('(if false true false)'))
+
+    def eval(self, code):
+        r = StringReader(code)
+        s = read(r, True, None, True)
+        res = self.comp.compile(s)
+        return self.comp.executeCode(res)
