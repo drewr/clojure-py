@@ -138,9 +138,8 @@ class PyNamespaceTests(unittest.TestCase):
         self.comp.setNS(Symbol.intern('clojure.core'))
 
     def testBuiltinsNamespaced(self):
-        import pdb; pdb.set_trace()
-        self.assertEqual(self.eval('(py/str [1 2 3])'), '[1, 2, 3]')
-        self.assertEqual(self.eval('(py/list [1 2 3])'), '[1, 2, 3')
+        self.assertEqual(self.eval('(py/str [1 2 3])'), '[1 2 3]')
+        self.assertEqual(self.eval('(py/list "abc")'), ['a', 'b', 'c'])
         self.assertEqual(self.eval('((py/getattr "namespace" "__len__"))'), 9)
 
     def testBuiltinsNotIncluded(self):

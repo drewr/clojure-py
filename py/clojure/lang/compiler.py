@@ -524,18 +524,19 @@ def compileBuiltin(comp, form):
     if len(form) != 2:
         raise CompilerException("throw requires two arguments", form)
     name = str(form.next().first())
+    return [(LOAD_CONST, getBuiltin(name))]
 
-    ## PyPy defines this as a module...CPython as a dict
+def getBuiltin(name):
+    ## PyPy defines `__builtins__` as a module...CPython as a dict
     ## see http://pypy.readthedocs.org/en/latest/cpython_differences.html#miscellaneous
     ## for more info
-    if type(__builtins__) is dict:
+    if isinstance(__builtins__, dict):
         if name in __builtins__:
-            return [(LOAD_CONST, __builtins__[name])]
-    else:
-        if hasattr(__builtins__, name):
-            return [(LOAD_CONST, getattr(__builtins__,name))]
+            return __builtins__[name]
+    elif hasattr(__builtins__, name):
+        return getattr(__builtins__, name)
 
-    raise CompilerException("Python builtin not found", form)
+    raise CompilerException("Python builtin not found", name)
 
 
 def compileAliasProperties(comp, form):
@@ -695,7 +696,10 @@ class Compiler():
     def compileAccessList(self, sym):
         c = []
         first = True
-        for x in self.getAccessList(sym):
+        accessList = self.getAccessList(sym)
+        if accessList[0] == 'py':
+            return [(LOAD_CONST, getBuiltin(accessList[1]))]
+        for x in accessList:
             if first:
                 c.append((LOAD_GLOBAL, x))
                 first = False
@@ -787,7 +791,6 @@ class Compiler():
         newcode = code[:]
         newcode.append((RETURN_VALUE, None))
         c = Code(newcode, [], [], False, False, False, str(Symbol.intern(self.getNS().__name__, "<string>")), "./clj/clojure/core.clj", 0, None)
-        globs = {}
         retval = eval(c.to_code(), self.getNS().__dict__)
         return retval
 
