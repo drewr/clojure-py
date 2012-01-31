@@ -694,18 +694,10 @@ class Compiler():
         return c
 
     def compileAccessList(self, sym):
-        c = []
-        first = True
         accessList = self.getAccessList(sym)
         if accessList[0] == 'py':
             return [(LOAD_CONST, getBuiltin(accessList[1]))]
-        for x in accessList:
-            if first:
-                c.append((LOAD_GLOBAL, x))
-                first = False
-            else:
-                c.append((LOAD_ATTR, x))
-        return c
+        return [(LOAD_GLOBAL, accessList[0])] + [(LOAD_ATTR, attr) for attr in accessList[1:]]
 
     def getAccessList(self, sym):
         if sym.ns is not None \
