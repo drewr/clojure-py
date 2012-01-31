@@ -225,11 +225,11 @@ def compileIf(comp, form):
     code = cmp
     code.append((STORE_FAST, condition_name))
     code.append((LOAD_FAST, condition_name))
-    code.append((LOAD_CONST, 'None'))
+    code.append((LOAD_CONST, None))
     code.append((COMPARE_OP, 'is not'))
     code.append((POP_JUMP_IF_FALSE, elseLabel))
     code.append((LOAD_FAST, condition_name))
-    code.append((LOAD_GLOBAL, 'False'))
+    code.append((LOAD_CONST, False))
     code.append((COMPARE_OP, '!='))
     code.append((POP_JUMP_IF_FALSE, elseLabel))
     code.extend(body)
