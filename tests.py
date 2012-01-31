@@ -128,3 +128,27 @@ class TruthinessTests(unittest.TestCase):
         s = read(r, True, None, True)
         res = self.comp.compile(s)
         return self.comp.executeCode(res)
+
+
+class PyNamespaceTests(unittest.TestCase):
+    def setUp(self):
+        RT.init()
+        self.comp = Compiler()
+        currentCompiler.set(self.comp)
+        self.comp.setNS(Symbol.intern('clojure.core'))
+
+    def testBuiltinsNamespaced(self):
+        import pdb; pdb.set_trace()
+        self.assertEqual(self.eval('(py/str [1 2 3])'), '[1, 2, 3]')
+        self.assertEqual(self.eval('(py/list [1 2 3])'), '[1, 2, 3')
+        self.assertEqual(self.eval('((py/getattr "namespace" "__len__"))'), 9)
+
+    def testBuiltinsNotIncluded(self):
+        self.assertRaises(NameError, self.eval, '(str [1 2 3])')
+        self.assertRaises(NameError, self.eval, '(getattr [1 2 3] "pop")')
+
+    def eval(self, code):
+        r = StringReader(code)
+        s = read(r, True, None, True)
+        res = self.comp.compile(s)
+        return self.comp.executeCode(res)
