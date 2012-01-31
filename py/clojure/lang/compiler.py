@@ -709,18 +709,14 @@ class Compiler():
             return [sym.name]
         return re.split('[\./]', str(sym))
 
-
     def compileSymbol(self, sym):
-
-
         if sym in self.locals or \
            Symbol.intern("__closure__" + str(sym)) in self.locals or\
-            sym in self.aliasedProperties:
+           sym in self.aliasedProperties:
             return self.compileLocal(sym)
         return self.compileAccessList(sym)
 
     def compileLocal(self, sym):
-
         if sym in self.aliasedProperties:
             code = self.compile(self.aliasedProperties[sym][-1])
             code.append((LOAD_ATTR, sym.name))
@@ -738,7 +734,6 @@ class Compiler():
         else:
             raise CompilerException("Unknown local")
 
-
     def compile(self, itm):
         from py.clojure.lang.persistentlist import PersistentList
         from py.clojure.lang.cons import Cons
@@ -752,7 +747,6 @@ class Compiler():
                 self.lastlineno = line
                 c.append([SetLineno, line])
 
-
         if isinstance(itm, Symbol):
             c.extend(self.compileSymbol(itm))
         elif isinstance(itm, PersistentList) or isinstance(itm, Cons):
@@ -761,13 +755,10 @@ class Compiler():
             c.extend(self.compileNone(itm))
         elif type(itm) in [str, int, new.classobj, type]:
             c.extend([(LOAD_CONST, itm)])
-
         elif isinstance(itm, IPersistentVector):
             c.extend(compileVector(self, itm))
-
         elif isinstance(itm, IPersistentMap):
             c.extend(compileMap(self, itm))
-
         elif isinstance(itm, Keyword):
             c.extend(compileKeyword(self, itm))
         elif isinstance(itm, bool):
@@ -778,7 +769,6 @@ class Compiler():
         if len(c) < 2 and lineset:
             return []
         return c
-
 
     def compileNone(self, itm):
         return [(LOAD_CONST, None)]
