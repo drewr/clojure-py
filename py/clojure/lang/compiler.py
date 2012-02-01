@@ -81,19 +81,18 @@ def compileLoopStar(comp, form):
         idx += 1
 
         body = s[idx]
-        if local in comp.locals:
+        if local in comp.aliases:
             newlocal = Symbol.intern(str(local)+"_"+str(RT.nextID()))
             code.extend(comp.compile(body))
-            comp.locals[local] = comp.locals[local].cons(newlocal)
+            comp.pushAlias(local, RenamedLocal(newlocal))
             args.append(local)
-            local = newlocal
         else:
-            comp.locals[local] = RT.list(local)
+            comp.pushAlias(local, RenamedLocal(local))
             args.append(local)
             code.extend(comp.compile(body))
 
 
-        code.append((STORE_FAST, str(local)))
+        code.extend(comp.getAlias(local).compileSet(comp))
 
         idx += 1
 
@@ -105,7 +104,7 @@ def compileLoopStar(comp, form):
     comp.pushRecur(recur)
     code.extend(compileImplcitDo(comp, form))
     comp.popRecur()
-    comp.popLocals(args)
+    comp.popAliases(args)
     return code
 
 def compileLetStar(comp, form):
@@ -128,26 +127,24 @@ def compileLetStar(comp, form):
         idx += 1
 
         body = s[idx]
-        if local in comp.locals:
+        if comp.getAlias(local) is not None:
+            code.extend(comp.compile(body))
             newlocal = Symbol.intern(str(local)+"_"+str(RT.nextID()))
-            code.extend(comp.compile(body))
-            comp.locals[local] = comp.locals[local].cons(newlocal)
+            comp.pushAlias(local, RenamedLocal(newlocal))
             args.append(local)
-            local = newlocal
         else:
-            comp.locals[local] = RT.list(local)
-            args.append(local)
             code.extend(comp.compile(body))
+            comp.pushAlias(local, RenamedLocal(local))
+            args.append(local)
 
-
-        code.append((STORE_FAST, str(local)))
+        code.extend(comp.getAlias(local).compileSet(comp))
 
         idx += 1
 
     form = form.next()
 
     code.extend(compileImplcitDo(comp, form))
-    comp.popLocals(args)
+    comp.popAliases(args)
     return code
 
 
@@ -267,7 +264,9 @@ def compileDo(comp, form):
 def compileFn(comp, name, form, orgform):
     locals, args, lastisargs, argsname = unpackArgs(form.first())
 
-    comp.pushLocals(locals)
+    for x in locals:
+        comp.pushAlias(x, FnArgument(x))
+
     if orgform.meta() is not None:
         line = orgform.meta()[LINE_KEY]
     else:
@@ -282,10 +281,11 @@ def compileFn(comp, name, form, orgform):
     comp.popRecur()
 
     code.append((RETURN_VALUE,None))
-    comp.popLocals(locals)
-    clist = comp.closureList()
 
-    c = Code(code, comp.closureList(), args, lastisargs, False, True, str(Symbol.intern(comp.getNS().__name__, name.name)), "./clj/clojure/core.clj", 0, None)
+    comp.popAliases(locals)
+
+    clist = map(lambda x: x.sym.name, comp.closureList())
+    c = Code(code, clist, args, lastisargs, False, True, str(Symbol.intern(comp.getNS().__name__, name.name)), "./clj/clojure/core.clj", 0, None)
     if not clist:
         c = new.function(c.to_code(), comp.ns.__dict__, name.name)
 
@@ -304,25 +304,27 @@ class MultiFn(object):
         self.locals, self.args, self.lastisargs, self.argsname = unpackArgs(argv)
         endLabel = Label("endLabel")
         argcode = [(LOAD_FAST, '__argsv__'),
-                   (LOAD_ATTR, '__len__'),
-                   (CALL_FUNCTION, 0),
-                   (LOAD_CONST, len(self.args) - (1 if self.lastisargs else 0)),
-                   (COMPARE_OP, ">=" if self.lastisargs else "=="),
-                   (POP_JUMP_IF_FALSE, endLabel)]
+            (LOAD_ATTR, '__len__'),
+            (CALL_FUNCTION, 0),
+            (LOAD_CONST, len(self.args) - (1 if self.lastisargs else 0)),
+            (COMPARE_OP, ">=" if self.lastisargs else "=="),
+            (POP_JUMP_IF_FALSE, endLabel)]
         for x in range(len(self.args)):
             if self.lastisargs and x == len(self.args) - 1:
                 offset = len(self.args) - 1
                 argcode.extend([(LOAD_FAST, '__argsv__'),
-                                (LOAD_CONST, offset),
-                                (SLICE_1, None),
-                                (STORE_FAST, self.argsname.name)])
+                    (LOAD_CONST, offset),
+                    (SLICE_1, None),
+                    (STORE_FAST, self.argsname.name)])
             else:
                 argcode.extend([(LOAD_FAST, '__argsv__'),
-                                (LOAD_CONST, x),
-                                (BINARY_SUBSCR, None),
-                                (STORE_FAST, self.args[x])])
+                    (LOAD_CONST, x),
+                    (BINARY_SUBSCR, None),
+                    (STORE_FAST, self.args[x])])
 
-        comp.pushLocals(self.locals)
+        for x in self.locals:
+            comp.pushAlias(x, FnArgument(x))
+
         recurlabel = Label("recurLabel")
         recur = {"label": recurlabel,
                  "args": self.args}
@@ -332,7 +334,7 @@ class MultiFn(object):
         bodycode.append((RETURN_VALUE, None))
         bodycode.append((endLabel, None))
         comp.popRecur()
-        comp.popLocals(self.locals)
+        comp.popAliases(self.locals)
 
         self.argcode = argcode
         self.bodycode = bodycode
@@ -364,10 +366,12 @@ def compileMultiFn(comp, name, form):
         code.append((CALL_FUNCTION, 0))
         code.append((RAISE_VARARGS, 1))
 
-    c = Code(code, comp.closureList(), argslist, hasvararg, False, True, str(Symbol.intern(comp.getNS().__name__, name.name)), "./clj/clojure/core.clj", 0, None)
+    clist = map(lambda x: x.sym.name, comp.closureList())
+    c = Code(code, clist, argslist, hasvararg, False, True, str(Symbol.intern(comp.getNS().__name__, name.name)), "./clj/clojure/core.clj", 0, None)
+    if not clist:
+        c = new.function(c.to_code(), comp.ns.__dict__, name.name)
 
-    fn = new.function(c.to_code(), comp.ns.__dict__, name.name)
-    return [(LOAD_CONST, fn)]
+    return [(LOAD_CONST, c)]
 
 def compileImplcitDo(comp, form):
     code = []
@@ -384,8 +388,11 @@ def compileImplcitDo(comp, form):
 
 def compileFNStar(comp, form):
     haslocalcaptures = False
-    if len(comp.locals) > 0: # we got a closure to deal with
-        comp.pushLocalCaptures()
+    aliases = []
+    if len(comp.aliases) > 0: # we got a closure to deal with
+        for x in comp.aliases:
+            comp.pushAlias(x, Closure(x))
+            aliases.append(x)
         haslocalcaptures = True
 
     orgform = form
@@ -393,6 +400,7 @@ def compileFNStar(comp, form):
         raise CompilerException("2 or more arguments to fn* required", form)
     form = form.next()
     name = form.first()
+
     pushed = False
     if not isinstance(name, Symbol):
         comp.pushName(name)
@@ -415,21 +423,17 @@ def compileFNStar(comp, form):
 
 
     if haslocalcaptures:
-        comp.popLocalCaptures()
+        comp.popAliases(aliases)
 
     if clist:
         for x in clist:
-            fcode.extend(comp.compile(Symbol.intern(x)))
-            fcode.append((STORE_DEREF, x))
-            fcode.append((LOAD_CLOSURE, x))
+            fcode.extend(comp.getAlias(x.sym).compile(comp))  # Load our local version
+            fcode.append((STORE_DEREF, x.sym.name))            # Store it in a Closure Cell
+            fcode.append((LOAD_CLOSURE, x.sym.name))           # Push the cell on the stack
         fcode.append((BUILD_TUPLE, len(clist)))
         fcode.extend(code)
         fcode.append((MAKE_CLOSURE, 0))
         code = fcode
-
-
-
-
     return code
 
 def compileVector(comp, form):
@@ -450,12 +454,15 @@ def compileRecur(comp, form):
         if idx >= len(comp.recurPoint.first()["args"]):
             raise CompilerException("to many arguments to recur", form)
         local = comp.recurPoint.first()["args"][idx]
-        local = comp.locals[Symbol.intern(local)].first()
-        locals.append(local.name)
+        local = comp.getAlias(Symbol.intern(local))
+        if local is None:
+            pass
+        locals.append(local)
         idx += 1
         s = s.next()
     locals.reverse()
-    code.extend(map(lambda x: (STORE_FAST, x), locals))
+    for x in locals:
+        code.extend(x.compileSet(comp))
     code.append((JUMP_ABSOLUTE, comp.recurPoint.first()["label"]))
     return code
 
@@ -576,58 +583,135 @@ builtins = {Symbol.intern("ns"): compileNS,
             Symbol.intern("alias-properties"): compileAliasProperties}
 
 
+"""
+We should mention a few words about aliases. Aliases are created when the
+user uses closures, fns, loop, let, or let-macro. For some forms like
+let or loop, the alias just creates a new local variable in which to store the 
+data. In other cases, closures are created. To handle all these cases, we have
+a base AAlias class which provides basic single-linked list abilites. This will 
+allow us to override what certain symbols resolve to. 
 
+For instance:
+
+(fn bar [a b]
+    (let [b (inc b)
+          z 1]
+        (let-macro [a (fn [fdecl& env& decl] 'z)]
+            (let [o (fn [a] a)]
+                 [a o b]))))
+
+As each new local is created, it is pushed onto the stack, then only the 
+top most local is executed whenever a new local is resolved. This allows 
+the above example to resolve exactly as desired. lets will never stop on 
+top of eachother, let-macros can turn 'x into (.-x self), etc.
+
+
+
+
+"""
+
+class AAlias():
+    """Base class for all aliases"""
+    def __init__(self, rest = None):
+        self.rest = rest
+    def compile(self, comp):
+        raise AbstractMethodCall(self)
+    def compileSet(self, comp):
+        raise AbstractMethodCall(self)
+    def next(self):
+        return self.rest
+
+class FnArgument(AAlias):
+    """An alias provided by the arguments to a fn*
+       in the fragment (fn [a] a) a is a FnArgument"""
+    def __init__(self, sym, rest = None):
+        AAlias.__init__(self, rest)
+        self.sym = sym
+    def compile(self, comp):
+        return [(LOAD_FAST, self.sym.name)]
+    def compileSet(self, comp):
+        return [(STORE_FAST, self.sym.name)]
+
+class RenamedLocal(AAlias):
+    """An alias created by a let, loop, etc."""
+    def __init__(self, sym, rest = None):
+        AAlias.__init__(self, rest)
+        self.sym = sym
+        self.newsym = Symbol.intern(sym.name + str(RT.nextID()))
+    def compile(self, comp):
+        return [(LOAD_FAST, self.newsym.name)]
+    def compileSet(self, comp):
+        return [(STORE_FAST, self.newsym.name)]
+
+class Closure(AAlias):
+    """Represents a value that is contained in a closure"""
+    def __init__(self, sym, rest = None):
+        AAlias.__init__(self, rest)
+        self.sym = sym
+        self.isused = False  ## will be set to true whenever this is compiled
+    def isUsed(self):
+        return self.isused
+    def compile(self, comp):
+        self.isused = True
+        return [(LOAD_DEREF, self.sym.name)]
+
+
+class LocalMacro(AAlias):
+    """represents a value that represents a local macro"""
+    def __init__(self, sym, macroform, comp, rest = None):
+        AAlias.__init__(self, rest)
+        self.sym = sym
+        self.fn = evalForm(macroform, comp.getNS())
+        self.macroform = macroform
+        self.comp = comp
+    def compile(self, comp):
+        form = self.fn(self.macroform, comp, self.sym)
+        code = comp.compile(form)
+        return code
 
 
 class Compiler():
     def __init__(self):
-        self.locals = {}
         self.recurPoint = RT.list()
         self.names = RT.list()
-        self.usedClosures = RT.list()
         self.ns = None
-        self.aliasedProperties = {}
         self.lastlineno = -1
+        self.aliases = {}
+
+    def pushAlias(self, sym, alias):
+        """ Pushes this alias onto the alias stack for the entry sym. 
+            if no entry is found, a new one is created """
+        if sym in self.aliases:
+            alias.rest = self.aliases[sym]
+            self.aliases[sym] = alias
+        else:
+            self.aliases[sym] = alias
+
+    def getAlias(self, sym):
+        """ Retreives to top alias for this entry """
+        if sym in self.aliases:
+            return self.aliases[sym]
+        return None
+
+    def popAlias(self, sym):
+        """ Removes the top alias for this entry. If the entry would be 
+            empty after this pop, the entry is deleted """
+        if sym in self.aliases and self.aliases[sym].rest is None:
+            del self.aliases[sym]
+            return
+        self.aliases[sym] = self.aliases[sym].rest
+        return
+
+    def popAliases(self, syms):
+        for x in syms:
+            self.popAlias(x)
 
     def pushRecur(self, label):
+        """ Pushes a new recursion label. All recur calls will loop back to this point """
         self.recurPoint = RT.cons(label, self.recurPoint)
     def popRecur(self):
+        """ Pops the top most recursion point """
         self.recurPoint = self.recurPoint.next()
-
-    def pushLocalCaptures(self):
-        for x in self.locals:
-            self.locals[x] = self.locals[x].cons(Symbol.intern("__closure__" + x.name))
-        self.usedClosures = self.usedClosures.cons([])
-
-    def pushClosure(self, sym):
-        if sym in self.usedClosures.first():
-            return
-        self.usedClosures.first().append(sym)
-    def closureList(self):
-        lst = self.usedClosures.first()
-        if lst is None:
-            return []
-        return map(str, lst)
-
-    def cellList(self):
-        if (self.closureList()) == 0:
-            return None
-        def makecell():
-            x = None
-            cell = (lambda: x).func_closure[0]
-            return cell
-        return tuple(map(lambda x: makecell(), range(len(self.closureList()))))
-
-    def hasClosures(self):
-        return self.usedClosures is not None and \
-               self.usedClosures.first() is not None \
-                and len(self.usedClosures.first())
-
-    def popLocalCaptures(self):
-        for x in self.locals:
-            self.locals[x] = self.locals[x].next()
-        self.usedClosures = self.usedClosures.pop()
-
 
     def pushName(self, name):
         if self.names is None:
@@ -674,8 +758,9 @@ class Compiler():
             if macro is not None:
 
                 if (hasattr(macro, "meta") and macro.meta()[_MACRO_])\
-                   or (hasattr(macro, "macro?") and getattr(macro, "macro?")):
-                    mresult = macro(macro, self, *RT.seqToTuple(form.next()))
+                or (hasattr(macro, "macro?") and getattr(macro, "macro?")):
+                    args = RT.seqToTuple(form.next())
+                    mresult = macro(macro, self, *args)
                     s = repr(mresult)
                     return self.compile(mresult)
         c = None
@@ -710,40 +795,40 @@ class Compiler():
         return c
 
     def getAccessList(self, sym):
-        if sym.ns is not None \
-            and sym.ns == self.getNS().__name__:
+        if sym.ns is not None\
+        and sym.ns == self.getNS().__name__:
             return [sym.name]
-        return re.split('[\./]', str(sym))
+        splt = []
+        if sym.ns is not None:
+            splt.extend(sym.ns.split("."))
+        splt.extend(sym.name.split("."))
+        return splt
 
 
     def compileSymbol(self, sym):
+        """ Compiles the symbol. First the compiler tries to compile it
+            as an alias, then as a global """
 
+        if sym in self.aliases:
+            return self.compileAlias(sym)
 
-        if sym in self.locals or \
-           Symbol.intern("__closure__" + str(sym)) in self.locals or\
-            sym in self.aliasedProperties:
-            return self.compileLocal(sym)
         return self.compileAccessList(sym)
 
-    def compileLocal(self, sym):
+    def compileAlias(self, sym):
+        """ Compiles the given symbol as an alias. """
+        alias = self.getAlias(sym)
+        if alias is None:
+            raise CompilerException("Unknown Local " + str(sym))
 
-        if sym in self.aliasedProperties:
-            code = self.compile(self.aliasedProperties[sym][-1])
-            code.append((LOAD_ATTR, sym.name))
-            return code
+        return alias.compile(self)
 
-        if sym in self.locals:
-            resolved = self.locals[sym].first()
-            arg = resolved.name
-            if str(arg).startswith("__closure__"):
-                arg = self.locals[sym].next().first().name
-                self.pushClosure(sym)
-                return [(LOAD_DEREF, str(arg))]
-            else:
-                return [(LOAD_FAST, str(arg))]
-        else:
-            raise CompilerException("Unknown local")
-
+    def closureList(self):
+        closures = []
+        for x in self.aliases:
+            alias = self.aliases[x]
+            if isinstance(alias, Closure) and alias.isUsed():
+                closures.append(alias)
+        return closures
 
     def compile(self, itm):
         from py.clojure.lang.persistentlist import PersistentList
@@ -807,13 +892,6 @@ class Compiler():
         retval = eval(c.to_code(), self.getNS().__dict__)
         return retval
 
-    def pushLocals(self, locals):
-        for x in locals:
-            if x in self.locals:
-                self.locals[x] = RT.cons(x, self.locals[x])
-            else:
-                self.locals[x] = RT.cons(x, None)
-
     def pushPropertyAlias(self, mappings):
         locals = {}
         for x in mappings:
@@ -833,22 +911,11 @@ class Compiler():
 
 
 
-
-
-    def popLocals(self, locals):
-        dellist = []
-        for x in locals:
-            self.locals[x] = self.locals[x].next()
-            if self.locals[x] is None:
-                dellist.append(x)
-        for x in dellist:
-            del self.locals[x]
-
     def standardImports(self):
         return [(LOAD_CONST, -1),
-                (LOAD_CONST, None),
-                (IMPORT_NAME, "py.clojure.standardimports"),
-                (IMPORT_STAR, None)]
+            (LOAD_CONST, None),
+            (IMPORT_NAME, "py.clojure.standardimports"),
+            (IMPORT_STAR, None)]
 
     def executeModule(self, code):
         code.append((RETURN_VALUE, None))

@@ -623,58 +623,58 @@
 ;;;;;;;;;;;;;;;;;Lazy Seq and Chunked Seq;;;;;;;;;;;;;;;;
 
 
-(deftype IPending [] 
-	(isRealized [self] 
-		(throw (AbstractMethodCall))))
-
-(deftype LazySeq [fnc sv s _meta]
-	(withMeta [self meta]
-		(LazySeq nil nil (.seq self) meta))
-	(sval [self]
-		(when (not (nil? fnc))
-			  (setattr self "sv" (fnc))
-			  (setattr self "fnc" nil))
-		(py/if (not (nil? sv))
-			sv
-			s))
-	(seq [self]
-		(.sval self)
-		(when (not (nil? sv))
-			(let [ls sv]
-				 (setattr self "sv" nil)
-        		 (setattr self 
-        		 	 	  "s" 
-        		 	 	  (loop [ls sv]
-							    (py/if (instance? LazySeq ls)
-								    (recur (.sval ls))
-								    (.seq ls))))))
-		s)
-	
-	(__len__ [self]
-	    (loop [c 0
-	           s (.seq self)]
-	          (py/if (nil? s)
-	              c
-	              (recur (.__add__ c 1) (next s)))))
-	(first [self]
-	    (.seq self)
-	    (py/if (nil? s)
-	        nil
-	        (.first s)))
-	(next [self]
-	    (.seq self)
-	    (py/if (nil? s)
-	        nil
-	        (.next s)))
-	(more [self]
-	    (.seq self)
-	    (py/if (nil? s)
-	        (list)
-	        (.more self)))
-	(cons [self o]
-	    (cons o (.seq self)))
-	(empty [self]
-	    (list)))
+;(deftype IPending []
+;	(isRealized [self]
+;		(throw (AbstractMethodCall))))
+;
+;(deftype LazySeq [fnc sv s _meta]
+;	(withMeta [self meta]
+;		(LazySeq nil nil (.seq self) meta))
+;	(sval [self]
+;		(when (not (nil? fnc))
+;			  (setattr self "sv" (fnc))
+;			  (setattr self "fnc" nil))
+;		(py/if (not (nil? sv))
+;			sv
+;			s))
+;	(seq [self]
+;		(.sval self)
+;		(when (not (nil? sv))
+;			(let [ls sv]
+;				 (setattr self "sv" nil)
+;        		 (setattr self
+;        		 	 	  "s"
+;        		 	 	  (loop [ls sv]
+;							    (py/if (instance? LazySeq ls)
+;								    (recur (.sval ls))
+;								    (.seq ls))))))
+;		s)
+;
+;	(__len__ [self]
+;	    (loop [c 0
+;	           s (.seq self)]
+;	          (py/if (nil? s)
+;	              c
+;	              (recur (.__add__ c 1) (next s)))))
+;	(first [self]
+;	    (.seq self)
+;	    (py/if (nil? s)
+;	        nil
+;	        (.first s)))
+;	(next [self]
+;	    (.seq self)
+;	    (py/if (nil? s)
+;	        nil
+;	        (.next s)))
+;	(more [self]
+;	    (.seq self)
+;	    (py/if (nil? s)
+;	        (list)
+;	        (.more self)))
+;	(cons [self o]
+;	    (cons o (.seq self)))
+;	(empty [self]
+;	    (list)))
 
 (defmacro lazy-seq
   "Takes a body of expressions that returns an ISeq or nil, and yields
@@ -686,19 +686,19 @@
   (list 'clojure.core.LazySeq (list* '^{:once true} fn* [] body) nil nil nil))    
 
 
-(deftype ChunkBuffer [buffer end]
-    (add [self o]
-        (setattr self "end" (inc end))
-        (get buffer end))
-    (chunk [self]
-        (let [ret (ArrayChunk buffer 0 end)]
-             (setattr self "buffer" nil)
-             ret))
-    (count [self] end))
+;(deftype ChunkBuffer [buffer end]
+;    (add [self o]
+;        (setattr self "end" (inc end))
+;        (get buffer end))
+;    (chunk [self]
+;        (let [ret (ArrayChunk buffer 0 end)]
+;             (setattr self "buffer" nil)
+;             ret))
+;    (count [self] end))
 
-(deftype ArrayChunk [array off end]
-    (nth [self i]
-        (get array (inc of))))
+;(deftype ArrayChunk [array off end]
+;    (nth [self i]
+;        (get array (inc of))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

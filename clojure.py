@@ -15,7 +15,7 @@ from py.clojure.lang.compiler import Compiler
 from py.clojure.lang.symbol import Symbol
 
 
-def requireClj(filename):
+def requireClj(filename, stopafter = None):
     with open(filename) as fl:
         r = StringReader(fl.read())
 
@@ -30,6 +30,9 @@ def requireClj(filename):
             try:
                 res = comp.compile(s)
                 comp.executeCode(res)
+                if stopafter is not None:
+                    if hasattr(comp.getNS(), stopafter):
+                        break
             except IOError as exp:
                 print s
                 raise exp
