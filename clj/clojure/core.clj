@@ -54,7 +54,7 @@
       :doc "Returns a new python list from args"
       :added "1.0"}
  native-list (fn native-list [& args]
-                            ((getattr __builtins__ "list")
+                            ((py/getattr __builtins__ "list")
                                 args)))
 (def
     ^{:arglists '([& args])
@@ -87,7 +87,7 @@
    :doc "Evaluates x and tests if it is an instance of the class
     c. Returns true or false"
    :added "1.0"}
- instance? (fn instance? [c x] (isinstance x c)))
+ instance? (fn instance? [c x] (py/isinstance x c)))
 
 (def
  ^{:arglists '([x])
@@ -132,7 +132,7 @@
   argument."
    :added "1.0"
    :static true}  
- rest (fn rest [x] (py/if (isinstance? ISeq x)
+ rest (fn rest [x] (py/if (py/isinstance ISeq x)
                        (.more x)
                        (let [s (.seq x)]
                            (py/if seq
@@ -217,7 +217,7 @@
    :doc "Returns the metadata of obj, returns nil if there is no metadata."
    :added "1.0"}
  meta (fn meta [x]
-        (py/if (hasattr x "meta")
+        (py/if (py/hasattr x "meta")
           (.meta x))))
 
 (def
@@ -283,7 +283,7 @@
  		
 (def set-macro 
     (fn set-macro [f]
-        (setattr f "macro?" true)
+        (py/setattr f "macro?" true)
         f))	 
  	 
  	 
@@ -300,7 +300,7 @@
            (let [arglist (first fdecl)
                  ;elide implicit macro args
                  arglist (py/if (.__eq__ '&form (first arglist)) 
-                           (clojure.lang.rt.subvec arglist 2 (len arglist))
+                           (clojure.lang.rt.subvec arglist 2 (py/len arglist))
                            arglist)
                  body (next fdecl)]
              (py/if (map? (first body))
@@ -508,10 +508,10 @@
           (loop [keyvals (seq keyvals) coll coll]
               (py/if (nil? keyvals)
                   coll
-                  (do (py/if (.__eq__ (len keyvals) 1)
-                          (throw (Exception "Even number of args required to hash-map")))
+                  (do (py/if (.__eq__ (py/len keyvals) 1)
+                          (throw (py/Exception "Even number of args required to hash-map")))
                       (py/if (contains? coll (first keyvals))
-                          (throw (Exception "Duplicate keys found in hash-map")))
+                          (throw (py/Exception "Duplicate keys found in hash-map")))
                       (recur (nnext keyvals) 
                              (.assoc coll 
                                     (first keyvals)
@@ -526,7 +526,7 @@
   prefix is not supplied, the prefix is 'G__'."
   {:added "1.0"}
   ([] (gensym "G__"))
-  ([prefix-string] (. clojure.lang.symbol.Symbol (intern (str prefix-string (str (. clojure.lang.rt (nextID))))))))
+  ([prefix-string] (. clojure.lang.symbol.Symbol (intern (py/str prefix-string (py/str (. clojure.lang.rt (nextID))))))))
 
 
 (defmacro cond
@@ -569,7 +569,7 @@
     "Creates a new clas with the given name, that is inherited from
     classes and has the given member functions."
     [name classes members]
-    (type (.-name name) (apply tuple classes) (.toDict members)))
+    (py/type (.-name name) (apply tuple classes) (.toDict members)))
 
 (defn make-init
     "Creates a __init__ method for use in deftype"
@@ -580,9 +580,9 @@
            (py/if (not fields)
                (cons 'fn (cons '__init__ (cons args body)))
                (let [newargs (conj args (first fields))
-                     newbody (conj body (list 'setattr 
+                     newbody (conj body (list 'py/setattr
                                               'self 
-                                              (str (first fields)) 
+                                              (py/str (first fields))
                                               (first fields)))]
                      (recur (next fields) newargs newbody)))))
 
@@ -605,7 +605,7 @@
 (defmacro deftype
     [name fields & specs]
     (loop [specs (seq specs)
-           inherits [object]
+           inherits [py/object]
            fns {"__init__" (make-init fields)}]
           (cond (not specs)
                     (list 'def name (list 'make-class (list 'quote name) inherits fns))
@@ -616,7 +616,7 @@
                 (instance? clojure.lang.ipersistentlist.IPersistentList (first specs))
                     (recur (next specs)
                            inherits
-                           (assoc fns (str (ffirst specs))
+                           (assoc fns (py/str (ffirst specs))
                            	   	      (prop-wrap-fn fields (first specs)))))))
 
 
@@ -684,6 +684,7 @@
   {:added "1.0"}
   [& body]
   (list 'clojure.core.LazySeq (list* '^{:once true} fn* [] body) nil nil nil))    
+
 
 
 ;(deftype ChunkBuffer [buffer end]

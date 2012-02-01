@@ -531,18 +531,19 @@ def compileBuiltin(comp, form):
     if len(form) != 2:
         raise CompilerException("throw requires two arguments", form)
     name = str(form.next().first())
+    return [(LOAD_CONST, getBuiltin(name))]
 
-    ## PyPy defines this as a module...CPython as a dict
+def getBuiltin(name):
+    ## PyPy defines `__builtins__` as a module...CPython as a dict
     ## see http://pypy.readthedocs.org/en/latest/cpython_differences.html#miscellaneous
     ## for more info
-    if type(__builtins__) is dict:
+    if isinstance(__builtins__, dict):
         if name in __builtins__:
-            return [(LOAD_CONST, __builtins__[name])]
-    else:
-        if hasattr(__builtins__, name):
-            return [(LOAD_CONST, getattr(__builtins__,name))]
+            return __builtins__[name]
+    elif hasattr(__builtins__, name):
+        return getattr(__builtins__, name)
 
-    raise CompilerException("Python builtin not found", form)
+    raise CompilerException("Python builtin not found", name)
 
 
 def compileAliasProperties(comp, form):
@@ -586,10 +587,10 @@ builtins = {Symbol.intern("ns"): compileNS,
 """
 We should mention a few words about aliases. Aliases are created when the
 user uses closures, fns, loop, let, or let-macro. For some forms like
-let or loop, the alias just creates a new local variable in which to store the 
+let or loop, the alias just creates a new local variable in which to store the
 data. In other cases, closures are created. To handle all these cases, we have
-a base AAlias class which provides basic single-linked list abilites. This will 
-allow us to override what certain symbols resolve to. 
+a base AAlias class which provides basic single-linked list abilites. This will
+allow us to override what certain symbols resolve to.
 
 For instance:
 
@@ -600,9 +601,9 @@ For instance:
             (let [o (fn [a] a)]
                  [a o b]))))
 
-As each new local is created, it is pushed onto the stack, then only the 
-top most local is executed whenever a new local is resolved. This allows 
-the above example to resolve exactly as desired. lets will never stop on 
+As each new local is created, it is pushed onto the stack, then only the
+top most local is executed whenever a new local is resolved. This allows
+the above example to resolve exactly as desired. lets will never stop on
 top of eachother, let-macros can turn 'x into (.-x self), etc.
 
 
@@ -679,7 +680,7 @@ class Compiler():
         self.aliases = {}
 
     def pushAlias(self, sym, alias):
-        """ Pushes this alias onto the alias stack for the entry sym. 
+        """ Pushes this alias onto the alias stack for the entry sym.
             if no entry is found, a new one is created """
         if sym in self.aliases:
             alias.rest = self.aliases[sym]
@@ -694,7 +695,7 @@ class Compiler():
         return None
 
     def popAlias(self, sym):
-        """ Removes the top alias for this entry. If the entry would be 
+        """ Removes the top alias for this entry. If the entry would be
             empty after this pop, the entry is deleted """
         if sym in self.aliases and self.aliases[sym].rest is None:
             del self.aliases[sym]
@@ -748,7 +749,6 @@ class Compiler():
         c.append((LOAD_ATTR, attrname))
         return c
 
-
     def compileForm(self, form):
         if form.first() in builtins:
             return builtins[form.first()](self, form)
@@ -756,23 +756,18 @@ class Compiler():
             macro = findItem(self.getNS(), form.first())
 
             if macro is not None:
-
                 if (hasattr(macro, "meta") and macro.meta()[_MACRO_])\
                 or (hasattr(macro, "macro?") and getattr(macro, "macro?")):
                     args = RT.seqToTuple(form.next())
                     mresult = macro(macro, self, *args)
                     s = repr(mresult)
                     return self.compile(mresult)
-        c = None
         if isinstance(form.first(), Symbol):
             if form.first().name.startswith(".-"):
-                c = self.compilePropertyAccess(form)
-                return c
+                return self.compilePropertyAccess(form)
             if form.first().name.startswith(".") and form.first().ns is None:
-                c = self.compileMethodAccess(form)
-                return c
-        if c is None:
-            c = self.compile(form.first())
+                return self.compileMethodAccess(form)
+        c = self.compile(form.first())
         f = form.next()
         acount = 0
         while f is not None:
@@ -784,15 +779,10 @@ class Compiler():
         return c
 
     def compileAccessList(self, sym):
-        c = []
-        first = True
-        for x in self.getAccessList(sym):
-            if first:
-                c.append((LOAD_GLOBAL, x))
-                first = False
-            else:
-                c.append((LOAD_ATTR, x))
-        return c
+        accessList = self.getAccessList(sym)
+        if accessList[0] == 'py':
+            return [(LOAD_CONST, getBuiltin(accessList[1]))]
+        return [(LOAD_GLOBAL, accessList[0])] + [(LOAD_ATTR, attr) for attr in accessList[1:]]
 
     def getAccessList(self, sym):
         if sym.ns is not None\
@@ -803,7 +793,6 @@ class Compiler():
             splt.extend(sym.ns.split("."))
         splt.extend(sym.name.split("."))
         return splt
-
 
     def compileSymbol(self, sym):
         """ Compiles the symbol. First the compiler tries to compile it
@@ -819,7 +808,6 @@ class Compiler():
         alias = self.getAlias(sym)
         if alias is None:
             raise CompilerException("Unknown Local " + str(sym))
-
         return alias.compile(self)
 
     def closureList(self):
@@ -843,7 +831,6 @@ class Compiler():
                 self.lastlineno = line
                 c.append([SetLineno, line])
 
-
         if isinstance(itm, Symbol):
             c.extend(self.compileSymbol(itm))
         elif isinstance(itm, PersistentList) or isinstance(itm, Cons):
@@ -852,13 +839,10 @@ class Compiler():
             c.extend(self.compileNone(itm))
         elif type(itm) in [str, int, new.classobj, type]:
             c.extend([(LOAD_CONST, itm)])
-
         elif isinstance(itm, IPersistentVector):
             c.extend(compileVector(self, itm))
-
         elif isinstance(itm, IPersistentMap):
             c.extend(compileMap(self, itm))
-
         elif isinstance(itm, Keyword):
             c.extend(compileKeyword(self, itm))
         elif isinstance(itm, bool):
@@ -869,7 +853,6 @@ class Compiler():
         if len(c) < 2 and lineset:
             return []
         return c
-
 
     def compileNone(self, itm):
         return [(LOAD_CONST, None)]
@@ -888,7 +871,6 @@ class Compiler():
         newcode = code[:]
         newcode.append((RETURN_VALUE, None))
         c = Code(newcode, [], [], False, False, False, str(Symbol.intern(self.getNS().__name__, "<string>")), "./clj/clojure/core.clj", 0, None)
-        globs = {}
         retval = eval(c.to_code(), self.getNS().__dict__)
         return retval
 
