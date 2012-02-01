@@ -545,21 +545,32 @@ def getBuiltin(name):
 
     raise CompilerException("Python builtin not found", name)
 
-
-def compileAliasProperties(comp, form):
+def compileLetMacro(comp, form):
     if len(form) < 3:
         raise CompilerException("alias-properties takes at least two args", form)
 
     form = form.next()
 
-    resolv = form.first()
 
-    form = form.next()
-    comp.pushPropertyAlias(resolv)
+    s = RT.seq(form.first())
+    syms = []
+    while s is not None:
+        sym = s.first()
+        syms.append(sym)
+        s = s.next()
+        if s is None:
+            raise CompilerException("let-macro takes a even number of bindings")
+        macro = s.first()
 
-    code = compileImplcitDo(comp, form)
+        comp.pushAlias(sym, LocalMacro(sym, macro, comp))
 
-    comp.popPropertyAlias(resolv)
+        s = s.next()
+
+    body = form.next()
+
+    code = compileImplcitDo(comp, body)
+
+    comp.popAliases(syms)
     return code
 
 
@@ -581,7 +592,7 @@ builtins = {Symbol.intern("ns"): compileNS,
             Symbol.intern("throw"): compileThrow,
             Symbol.intern("builtin"): compileBuiltin,
             Symbol.intern("apply"): compileApply,
-            Symbol.intern("alias-properties"): compileAliasProperties}
+            Symbol.intern("let-macro"): compileLetMacro}
 
 
 """
@@ -670,7 +681,11 @@ class LocalMacro(AAlias):
         code = comp.compile(form)
         return code
 
-
+def evalForm(form, ns):
+    comp = Compiler()
+    comp.ns = ns
+    code = comp.compile(form)
+    return comp.executeCode(code)
 class Compiler():
     def __init__(self):
         self.recurPoint = RT.list()
