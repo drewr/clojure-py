@@ -51,13 +51,6 @@
 
 (def
     ^{:arglists '([& args])
-      :doc "Returns a new python list from args"
-      :added "1.0"}
- native-list (fn native-list [& args]
-                            ((py/getattr __builtins__ "list")
-                                args)))
-(def
-    ^{:arglists '([& args])
       :doc "Returns a new python tuple from args"
       :added "1.0"}
  tuple (fn native-list [& args] args))
@@ -179,7 +172,7 @@
    :doc "Return true if x is a String"
    :added "1.0"
    :static true}
- string? (fn string? [x] (instance? (builtin "str") x)))
+ string? (fn string? [x] (instance? py/str x)))
 
 (def
  ^{:arglists '([x])
@@ -463,7 +456,7 @@
   ([x]
    (py/if (nil? x) "" (.__str__ x)))
   ([x & ys]
-     (let [lst (native-list (.__str__ x))
+     (let [lst (py/list (.__str__ x))
            lst (loop [remain ys]
                  (py/if remain
                    (do (.append lst (.__str__ (first remain)))
