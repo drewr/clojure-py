@@ -589,15 +589,17 @@
 (defn make-props
     [fields self]
     (loop [remain (seq fields)
-        props {}]
+        props []]
        (py/if (nil? remain)
            props
            (recur (next remain) 
-                  (assoc props (first remain) self)))))
+                  (conj (conj props (first remain))
+                        (list 'fn ['f 'env 'sym]
+                              (list 'getattr self (first remain))))))))
 
 (defn prop-wrap-fn
     [members f]
-    (list 'alias-properties (make-props members (first (fnext f)))
+    (list 'let-macro (make-props members (first (fnext f)))
                             (cons 'fn f)))
 
 
