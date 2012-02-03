@@ -35,18 +35,17 @@ def seqToTuple(s):
 def seq(obj):
     from py.clojure.lang.indexableseq import IndexableSeq
     from py.clojure.lang.symbol import Symbol
+    from py.clojure.lang.aseq import ASeq
+    
     if isinstance(obj, Symbol):
         pass
     if obj is None:
         return None
-    if isinstance(obj, ISeq):
+    if isinstance(obj, ASeq):
         return obj
     if isinstance(obj, (tuple, _list, str)):
         return IndexableSeq(obj, 0)
     return obj.seq()
-
-def fluffalicious():
-    return "cat"
 
 def first(obj):
     return seq(obj).first()

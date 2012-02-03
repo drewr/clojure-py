@@ -590,7 +590,6 @@ builtins = {Symbol.intern("ns"): compileNS,
             Symbol.intern("is?"): compileIs,
             Symbol.intern("contains?"): compileContains,
             Symbol.intern("throw"): compileThrow,
-            Symbol.intern("builtin"): compileBuiltin,
             Symbol.intern("apply"): compileApply,
             Symbol.intern("let-macro"): compileLetMacro}
 
