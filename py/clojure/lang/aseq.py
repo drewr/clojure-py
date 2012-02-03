@@ -19,9 +19,11 @@ class ASeq(Obj, Sequential, ISeq, IHashEq, Interable):
             return False
         se = RT.seq(other)
         ms = self.seq()
-        for s in se.interate():
-            if ms is None or not (s.first() == ms.first()):
+        while se is not None:
+            if ms is None or not (se.first() == ms.first()):
                 return False
+            ms = ms.next()
+            se = se.next()	
         return ms is None
 
     def __hash__(self):
@@ -64,7 +66,7 @@ class ASeq(Obj, Sequential, ISeq, IHashEq, Interable):
 
     def hasheq(self):
         hash = 1
-        for s in self.interator():
+        for s in self:
             hash = 31 * hash + Util.hasheq(s.first())
         return hash
 
