@@ -142,11 +142,6 @@ class PyNamespaceTests(unittest.TestCase):
         self.assertEqual(self.eval('(py/list "abc")'), ['a', 'b', 'c'])
         self.assertEqual(self.eval('((py/getattr "namespace" "__len__"))'), 9)
 
-    @unittest.skip # LOAD_GLOBAL will never throw a NameError...not sure how to test this
-    def testBuiltinsNotIncluded(self):
-        self.assertRaises(NameError, self.eval, '(setattr [1 2 3] "foo" 1)')
-        self.assertRaises(NameError, self.eval, '(getattr [1 2 3] "pop")')
-
     def eval(self, code):
         r = StringReader(code)
         s = read(r, True, None, True)
