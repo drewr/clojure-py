@@ -44,6 +44,8 @@ def seq(obj):
     if isinstance(obj, ASeq):
         return obj
     if isinstance(obj, (tuple, _list, str)):
+        if len(obj) == 0:
+            return None
         return IndexableSeq(obj, 0)
     return obj.seq()
 

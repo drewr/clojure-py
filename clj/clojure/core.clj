@@ -706,12 +706,12 @@
   comparison."
   {:added "1.0"}
   ([x] true)
-  ([x y] (.__eq__ x y))
+  ([x y] (py.bytecode/COMPARE_OP "==" x y))
   ([x y & more]
-   (py/if (.__eq__ x y)
+   (py/if (py.bytecode/COMPARE_OP "==" x y)
      (py/if (next more)
        (recur y (first more) (next more))
-       (.__eq__ y (first more)))
+       (py.bytecode/COMPARE_OP "==" y (first more)))
      false)))
 
 

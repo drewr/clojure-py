@@ -7,6 +7,7 @@ from py.clojure.lang.ipersistentmap import IPersistentMap
 from py.clojure.lang.ipersistentlist import IPersistentList
 from py.clojure.lang.var import Var
 from py.clojure.util.byteplay import *
+import py.clojure.util.byteplay as byteplay
 from py.clojure.lang.cljkeyword import Keyword
 import new
 import py.clojure.lang.rt as RT
@@ -60,6 +61,31 @@ def compileGet(comp, form):
     code.extend(comp.compile(itm))
     code.append((BINARY_SUBSCR, None))
     return code
+
+def compileBytecode(comp, form):
+    codename = form.first().name
+    if not hasattr(byteplay, codename):
+        raise CompilerException("bytecode " + codename + " unknown", form)
+    bc = getattr(byteplay, codename)
+    hasarg = bc in byteplay.hasarg
+    form = form.next()
+    arg = None
+    if hasarg:
+        arg = form.first()
+        if not isinstance(arg, (int, str)):
+            raise CompilerException("first argument to "+ codename + " must be int or str")
+        form = form.next()
+    se = byteplay.getse(bc, arg)
+    if se[0] != len(form) or se[1] != 1:
+        raise CompilerException("literal bytecode " + codename + " not supported")
+    s = form
+    code = []
+    while s is not None:
+        code.extend(comp.compile(s.first()))
+        s = s.next()
+    code.append((bc, arg))
+    return code
+
 
 def compileLoopStar(comp, form):
     if len(form) < 3:
@@ -777,6 +803,8 @@ class Compiler():
                     s = repr(mresult)
                     return self.compile(mresult)
         if isinstance(form.first(), Symbol):
+            if form.first().ns == "py.bytecode":
+                return compileBytecode(self, form)
             if form.first().name.startswith(".-"):
                 return self.compilePropertyAccess(form)
             if form.first().name.startswith(".") and form.first().ns is None:
