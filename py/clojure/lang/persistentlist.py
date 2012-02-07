@@ -100,15 +100,12 @@ class EmptyList(Obj, IPersistentList, ISeq, Counted):
 
     def __hash__(self):
         return 1
+
     def __eq__(self, other):
-        return (isinstance(other, Sequential)
-           or isinstance(other, list)
-           or isinstance(other, tuple)) \
-           and RT.seq(other) is None
+        return isinstance(other, (Sequential, list, tuple)) and RT.seq(other) is None
 
     def __iter__(self):
         return
-        yield
 
     def withMeta(self, meta):
         if self._meta == meta:
@@ -117,26 +114,36 @@ class EmptyList(Obj, IPersistentList, ISeq, Counted):
 
     def first(self):
         return None
+
     def next(self):
         return None
+
     def more(self):
         return self
+
     def cons(self, o):
         return PersistentList(self.meta(), o, None, 1)
+
     def empty(self):
         return self
+
     def peek(self):
         return None
+
     def pop(self):
         raise IllegalStateException("Can't pop an empty list")
+
     def count(self):
         return 0
+
     def seq(self):
         return None
+
     def __repr__(self):
         return "()"
+
     def __len__(self):
         return 0
 
-EMPTY = EmptyList()
 
+EMPTY = EmptyList()

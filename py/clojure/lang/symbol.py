@@ -1,3 +1,5 @@
+import types
+
 from py.clojure.lang.iobj import IObj
 from py.clojure.lang.cljexceptions import ArityException
 
@@ -14,7 +16,6 @@ class Symbol(object, IObj):
             self.name = args[2]
         else:
             raise ArityException()
-        import types
         if isinstance(self.ns, types.ModuleType):
             pass
 

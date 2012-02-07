@@ -8,7 +8,6 @@ from py.clojure.lang.ipersistentset import IPersistentSet
 from py.clojure.lang.ipersistentcollection import IPersistentCollection
 from py.clojure.lang.persistenthashmap import EMPTY as EMPTY_MAP
 from py.clojure.lang.cljexceptions import ReaderException, IllegalStateException
-#from py.clojure.lang.gmp import Integer, Rational, Float
 import py.clojure.lang.rt as RT
 from py.clojure.lang.cljkeyword import LINE_KEY
 from py.clojure.lang.symbol import Symbol
@@ -64,7 +63,6 @@ def forIter(start, whileexpr, next):
 
 DIGITS = "0123456789abcdefghijklmnopqrstuvwxyz"
 def digit(d, base = 10):
-
     idx = DIGITS.index(d)
     if idx == -1 or idx >= base:
         return -1
@@ -72,7 +70,6 @@ def digit(d, base = 10):
 
 def isDigit(d):
     return d in DIGITS and DIGITS.index(d) < 10
-
 
 
 chrLiterals = {'t': '\t',
@@ -151,7 +148,6 @@ def stringReader(rdr, doublequote):
                     raise ReaderException("Octal escape sequence must be in range [0, 377].")
         sb.append(ch)
         ch = read1(rdr)
-
     return "".join(sb)
 
 def readToken(rdr, initch):
@@ -162,15 +158,12 @@ def readToken(rdr, initch):
             rdr.back()
             break
         sb.append(ch)
-
     s = "".join(sb)
-
     return s
 
 INTERPRET_TOKENS = {"nil": None,
                     "true": True,
-                    "false": False,
-                    }
+                    "false": False}
 def interpretToken(s):
     if s in INTERPRET_TOKENS:
         return INTERPRET_TOKENS[s]
@@ -228,9 +221,11 @@ def discardReader(rdr, underscore):
 class wrappingReader():
     def __init__(self, sym):
         self.sym = sym
+
     def __call__(self, rdr, quote):
         o = read(rdr, True, None, True)
         return RT.list(self.sym, o)
+
 
 def varReader():
     return wrappingReader(THE_VAR)
@@ -239,14 +234,7 @@ def dispatchReader(rdr, hash):
     ch = read1(rdr)
     if ch == "":
         raise ReaderException("EOF while reading character")
-
     if ch not in dispatchMacros:
-        #rdr.back()
-        #result = fn(rdr, ch)
-        #if result is not None:
-        #    return result
-        #else:
-        #    raise ReaderException("No dispatch macro for: "+ ch)
         raise ReaderException("No dispatch macro for: ("+ ch + ")")
     return dispatchMacros[ch](rdr, ch)
 
@@ -273,7 +261,6 @@ def unmatchedDelimiterReader(rdr, un):
 
 def readDelimitedList(delim, rdr, isRecursive):
     firstline = rdr.lineCol()[0]
-
     a = []
 
     while True:
@@ -391,7 +378,6 @@ def fnReader(rdr, lparen):
 
     if ARG_ENV.deref() is not None:
         raise IllegalStateException("Nested #()s are not allowed")
-        #try:
     pushThreadBindings(RT.map(ARG_ENV, EMPTY))
     rdr.back()
     form = read(rdr, True, None, True)
@@ -412,7 +398,6 @@ def fnReader(rdr, lparen):
     vargs = RT.vector(args)
     popThreadBindings()
     return RT.list(_FN_, vargs, form)
-    #finally:
 
 def isUnquote(form):
     return isinstance(form, ISeq) and form.first() == _UNQUOTE_
@@ -429,8 +414,10 @@ class SyntaxQuoteReader():
             return self.syntaxQuote(form)
         finally:
             popThreadBindings()
+
     def syntaxQuote(self, form):
         from py.clojure.lang.compiler import builtins as compilerbuiltins
+
         if form in compilerbuiltins:
             ret = RT.list(_QUOTE_, form)
         elif isinstance(form, Symbol):
@@ -444,7 +431,6 @@ class SyntaxQuoteReader():
                     gs = Symbol.intern(None, sym.name[:-1] + "__" + str(RT.nextID()) + "__auto__")
                     GENSYM_ENV.set(gmap.assoc(sym, gs))
                 sym = gs
-
             elif sym.ns is None and sym.name.endswith("."):
                 ret = sym
             elif sym.ns is None and sym.name.startswith("."):
@@ -511,12 +497,6 @@ class SyntaxQuoteReader():
         return keyvals
 
 
-
-
-
-
-
-
 def garg(n):
     from symbol import Symbol
     return Symbol.intern(None,  "rest" if n == -1 else  ("p" + str(n)) + "__" + str(RT.nextID()) + "#")
@@ -543,26 +523,3 @@ dispatchMacros = {"\"": regexReader,
                   "(": fnReader,
                   "'": varQuoteReader,
                   "^": metaReader}
-
-
-if __name__ == '__main__':
-    from StringIO import StringIO
-    from fileseq import StringReader
-    def rdr(s):
-        #return MutatableFileSeq(FileSeq(StringIO(s)))
-        return StringReader(s)
-
-    fl = open("/home/tim/core.clj")
-    s = fl.read()
-    fl.close()
-    import sys
-    sys.path = ["."] + sys.path
-
-    r = rdr(" "+s)
-    try:
-        while r.fs:
-            s = read(rdr, True, None, True)
-            #print '-' + repr(s) + '-'
-    except IOError:
-        pass
-

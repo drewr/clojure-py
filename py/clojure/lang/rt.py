@@ -20,7 +20,6 @@ def cons(x, s):
         return Cons(x, s)
     if s is None:
         return EMPTY_LIST.cons(x)
-
     return Cons(x, seq(s))
 
 def seqToTuple(s):
@@ -126,11 +125,10 @@ def getDefaultImports():
     import sys
     import math
     d = {"String": str,
-            "Integer": int,
-            "Math": math,
-            "clojure.lang.PersistentList": PersistentList,
-            "clojure.lang.RT": sys.modules[__name__]
-            }
+         "Integer": int,
+         "Math": math,
+         "clojure.lang.PersistentList": PersistentList,
+         "clojure.lang.RT": sys.modules[__name__]}
     return d
 
 id = AtomicInteger()
@@ -145,7 +143,6 @@ def subvec(v, start, end):
     if start == end:
         return EMPTY_VECTOR
     return SubVec(None, v, start, end)
-
 
 def init():
     global DEFAULT_IMPORTS

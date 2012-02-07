@@ -8,6 +8,7 @@ def isReader(rdr):
         return False
     return True
 
+
 class FileSeq(ASeq):
     def __init__(self, *args):
         if len(args) == 1:
@@ -35,9 +36,7 @@ class FileSeq(ASeq):
         nxt.col = newcol
         nxt.ccur = c
         nxt._next = None
-
         return nxt
-
 
     def next(self):
         if self._next is not None:
@@ -79,6 +78,7 @@ class FileSeq(ASeq):
             return True
         return False
 
+
 class MutatableFileSeq(ASeq):
     def __init__(self, fs):
         self.fs = fs
@@ -89,9 +89,6 @@ class MutatableFileSeq(ASeq):
         return self.fs.first()
 
     def next(self):
-        #if self.fs is None:
-        #    return None
-
         o = self.old
         self.old = self.fs
         if o is not None:
@@ -109,6 +106,7 @@ class MutatableFileSeq(ASeq):
 
     def lineCol(self):
         return self.fs.lineCol() if self.fs is not None else [None, None]
+
 
 class StringReader(object):
     def __init__(self, s):
@@ -151,34 +149,3 @@ class StringReader(object):
         self.haslast = False
         self.line = self.lastline
         self.col = self.lastcol
-
-
-
-
-
-if __name__ == '__main__':
-    print "running tests..."
-    f = open("fileseq.py", "r")
-    fstart = FileSeq(f)
-    s = []
-    for x in fstart:
-        s.append(x.first())
-        if x.atLineEnd():
-            print x.lineCol() , "".join(s).strip("\n\r")
-            s = []
-
-    oldpos = f.tell()
-
-    for x in fstart:
-        s.append(x.first())
-        if x.atLineEnd():
-            print x.lineCol() , "".join(s).strip("\n\r")
-            s = []
-
-    m = MutatableFileSeq(fstart)
-    m.next()
-    print m.first(), fstart.next().first()
-    assert(m.first() is fstart.next().first())
-
-    assert(f.tell() == oldpos)
-

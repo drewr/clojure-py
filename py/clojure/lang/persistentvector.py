@@ -62,7 +62,6 @@ class PersistentVector(APersistentVector):
 
         raise IndexOutOfBoundsException()
 
-
     def __len__(self):
         return self.cnt
 
@@ -89,7 +88,6 @@ class PersistentVector(APersistentVector):
 
     def pushTail(self, level, parent, tailnode):
         subidx = ((self.cnt - 1) >> level) & 0x01f
-
         ret = PersistentVector.Node(parent.edit, parent.array[:])
 
         if level == 5:
@@ -104,7 +102,6 @@ class PersistentVector(APersistentVector):
 
     def empty(self):
         return EMPTY.withMeta(self.meta())
-
 
     def pop(self):
         if not self.cnt:
@@ -170,7 +167,6 @@ class PersistentVector(APersistentVector):
         return True
 
 
-
 def newPath(edit, level, node):
     if not level:
         return node
@@ -198,22 +194,6 @@ def vec(seq):
     return v
 
 
-
 NOEDIT = AtomicReference()
 EMPTY_NODE = PersistentVector.Node(NOEDIT)
 EMPTY = PersistentVector(0, 5, EMPTY_NODE, [])
-
-
-if __name__ == '__main__':
-    print "running tests..."
-    m = EMPTY
-    times = 2000000
-    for x in range(times):
-        m = m.cons(x)
-    #for x in range(times):
-    #    assert(m[x] ==  x)
-    for x in range(times, 0, -1):
-        assert(len(m) == x)
-        m = m.pop()
-        assert(len(m) == x - 1)
-

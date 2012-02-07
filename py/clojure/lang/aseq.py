@@ -4,10 +4,10 @@ from py.clojure.lang.iseq import ISeq
 from py.clojure.lang.sequential import Sequential
 from py.clojure.lang.counted import Counted
 from py.clojure.lang.ihasheq import IHashEq
-from py.clojure.lang.interable import Interable
+from py.clojure.lang.iterable import Iterable
 import py.clojure.lang.rt as RT
 
-class ASeq(Obj, Sequential, ISeq, IHashEq, Interable):
+class ASeq(Obj, Sequential, ISeq, IHashEq, Iterable):
     def __eq__(self, other):
         if self is other:
             return True

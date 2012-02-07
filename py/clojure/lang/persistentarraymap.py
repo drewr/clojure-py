@@ -10,7 +10,6 @@ from threading import currentThread
 HASHTABLE_THRESHOLD = 16
 
 class PersistentArrayMap(APersistentMap, IEditableCollection):
-
     def __init__(self, *args):
         if len(args) == 0:
             self.array = []
@@ -44,9 +43,9 @@ class PersistentArrayMap(APersistentMap, IEditableCollection):
 
     def assoc(self, key, val):
         i = self.indexOf(key)
-        if i >= 0: # allready have the key
+        if i >= 0: # already have the key
             if self.array[i + 1] == val:
-                return this #no op
+                return this # no op
             newarray = self.array[:]
             newarray[i + 1] = val
         else:
@@ -106,9 +105,6 @@ class PersistentArrayMap(APersistentMap, IEditableCollection):
         for x in range(0, len(self.array), 2):
             yield MapEntry(self.array[x], self.array[x + 1])
 
-
-
-
     class Seq(ASeq, Counted):
         def __init__(self, *args):
             if len(args) == 2:
@@ -124,10 +120,13 @@ class PersistentArrayMap(APersistentMap, IEditableCollection):
 
         def first(self):
             return MapEntry(self.array[self.i], self.array[self.i + 1])
+
         def next(self):
             return PersistentArrayMap.Seq(self.array, self.i + 2)
+
         def count(self):
             return (len(self.array) - self.i) / 2
+
         def withMeta(self, meta):
             return PersistentArrayMap.Seq(meta, self.array, self.i)
 
@@ -138,11 +137,13 @@ class PersistentArrayMap(APersistentMap, IEditableCollection):
         def __init__(self, array):
             self.owner = currentThread()
             self.array = array[:]
+
         def indexOf(self, key):
             for x in range(0, len(self.array), 2):
                 if self.array[x] == key:
                     return x
             return -1
+
         def doAssoc(self, key, val):
             i = self.indexOf(key)
             if i >= 0: # allready have the key
@@ -189,5 +190,3 @@ class PersistentArrayMap(APersistentMap, IEditableCollection):
             if self.owner is None:
                 raise IllegalAccessError("Transient used by non-owner thread")
             raise IllegalAccessError("Transient used after persistent! call")
-
-

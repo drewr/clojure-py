@@ -15,16 +15,21 @@ class Cons(ASeq):
             self._more = args[2]
         else:
             raise ArityException()
+
     def first(self):
         return self._first
+
     def next(self):
         return self.more().seq()
+
     def more(self):
         if self._more is None:
             return EMPTY
         return self._more
+
     def count(self):
         return 1 + RT.count(self._more)
+
     def withMeta(self, meta):
         return Cons(meta, self._first, self._more)
 

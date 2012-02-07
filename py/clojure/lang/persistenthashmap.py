@@ -1,5 +1,4 @@
 from py.clojure.lang.apersistentmap import APersistentMap
-#from py.clojure.lang.atransientmap import ATransientMap
 from py.clojure.lang.cljexceptions import ArityException, AbstractMethodCall
 from py.clojure.lang.ieditablecollection import IEditableCollection
 from py.clojure.lang.iobj import IObj
@@ -50,9 +49,6 @@ def removePair(array, i):
     return newArray
     
 class PersistentHashMap(APersistentMap, IEditableCollection, IObj):
-
-
-
     def __init__(self, *args):
         if len(args) == 4:
             self._meta = None
@@ -75,7 +71,6 @@ class PersistentHashMap(APersistentMap, IEditableCollection, IObj):
         for v in d:
             m = m.assoc(v, d[v])
         return m
-
 
     def assoc(self, key, val):
         if key is None:
@@ -280,9 +275,6 @@ class PersistentHashMap(APersistentMap, IEditableCollection, IObj):
             def next(self):
                 return PersistentHashMap.ArrayNode.Seq.create(None, self.nodes, self.i, self.s.next())
 
-
-
-
     class BitmapIndexedNode(INode):
         def __init__(self, edit, bitmap, array):
             self.edit = edit
@@ -316,8 +308,8 @@ class PersistentHashMap(APersistentMap, IEditableCollection, IObj):
                 addedLeaf.val = addedLeaf
                 return PersistentHashMap.BitmapIndexedNode(None, self.bitmap,
                                         cloneAndSet(self.array,
-                                            2*idx, None,
-                                            2*idx+1, createNode(None, shift + 5, keyOrNull, valOrNode, hsh, key, val)))
+                                                    2*idx, None,
+                                                    2*idx+1, createNode(None, shift + 5, keyOrNull, valOrNode, hsh, key, val)))
             else:
                 n = bitCount(self.bitmap)
                 if n >= 16:
@@ -400,7 +392,6 @@ class PersistentHashMap(APersistentMap, IEditableCollection, IObj):
             editable.array[len(editable.array) - 1] = None
             return editable
 
-
         def assocEd(self, edit, shift, hsh, key, val, addedLeaf):
             bit = bitpos(hsh, shift)
             idx = self.index(bit)
@@ -441,11 +432,11 @@ class PersistentHashMap(APersistentMap, IEditableCollection, IObj):
                                 nodes[i] = self.array[j+1]
                             else:
                                 nodes[i] = EMPTY_BITMAP_NODE.assocEd(edit,
-                                                                         shift + 5,
-                                                                         hash(self.array[j]),
-                                                                         self.array[j],
-                                                                         self.array[j+1],
-                                                                         addedLeaf)
+                                                                     shift + 5,
+                                                                     hash(self.array[j]),
+                                                                     self.array[j],
+                                                                     self.array[j+1],
+                                                                     addedLeaf)
                             j += 2
                     return PersistentHashMap.ArrayNode(edit, n + 1, nodes)
                 else:
@@ -481,7 +472,6 @@ class PersistentHashMap(APersistentMap, IEditableCollection, IObj):
                 removedLeaf.val = removedLeaf
                 return self.editAndRemovePair(self.edit, bit, idx)
             return self
-
 
     class HashCollisionNode(INode):
         def __init__(self, edit, hsh, count, array):
@@ -525,10 +515,8 @@ class PersistentHashMap(APersistentMap, IEditableCollection, IObj):
 
         def find(self,  shift,  hsh, key, notFound = None):
             idx = self.findIndex(key)
-
             if idx < 0:
                 return notFound
-
             return self.array[idx + 1]
 
         def nodeSeq(self):
@@ -552,7 +540,6 @@ class PersistentHashMap(APersistentMap, IEditableCollection, IObj):
             if j is not None:
                 editable.array[j] = b
             return editable
-
 
         def assocEd(self, edit, shift, hsh, key, val, addedLeaf):
             if hsh == self.hsh:
@@ -641,32 +628,3 @@ class PersistentHashMap(APersistentMap, IEditableCollection, IObj):
 EMPTY = PersistentHashMap(0, None, False, None)
 EMPTY_BITMAP_NODE = PersistentHashMap.BitmapIndexedNode(-1, 0, [])
 NOT_FOUND = AtomicReference()
-
-if __name__ == '__main__':
-    print "running tests..."
-    m = EMPTY
-    times = 100000
-    for x in range(times):
-        m = m.assoc(str(x), x)
-    for x in range(times):
-        assert(str(x) in m)
-    for x in range(times):
-        assert(m[str(x)] ==  x)
-    for x in range(times):
-        m = m.without(str(x))
-        assert(str(x) not in m)
-
-    assert(m.seq() is None)
-    for x in m:
-        #print x
-        raise Exception("{}.seq() should be None")
-
-    d = {1: 2, 3: 4, 5:6, 7:8}
-    assert(PersistentHashMap.fromDict(d) == PersistentHashMap.fromDict(d))
-    emp =  PersistentHashMap.fromDict({})
-    assert(emp == m)
-    assert(emp == EMPTY)
-    assert(m == m)
-    assert(m == emp)
-
-

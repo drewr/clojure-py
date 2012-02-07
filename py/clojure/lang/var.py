@@ -37,9 +37,7 @@ def popThreadBindings():
     dvals.set(f.prev)
 
 
-
 class Var(ARef, Settable, IFn, IRef ):
-
     class TBox(object):
         def __init__(self, thread, val):
             self.thread = thread
@@ -59,8 +57,6 @@ class Var(ARef, Settable, IFn, IRef ):
             self.prev = prev
         def clone(self):
             return Var.Frame(self.bindings)
-
-
 
     def __init__(self, ns, sym, root = UKNOWN):
         if root == UKNOWN:
@@ -123,8 +119,6 @@ class Var(ARef, Settable, IFn, IRef ):
         oldroot = self.root
         self.root = root
         self.rev += 1
-        #self.alterMeta(lambda o, k: o.dissoc(k), RT.list(macrokey))
-        #self.notifyWatches(oldroot, self.root)
 
     @staticmethod
     def internWithRoot(ns, sym, root, replaceRoot = True):
@@ -166,7 +160,6 @@ class Var(ARef, Settable, IFn, IRef ):
         ret.setMeta(Var.privateMeta)
         return ret
 
-
     def deref(self):
         b = self.getThreadBinding()
         if b is not None:
@@ -192,7 +185,3 @@ class Var(ARef, Settable, IFn, IRef ):
 
     def __getitem__(self, item):
         return self.deref().__getitem__(item)
-
-
-
-
