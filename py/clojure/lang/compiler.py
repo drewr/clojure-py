@@ -417,6 +417,8 @@ def compileFNStar(comp, form):
     aliases = []
     if len(comp.aliases) > 0: # we got a closure to deal with
         for x in comp.aliases:
+            if isinstance(comp.aliases[x], LocalMacro):
+                continue
             comp.pushAlias(x, Closure(x))
             aliases.append(x)
         haslocalcaptures = True
@@ -588,12 +590,11 @@ def compileLetMacro(comp, form):
             raise CompilerException("let-macro takes a even number of bindings")
         macro = s.first()
 
-        comp.pushAlias(sym, LocalMacro(sym, macro, comp))
+        comp.pushAlias(sym, LocalMacro(sym, macro))
 
         s = s.next()
 
     body = form.next()
-
     code = compileImplcitDo(comp, body)
 
     comp.popAliases(syms)
@@ -695,15 +696,12 @@ class Closure(AAlias):
 
 class LocalMacro(AAlias):
     """represents a value that represents a local macro"""
-    def __init__(self, sym, macroform, comp, rest = None):
+    def __init__(self, sym, macroform, rest = None):
         AAlias.__init__(self, rest)
         self.sym = sym
-        self.fn = evalForm(macroform, comp.getNS())
         self.macroform = macroform
-        self.comp = comp
     def compile(self, comp):
-        form = self.fn(self.macroform, comp, self.sym)
-        code = comp.compile(form)
+        code = comp.compile(self.macroform)
         return code
 
 def evalForm(form, ns):
@@ -711,6 +709,7 @@ def evalForm(form, ns):
     comp.ns = ns
     code = comp.compile(form)
     return comp.executeCode(code)
+
 class Compiler():
     def __init__(self):
         self.recurPoint = RT.list()
@@ -952,7 +951,6 @@ class Compiler():
 
         dis.dis(c)
         codeobject = c.to_code()
-        print codeobject.__class__ is compileDef.__class__
 
         with open('output.pyc', 'wb') as fc:
             fc.write(py_compile.MAGIC)

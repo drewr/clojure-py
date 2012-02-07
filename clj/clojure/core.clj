@@ -580,15 +580,14 @@
                      (recur (next fields) newargs newbody)))))
 
 (defn make-props
-    [fields self]
+    [fields selfname]
     (loop [remain (seq fields)
         props []]
        (py/if (nil? remain)
            props
            (recur (next remain) 
                   (conj (conj props (first remain))
-                        (list 'fn ['f 'env 'sym]
-                              (list 'getattr self (first remain))))))))
+                        (list 'getattr selfname (.-name (first remain))))))))
 
 (defn prop-wrap-fn
     [members f]
@@ -620,8 +619,8 @@
 
 ;(deftype IPending []
 ;	(isRealized [self]
-;		(throw (AbstractMethodCall))))
-;
+;	(throw (AbstractMethodCall))))
+
 ;(deftype LazySeq [fnc sv s _meta]
 ;	(withMeta [self meta]
 ;		(LazySeq nil nil (.seq self) meta))
@@ -631,15 +630,15 @@
 ;			  (setattr self "fnc" nil))
 ;		(py/if (not (nil? sv))
 ;			sv
-;			s))
+;		s))
 ;	(seq [self]
 ;		(.sval self)
 ;		(when (not (nil? sv))
 ;			(let [ls sv]
 ;				 (setattr self "sv" nil)
-;        		 (setattr self
+ ;       		 (setattr self
 ;        		 	 	  "s"
-;        		 	 	  (loop [ls sv]
+ ;       		 	 	  (loop [ls sv]
 ;							    (py/if (instance? LazySeq ls)
 ;								    (recur (.sval ls))
 ;								    (.seq ls))))))
@@ -670,7 +669,7 @@
 ;	    (cons o (.seq self)))
 ;	(empty [self]
 ;	    (list)))
-
+;
 (defmacro lazy-seq
   "Takes a body of expressions that returns an ISeq or nil, and yields
   a Seqable object that will invoke the body only the first time seq
