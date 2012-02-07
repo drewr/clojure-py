@@ -29,9 +29,11 @@ class Keyword(IFn, Named):
             return Keyword.intern(Symbol.intern(*args))
         else:
             raise ArityException()
+
     def __init__(self, sym):
         self.sym = sym
         self.hash = hash(sym) + 0x9e3779b9
+
     def __hash__(self):
         return self.hash
 
@@ -50,19 +52,11 @@ class Keyword(IFn, Named):
         if len(args) == 2:
             return Keyword.find(Symbol.intern(*args))
         raise ArityException()
+
     def __repr__(self):
         return str(self.sym)
+
 
 LINE_KEY = Keyword.intern(None, "line")
 TAG_KEY = Keyword.intern(None, "tag")
 T = Keyword.intern(None, "T")
-
-if __name__ == '__main__':
-    print "running tests..."
-    kw1 = Keyword.intern("foo")
-    print id(kw1), kw1, kw1.sym.name
-    kw2 = Keyword.intern("foo")
-    print id(kw2), kw2, kw2.sym.name
-    assert(kw1 is kw2)
-    kw3 = Keyword.intern("foo2")
-    assert(kw3 != kw1)

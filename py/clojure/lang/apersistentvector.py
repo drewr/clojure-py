@@ -2,7 +2,6 @@ from py.clojure.lang.ipersistentvector import IPersistentVector
 from py.clojure.lang.cljexceptions import AbstractMethodCall, ArityException
 from py.clojure.lang.indexableseq import IndexableSeq
 
-
 class APersistentVector(object, IPersistentVector):
     def __iter__(self):
         for x in range(len(self)):
@@ -20,6 +19,7 @@ class APersistentVector(object, IPersistentVector):
         if not len(self):
             return None
         return IndexableSeq(self, 0)
+
 
 class SubVec(APersistentVector):
     def __init__(self, meta, v, start, end):
@@ -41,27 +41,27 @@ class SubVec(APersistentVector):
         elif start + i == end:
             return self.cons(val)
         return SubVec(self._meta,
-                                        self.v.assocN(self.start + self.i, val),
-                                        start,
-                                        end)
+                      self.v.assocN(self.start + self.i, val),
+                      start,
+                      end)
 
     def __len__(self):
         return self.end - self.start
 
     def cons(self, o):
         return SubVec(self._meta,
-                                        self.v.assocN(self.end, o),
-                                        self.start,
-                                        self.end + 1)
+                      self.v.assocN(self.end, o),
+                      self.start,
+                      self.end + 1)
     def empty(self):
         from py.clojure.lang.persistentvector import EMPTY as EMPTY_VECTOR
-        return EMPTY_VECTOR.wiothMeta(self.meta())
+        return EMPTY_VECTOR.withMeta(self.meta())
 
     def pop(self):
         from py.clojure.lang.persistentvector import EMPTY as EMPTY_VECTOR
         if self.end - 1 == self.start:
             return EMPTY_VECTOR
-        return SubVec(self._meta, self.v, self.start, self.end -1)
+        return SubVec(self._meta, self.v, self.start, self.end - 1)
 
     def withMeta(self, meta):
         if self.meta == meta:

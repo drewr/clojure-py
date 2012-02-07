@@ -6,6 +6,7 @@ import py.clojure.lang.rt as RT
 class APersistentSet(object, IPersistentSet, IFn):
     def __init__(self, impl):
         self.impl = impl
+
     def __getitem__(self, item):
         return self.impl[item]
 
@@ -44,8 +45,3 @@ class APersistentSet(object, IPersistentSet, IFn):
                 s = s.next()
             self._hash = hsh
         return self._hash
-
-
-
-
-

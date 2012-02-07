@@ -5,22 +5,18 @@ from py.clojure.lang.sequential import Sequential
 from py.clojure.lang.counted import Counted
 from py.clojure.lang.ihasheq import IHashEq
 from py.clojure.lang.interable import Interable
-
-
 import py.clojure.lang.rt as RT
 
 class ASeq(Obj, Sequential, ISeq, IHashEq, Interable):
     def __eq__(self, other):
         if self is other:
             return True
-        if not (isinstance(other, Sequential)
-                or isinstance(other, list)
-                or isinstance(other, tuple)):
+        if not isinstance(other, (Sequential, list, tuple)):
             return False
         se = RT.seq(other)
         ms = self.seq()
         while se is not None:
-            if ms is None or not (se.first() == ms.first()):
+            if ms is None or not se.first() == ms.first():
                 return False
             ms = ms.next()
             se = se.next()	
@@ -69,4 +65,3 @@ class ASeq(Obj, Sequential, ISeq, IHashEq, Interable):
         for s in self:
             hash = 31 * hash + Util.hasheq(s.first())
         return hash
-

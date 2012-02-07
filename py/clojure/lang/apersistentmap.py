@@ -29,7 +29,6 @@ class APersistentMap(IPersistentMap):
             s = s.next()
         return d
 
-
     def __eq__(self, other):
         return APersistentMap.mapEquals(self, other)
 
@@ -43,8 +42,6 @@ class APersistentMap(IPersistentMap):
                 pass
             yield s.first().getKey()
             s = s.next()
-
-
 
     @staticmethod
     def mapEquals(m1, m2):
@@ -99,27 +96,27 @@ class APersistentMap(IPersistentMap):
             return APersistentMap.KeySeq(meta, self.seq)
 
     class ValueSeq(ASeq):
-            def __init__(self, *args):
-                if len(args) == 1:
-                    self.seq = args[0]
-                elif len(args) == 2:
-                    self._meta = args[0]
-                    self.seq = args[1]
-                else:
-                    raise ArityException()
+        def __init__(self, *args):
+            if len(args) == 1:
+                self.seq = args[0]
+            elif len(args) == 2:
+                self._meta = args[0]
+                self.seq = args[1]
+            else:
+                raise ArityException()
 
-            @staticmethod
-            def create(s):
-                if s is None:
-                    return None
-                return APersistentMap.ValueSeq(s)
+        @staticmethod
+        def create(s):
+            if s is None:
+                return None
+            return APersistentMap.ValueSeq(s)
 
-            def first(self):
-                return self.first().getValue()
-            def next(self):
-                return APersistentMap.ValueSeq.create(self.seq.next())
-            def withMeta(self, meta):
-                return APersistentMap.ValueSeq(meta, self.seq)
+        def first(self):
+            return self.first().getValue()
+        def next(self):
+            return APersistentMap.ValueSeq.create(self.seq.next())
+        def withMeta(self, meta):
+            return APersistentMap.ValueSeq(meta, self.seq)
 
     def __call__(self, *args, **kwargs):
         return apply(self.valAt, args)
@@ -129,10 +126,3 @@ class APersistentMap(IPersistentMap):
 
     def __contains__(self, item):
         return self.containsKey(item)
-
-
-
-
-
-
-

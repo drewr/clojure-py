@@ -10,6 +10,7 @@ class ARef(AReference, IRef):
         AReference.__init__(self, meta)
         self.validator = None
         self.watches = EMPTY
+
     def validate(self, *args):
         if len(args) == 1:
             val = args[0]
@@ -23,13 +24,16 @@ class ARef(AReference, IRef):
         if vf is not None \
            and not RT.booleanCast(vf(val)):
             raise IllegalStateException("Invalid reference state")
+
     def setValidator(self, fn):
         self.validate(fn, self.deref())
         self.validator = fn
+
     def getValidator(self):
         if not hasattr(self, "validator"):
             return None
         return self.validator
+
     def getWatches(self):
         return self.watches
 
@@ -51,6 +55,3 @@ class ARef(AReference, IRef):
                 fn = e.getValue()
                 if fn is not None:
                     fn(e.getKey(), self, oldval, newval)
-
-
-
