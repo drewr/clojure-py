@@ -593,9 +593,40 @@
 
 (defn prop-wrap-fn
     [members f]
-    (list 'let-macro (make-props members (first (fnext f)))
-                            (cons 'fn f)))
+    (list 'fn 
+ 	  (first f) 
+	  (second f)
+          (list* 'let-macro 
+		(make-props members 
+			    (first (fnext f)))
+		(next (next f)))))
 
+(defn prop-wrap-multi
+    [members f]
+    (let [name (first f)
+          f (next f)
+          wrapped (loop [remain f
+                         wr []]
+			(py/if remain
+			    (let [cur (first remain)
+				   args (first cur)
+				   body (next cur)]
+				  (recur (next remain) 
+ 			               (cons (list args
+					          (list* 'let-macro
+						      (make-props members
+								  (first args))
+						      body))
+					     wr)))
+			    wr))]
+	(list* 'fn name wrapped)))
+                        
+         
+(defn prop-wrap
+    [members f]
+    (if (vector? (fnext f))
+	(prop-wrap-fn members f)
+	(prop-wrap-multi members f)))
 
 
 (defmacro deftype
@@ -613,7 +644,7 @@
                     (recur (next specs)
                            inherits
                            (assoc fns (py/str (ffirst specs))
-                           	   	      (prop-wrap-fn fields (first specs)))))))
+                           	   	      (prop-wrap fields (first specs)))))))
 
 
 ;;;;;;;;;;;;;;;;;Lazy Seq and Chunked Seq;;;;;;;;;;;;;;;;
@@ -682,19 +713,21 @@
 
 
 
-;(deftype ChunkBuffer [buffer end]
-;    (add [self o]
-;        (setattr self "end" (inc end))
-;        (get buffer end))
-;    (chunk [self]
-;        (let [ret (ArrayChunk buffer 0 end)]
-;             (setattr self "buffer" nil)
-;             ret))
-;    (count [self] end))
+(deftype ChunkBuffer [buffer end]
+    (add [self o]
+        (setattr self "end" (inc end))
+        (get buffer end))
+    (chunk [self]
+        (let [ret (ArrayChunk buffer 0 end)]
+             (setattr self "buffer" nil)
+             ret))
+    (count [self] end))
 
-;(deftype ArrayChunk [array off end]
-;    (nth [self i]
-;        (get array (inc of))))
+(deftype ArrayChunk [array off end]
+    (nth [self i]
+        (get array (inc of)))
+    (__len__ [self]
+        (py.bytecode/BINARY_SUBTRACT end off)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
