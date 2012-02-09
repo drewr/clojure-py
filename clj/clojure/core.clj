@@ -559,6 +559,34 @@
   ([a b c d & more]
      (cons a (cons b (cons c (cons d (spread more)))))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defn =
+  "Equality. Returns true if x equals y, false if not. Same as
+  Java x.equals(y) except it also works for nil, and compares
+  numbers and collections in a type-independent manner.  Clojure's immutable data
+  structures define equals() (and thus =) as a value, not an identity,
+  comparison."
+  {:added "1.0"}
+  ([x] true)
+  ([x y] (py.bytecode/COMPARE_OP "==" x y))
+  ([x y & more]
+   (py/if (py.bytecode/COMPARE_OP "==" x y)
+     (py/if (next more)
+       (recur y (first more) (next more))
+       (py.bytecode/COMPARE_OP "==" y (first more)))
+     false)))
+
+
+(defn not=
+  "Same as (not (= obj1 obj2))"
+  {:added "1.0"}
+  ([x] false)
+  ([x y] (not (= x y)))
+  ([x y & more]
+   (not (apply = x y more))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defn make-class
     "Creates a new clas with the given name, that is inherited from
@@ -716,7 +744,7 @@
 (deftype ChunkBuffer [buffer end]
     (add [self o]
         (setattr self "end" (inc end))
-        (get buffer end))
+        (py.bytecode/STORE_SUBSCR buffer end o))
     (chunk [self]
         (let [ret (ArrayChunk buffer 0 end)]
              (setattr self "buffer" nil)
@@ -724,37 +752,51 @@
     (count [self] end))
 
 (deftype ArrayChunk [array off end]
-    (nth [self i]
-        (get array (inc of)))
+    (__getitem__ ([self i]
+          (get array (inc of)))
+         ([self i not-found]
+	  (if (py.bytecode/COMPARE_OP ">=" i 0)
+	      (if (py.bytecode/COMPARE_OP "<" i (len self))
+		  (nth self i)
+		  not-found)
+	      not-found)))
+
     (__len__ [self]
-        (py.bytecode/BINARY_SUBTRACT end off)))
+        (py.bytecode/BINARY_SUBTRACT end off))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    (dropFirst [self]
+	(if (= off end)
+	    (throw (IllegalStateException "dropFirst of empty chunk")))
+	(ArrayChunk array (inc off) end))
 
-(defn =
-  "Equality. Returns true if x equals y, false if not. Same as
-  Java x.equals(y) except it also works for nil, and compares
-  numbers and collections in a type-independent manner.  Clojure's immutable data
-  structures define equals() (and thus =) as a value, not an identity,
-  comparison."
-  {:added "1.0"}
-  ([x] true)
-  ([x y] (py.bytecode/COMPARE_OP "==" x y))
-  ([x y & more]
-   (py/if (py.bytecode/COMPARE_OP "==" x y)
-     (py/if (next more)
-       (recur y (first more) (next more))
-       (py.bytecode/COMPARE_OP "==" y (first more)))
-     false)))
+    (reduce [self f start]
+	(loop [ret (f start (get array off))
+	       x (inc off)]
+	     (if (py.bytecode/COMPARE_OP "<" x end)
+		 (recur (f ret (get array x)) 
+			(inc x))
+		 ret))))
 
+(defn chunk-buffer [capacity]
+     (ChunkBuffer (py.bytecode/BINARY_MULTIPLY (list [None]) capacity)
+		  0))
+(defn chunk-append [b x]
+     (.add b x))
 
-(defn not=
-  "Same as (not (= obj1 obj2))"
-  {:added "1.0"}
-  ([x] false)
-  ([x y] (not (= x y)))
-  ([x y & more]
-   (not (apply = x y more))))
+(defn chunk [b]
+     (.chunk b))
+
+(defn chunk-first [s]
+     (.chunkedFirst s))
+
+(defn chunk-rest [s]
+     (.chunkedMore s))
+
+(defn chunk-next [s]
+     (.chunkedNext s))
+
+(defn chunked-seq? [s]
+     (instance? IChunkedSeq s))
 
 (defmacro if-not
   "Evaluates test. If logical false, evaluates and returns then expr, 

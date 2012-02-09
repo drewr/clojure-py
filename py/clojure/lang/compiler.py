@@ -1,10 +1,3 @@
-import sys
-import marshal
-import pickle
-import py_compile
-import time
-import dis
-
 from py.clojure.lang.symbol import Symbol
 from py.clojure.lang.namespace import findOrCreate as findOrCreateNamespace
 from py.clojure.lang.cljexceptions import CompilerException, AbstractMethodCall
@@ -24,7 +17,10 @@ from py.clojure.lang.lispreader import LINE_KEY, garg
 import re
 import new
 
+
 _MACRO_ = Keyword.intern(Symbol.intern(":macro"))
+
+
 
 def compileNS(comp, form):
     rest = form.next()
@@ -80,7 +76,8 @@ def compileBytecode(comp, form):
             raise CompilerException("first argument to "+ codename + " must be int or str")
         form = form.next()
     se = byteplay.getse(bc, arg)
-    if se[0] != len(form) or se[1] != 1:
+    if se[0] != len(form) or se[1] > 1:
+	print se, form
         raise CompilerException("literal bytecode " + codename + " not supported")
     s = form
     code = []
@@ -88,7 +85,10 @@ def compileBytecode(comp, form):
         code.extend(comp.compile(s.first()))
         s = s.next()
     code.append((bc, arg))
+    if se[1] == 0:
+        code.append((LOAD_CONST, None))
     return code
+
 
 def compileLoopStar(comp, form):
     if len(form) < 3:
@@ -175,6 +175,9 @@ def compileLetStar(comp, form):
     code.extend(compileImplcitDo(comp, form))
     comp.popAliases(args)
     return code
+
+
+
 
 def compileDot(comp, form):
     from py.clojure.lang.persistentlist import PersistentList
@@ -314,8 +317,8 @@ def compileFn(comp, name, form, orgform):
     c = Code(code, clist, args, lastisargs, False, True, str(Symbol.intern(comp.getNS().__name__, name.name)), "./clj/clojure/core.clj", 0, None)
     if not clist:
         c = new.function(c.to_code(), comp.ns.__dict__, name.name)
-    return [(LOAD_CONST, c)]
 
+    return [(LOAD_CONST, c)]
 
 class MultiFn(object):
     def __init__(self, comp, form):
@@ -411,13 +414,12 @@ def compileImplcitDo(comp, form):
         code.append((LOAD_CONST, None))
     return code
 
+
 def compileFNStar(comp, form):
     haslocalcaptures = False
     aliases = []
     if len(comp.aliases) > 0: # we got a closure to deal with
         for x in comp.aliases:
-            if isinstance(comp.aliases[x], LocalMacro):
-                continue
             comp.pushAlias(x, Closure(x))
             aliases.append(x)
         haslocalcaptures = True
@@ -441,10 +443,13 @@ def compileFNStar(comp, form):
     else:
         code = compileMultiFn(comp, name, form)
 
+
+
     if pushed:
         comp.popName()
     clist = comp.closureList()
     fcode = []
+
 
     if haslocalcaptures:
         comp.popAliases(aliases)
@@ -500,6 +505,7 @@ def compileIs(comp, form):
     code.append((COMPARE_OP, "is"))
     return code
 
+
 def compileContains(comp, form):
     if len(form) != 3:
         raise CompilerException("contains? requires 2 arguments", form)
@@ -542,6 +548,7 @@ def compileApply(comp, form):
     code = []
     while s is not None:
         code.extend(comp.compile(s.first()))
+
         s = s.next()
     code.append((LOAD_CONST, RT.seqToTuple))
     code.append((ROT_TWO, None))
@@ -564,12 +571,16 @@ def getBuiltin(name):
             return __builtins__[name]
     elif hasattr(__builtins__, name):
         return getattr(__builtins__, name)
+
     raise CompilerException("Python builtin not found", name)
 
 def compileLetMacro(comp, form):
     if len(form) < 3:
         raise CompilerException("alias-properties takes at least two args", form)
+
     form = form.next()
+
+
     s = RT.seq(form.first())
     syms = []
     while s is not None:
@@ -579,13 +590,18 @@ def compileLetMacro(comp, form):
         if s is None:
             raise CompilerException("let-macro takes a even number of bindings")
         macro = s.first()
+
         comp.pushAlias(sym, LocalMacro(sym, macro))
+
         s = s.next()
 
     body = form.next()
+
     code = compileImplcitDo(comp, body)
+
     comp.popAliases(syms)
     return code
+
 
 
 builtins = {Symbol.intern("ns"): compileNS,
@@ -628,19 +644,20 @@ As each new local is created, it is pushed onto the stack, then only the
 top most local is executed whenever a new local is resolved. This allows
 the above example to resolve exactly as desired. lets will never stop on
 top of eachother, let-macros can turn 'x into (.-x self), etc.
+
+
+
+
 """
 
 class AAlias():
     """Base class for all aliases"""
     def __init__(self, rest = None):
         self.rest = rest
-
     def compile(self, comp):
         raise AbstractMethodCall(self)
-
     def compileSet(self, comp):
         raise AbstractMethodCall(self)
-
     def next(self):
         return self.rest
 
@@ -650,10 +667,8 @@ class FnArgument(AAlias):
     def __init__(self, sym, rest = None):
         AAlias.__init__(self, rest)
         self.sym = sym
-
     def compile(self, comp):
         return [(LOAD_FAST, self.sym.name)]
-
     def compileSet(self, comp):
         return [(STORE_FAST, self.sym.name)]
 
@@ -663,10 +678,8 @@ class RenamedLocal(AAlias):
         AAlias.__init__(self, rest)
         self.sym = sym
         self.newsym = Symbol.intern(sym.name + str(RT.nextID()))
-
     def compile(self, comp):
         return [(LOAD_FAST, self.newsym.name)]
-
     def compileSet(self, comp):
         return [(STORE_FAST, self.newsym.name)]
 
@@ -675,34 +688,29 @@ class Closure(AAlias):
     def __init__(self, sym, rest = None):
         AAlias.__init__(self, rest)
         self.sym = sym
-        self.isused = False  # set to true when closure is compiled
-
+        self.isused = False  ## will be set to true whenever this is compiled
     def isUsed(self):
         return self.isused
-
     def compile(self, comp):
         self.isused = True
         return [(LOAD_DEREF, self.sym.name)]
 
+
 class LocalMacro(AAlias):
-    """Represents a value that represents a local macro"""
+    """represents a value that represents a local macro"""
     def __init__(self, sym, macroform, rest = None):
         AAlias.__init__(self, rest)
         self.sym = sym
         self.macroform = macroform
-
     def compile(self, comp):
         code = comp.compile(self.macroform)
         return code
-
 
 def evalForm(form, ns):
     comp = Compiler()
     comp.ns = ns
     code = comp.compile(form)
     return comp.executeCode(code)
-
-
 class Compiler():
     def __init__(self):
         self.recurPoint = RT.list()
@@ -742,7 +750,6 @@ class Compiler():
     def pushRecur(self, label):
         """ Pushes a new recursion label. All recur calls will loop back to this point """
         self.recurPoint = RT.cons(label, self.recurPoint)
-
     def popRecur(self):
         """ Pops the top most recursion point """
         self.recurPoint = self.recurPoint.next()
@@ -787,6 +794,7 @@ class Compiler():
             return builtins[form.first()](self, form)
         if isinstance(form.first(), Symbol):
             macro = findItem(self.getNS(), form.first())
+
             if macro is not None:
                 if (hasattr(macro, "meta") and macro.meta()[_MACRO_])\
                 or (hasattr(macro, "macro?") and getattr(macro, "macro?")):
@@ -809,6 +817,7 @@ class Compiler():
             acount += 1
             f = f.next()
         c.append((CALL_FUNCTION, acount))
+
         return c
 
     def compileAccessList(self, sym):
@@ -818,8 +827,8 @@ class Compiler():
         return [(LOAD_GLOBAL, accessList[0])] + [(LOAD_ATTR, attr) for attr in accessList[1:]]
 
     def getAccessList(self, sym):
-        if sym.ns is not None \
-           and sym.ns == self.getNS().__name__:
+        if sym.ns is not None\
+        and sym.ns == self.getNS().__name__:
             return [sym.name]
         splt = []
         if sym.ns is not None:
@@ -830,8 +839,10 @@ class Compiler():
     def compileSymbol(self, sym):
         """ Compiles the symbol. First the compiler tries to compile it
             as an alias, then as a global """
+
         if sym in self.aliases:
             return self.compileAlias(sym)
+
         return self.compileAccessList(sym)
 
     def compileAlias(self, sym):
@@ -896,6 +907,7 @@ class Compiler():
             return self.ns
 
     def executeCode(self, code):
+        import sys
         if code == []:
             return None
         newcode = code[:]
@@ -921,17 +933,29 @@ class Compiler():
         for x in dellist:
             del self.aliasedProperties[x]
 
+
+
     def standardImports(self):
         return [(LOAD_CONST, -1),
-                (LOAD_CONST, None),
-                (IMPORT_NAME, "py.clojure.standardimports"),
-                (IMPORT_STAR, None)]
+            (LOAD_CONST, None),
+            (IMPORT_NAME, "py.clojure.standardimports"),
+            (IMPORT_STAR, None)]
 
     def executeModule(self, code):
         code.append((RETURN_VALUE, None))
         c = Code(code, [], [], False, False, False, str(Symbol.intern(self.getNS().__name__, "<string>")), "./clj/clojure/core.clj", 0, None)
+        import marshal
+        import pickle
+        import py_compile
+        import time
+        import dis
+
+        dis.dis(c)
         codeobject = c.to_code()
+        print codeobject.__class__ is compileDef.__class__
+
         with open('output.pyc', 'wb') as fc:
             fc.write(py_compile.MAGIC)
             py_compile.wr_long(fc, long(time.time()))
             marshal.dump(c, fc)
+
