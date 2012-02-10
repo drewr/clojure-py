@@ -673,14 +673,13 @@
                            inherits
                            (assoc fns (py/str (ffirst specs))
                            	   	      (prop-wrap fields (first specs)))))))
-
+(def definterface deftype) 
 
 ;;;;;;;;;;;;;;;;;Lazy Seq and Chunked Seq;;;;;;;;;;;;;;;;
 
 
-(deftype IPending []
-	(isRealized [self]
-	(throw (AbstractMethodCall))))
+(definterface IPending []
+	(isRealized [self] nil))
 
 (deftype LazySeq [fnc sv s _meta]
 	(withMeta [self meta]
@@ -740,6 +739,13 @@
   (list 'clojure.core.LazySeq (list* '^{:once true} fn* [] body) nil nil nil))    
 
 
+(definterface IChunkedSeq [] 
+	clojure.lang.iseq.ISeq
+	clojure.lang.sequential.Sequential
+	(chunkedFirst [self] nil)
+	(chunkedNext [self] nil)
+	(chunkedMore [self] nil))
+
 
 (deftype ChunkBuffer [buffer end]
     (add [self o]
@@ -777,6 +783,46 @@
 			(inc x))
 		 ret))))
 
+
+
+;(deftype ChunkedCons [_meta chunk _more]
+;
+;	clojure.lang.aseq.ASeq
+;	(first [self]
+;	       (.nth chunk 0))
+;	(withMeta [self meta]
+;	  (if (py.bytecode/COMPARE_OP "is" meta _meta)
+;	        (ChunkedCons meta chunk _more)
+;		self))
+;
+;
+;	(next [self]
+;	  (if (py.bytecode/COMPARE_OP ">" (len chunk) 1)
+;	      (ChunkedCons nil (.dropFirst chunk) _more)
+;	      (.chunkedNext self)))
+;
+;	(more [self]
+;	  (cond (py.bytecode/COMPARE_OP ">" (len chunk) 1)
+;		  (ChunkedCons nil (.dropFirst chunk) _more)
+;		(py.bytecode/COMPARE_OP "is" _more nil)
+;		  '()
+;		:else
+;		  _more))
+;
+;	IChunkedSeq
+;	(chunkedFirst [self] chunk)
+;
+;	(chunkedNext [self]
+;	  (.seq (.chunkedMore self)))
+;
+;	(chunkedMore [self]
+;	  (if (is? _more nil)
+;	        '()
+;		_more)))
+
+
+     
+
 (defn chunk-buffer [capacity]
      (ChunkBuffer (py.bytecode/BINARY_MULTIPLY (list [None]) capacity)
 		  0))
@@ -795,8 +841,40 @@
 (defn chunk-next [s]
      (.chunkedNext s))
 
+(defn chunk-cons [chunk rest]
+     (if (= (len chunk) 0)
+	 rest
+	 (ChunkedCons chunk rest)))
+
 (defn chunked-seq? [s]
      (instance? IChunkedSeq s))
+
+(defn concat
+  "Returns a lazy seq representing the concatenation of the elements in the supplied colls."
+  {:added "1.0"}
+  ([] (lazy-seq nil))
+  ([x] (lazy-seq x))
+  ([x y]
+    (lazy-seq
+      (let [s (seq x)]
+        (if s
+          (if (chunked-seq? s)
+            (chunk-cons (chunk-first s) (concat (chunk-rest s) y))
+            (cons (first s) (concat (rest s) y)))
+          y))))
+  ([x y & zs]
+     (let [cat (fn cat [xys zs]
+                 (lazy-seq
+                   (let [xys (seq xys)]
+                     (if xys
+                       (if (chunked-seq? xys)
+                         (chunk-cons (chunk-first xys)
+                                     (cat (chunk-rest xys) zs))
+                         (cons (first xys) (cat (rest xys) zs)))
+                       (when zs
+                         (cat (first zs) (next zs)))))))]
+       (cat (concat x y) zs))))
+
 
 (defmacro if-not
   "Evaluates test. If logical false, evaluates and returns then expr, 
