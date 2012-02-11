@@ -73,12 +73,11 @@ def compileBytecode(comp, form):
     if hasarg:
         arg = form.first()
         if not isinstance(arg, (int, str)):
-            raise CompilerException("first argument to "+ codename + " must be int or str")
+            raise CompilerException("first argument to "+ codename + " must be int or str", form)
         form = form.next()
     se = byteplay.getse(bc, arg)
     if se[0] != len(form) or se[1] > 1:
-	print se, form
-        raise CompilerException("literal bytecode " + codename + " not supported")
+        raise CompilerException("literal bytecode " + codename + " not supported", form)
     s = form
     code = []
     while s is not None:
@@ -796,7 +795,8 @@ class Compiler():
             macro = findItem(self.getNS(), form.first())
 
             if macro is not None:
-                if (hasattr(macro, "meta") and macro.meta()[_MACRO_])\
+                if not isinstance(macro, type) \
+		and (hasattr(macro, "meta") and macro.meta()[_MACRO_])\
                 or (hasattr(macro, "macro?") and getattr(macro, "macro?")):
                     args = RT.seqToTuple(form.next())
                     mresult = macro(macro, self, *args)

@@ -49,7 +49,7 @@ class ASeq(Obj, Sequential, ISeq, IHashEq, Iterable):
         if s is None:
             from py.clojure.lang.persistentlist import EMPTY
             return EMPTY
-        return True
+        return s
 
     def first(self):
         raise AbstractMethodCall(self)

@@ -127,11 +127,11 @@
   argument."
    :added "1.0"
    :static true}  
- rest (fn rest [x] (py/if (py/isinstance ISeq x)
+ rest (fn rest [x] (py/if (py/isinstance x ISeq)
                        (.more x)
-                       (let [s (.seq x)]
-                           (py/if seq
-                               (.more seq)
+                       (let [s (seq x)]
+                           (py/if s
+                               (.more s)
                                clojure.lang.persistentlist.EMPTY)))))
 
 (def
@@ -740,8 +740,8 @@
 
 
 (definterface IChunkedSeq [] 
-	clojure.lang.iseq.ISeq
 	clojure.lang.sequential.Sequential
+	clojure.lang.iseq.ISeq
 	(chunkedFirst [self] nil)
 	(chunkedNext [self] nil)
 	(chunkedMore [self] nil))
@@ -785,43 +785,43 @@
 
 
 
-;(deftype ChunkedCons [_meta chunk _more]
-;
-;	clojure.lang.aseq.ASeq
-;	(first [self]
-;	       (.nth chunk 0))
-;	(withMeta [self meta]
-;	  (if (py.bytecode/COMPARE_OP "is" meta _meta)
-;	        (ChunkedCons meta chunk _more)
-;		self))
-;
-;
-;	(next [self]
-;	  (if (py.bytecode/COMPARE_OP ">" (len chunk) 1)
-;	      (ChunkedCons nil (.dropFirst chunk) _more)
-;	      (.chunkedNext self)))
-;
-;	(more [self]
-;	  (cond (py.bytecode/COMPARE_OP ">" (len chunk) 1)
-;		  (ChunkedCons nil (.dropFirst chunk) _more)
-;		(py.bytecode/COMPARE_OP "is" _more nil)
-;		  '()
-;		:else
-;		  _more))
-;
-;	IChunkedSeq
-;	(chunkedFirst [self] chunk)
-;
-;	(chunkedNext [self]
-;	  (.seq (.chunkedMore self)))
-;
-;	(chunkedMore [self]
-;	  (if (is? _more nil)
-;	        '()
-;		_more)))
+(deftype ChunkedCons [_meta chunk _more]
+
+	clojure.lang.aseq.ASeq
+	(first [self]
+	       (.nth chunk 0))
+	(withMeta [self meta]
+	  (if (py.bytecode/COMPARE_OP "is" meta _meta)
+	        (ChunkedCons meta chunk _more)
+		self))
 
 
-     
+	(next [self]
+	  (if (py.bytecode/COMPARE_OP ">" (len chunk) 1)
+	      (ChunkedCons nil (.dropFirst chunk) _more)
+	      (.chunkedNext self)))
+
+	(more [self]
+	  (cond (py.bytecode/COMPARE_OP ">" (len chunk) 1)
+		  (ChunkedCons nil (.dropFirst chunk) _more)
+		(py.bytecode/COMPARE_OP "is" _more nil)
+		  '()
+		:else
+		  _more))
+
+	IChunkedSeq
+	(chunkedFirst [self] chunk)
+
+	(chunkedNext [self]
+	  (.seq (.chunkedMore self)))
+
+	(chunkedMore [self]
+	  (if (is? _more nil)
+	        '()
+		_more)))
+
+
+
 
 (defn chunk-buffer [capacity]
      (ChunkBuffer (py.bytecode/BINARY_MULTIPLY (list [None]) capacity)
@@ -841,6 +841,7 @@
 (defn chunk-next [s]
      (.chunkedNext s))
 
+(print "foo" (dir ChunkedCons))
 (defn chunk-cons [chunk rest]
      (if (= (len chunk) 0)
 	 rest
@@ -848,6 +849,7 @@
 
 (defn chunked-seq? [s]
      (instance? IChunkedSeq s))
+
 
 (defn concat
   "Returns a lazy seq representing the concatenation of the elements in the supplied colls."
