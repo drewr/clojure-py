@@ -428,7 +428,6 @@ def compileFNStar(comp, form):
         raise CompilerException("2 or more arguments to fn* required", form)
     form = form.next()
     name = form.first()
-
     pushed = False
     if not isinstance(name, Symbol):
         comp.pushName(name)
@@ -436,6 +435,11 @@ def compileFNStar(comp, form):
         name = Symbol.intern("fn" + str(RT.nextID()))
     else:
         form = form.next()
+
+    gensym = Symbol.intern("_"+name.name + str(RT.nextID()))
+
+    if haslocalcaptures:
+	comp.pushAlias(name, LocalMacro(name, gensym))
 
     if isinstance(form.first(), IPersistentVector):
         code = compileFn(comp, name, form, orgform)
@@ -449,6 +453,8 @@ def compileFNStar(comp, form):
     clist = comp.closureList()
     fcode = []
 
+    if haslocalcaptures:
+	comp.popAlias(name)
 
     if haslocalcaptures:
         comp.popAliases(aliases)
@@ -462,6 +468,11 @@ def compileFNStar(comp, form):
         fcode.extend(code)
         fcode.append((MAKE_CLOSURE, 0))
         code = fcode
+
+    if haslocalcaptures:
+        code.append((DUP_TOP, None))
+        code.append((STORE_GLOBAL, gensym.name))
+
     return code
 
 def compileVector(comp, form):
