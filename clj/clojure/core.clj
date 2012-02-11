@@ -592,7 +592,7 @@
     "Creates a new clas with the given name, that is inherited from
     classes and has the given member functions."
     [name classes members]
-    (py/type (.-name name) (apply tuple classes) (.toDict members)))
+    (py/type (.-name name) (apply tuple (conj classes py/object)) (.toDict members)))
 
 (defn make-init
     "Creates a __init__ method for use in deftype"
@@ -660,7 +660,7 @@
 (defmacro deftype
     [name fields & specs]
     (loop [specs (seq specs)
-           inherits [py/object]
+           inherits []
            fns {"__init__" (make-init fields)}]
           (cond (not specs)
                     (list 'def name (list 'make-class (list 'quote name) inherits fns))
