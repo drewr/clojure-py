@@ -841,7 +841,6 @@
 (defn chunk-next [s]
      (.chunkedNext s))
 
-(print "foo" (dir ChunkedCons))
 (defn chunk-cons [chunk rest]
      (if (= (len chunk) 0)
 	 rest
@@ -898,4 +897,10 @@
    `(let [and# ~x]
       (py/if and# (and ~@next) and#))))
 
-
+(defmacro import
+  ([module] `(py.bytecode/STORE_GLOBAL ~module
+				      (py/__import__ ~module
+						     (py/globals)
+						     (py/locals)
+					  	     (py/list)
+						     -1))))

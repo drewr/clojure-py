@@ -435,6 +435,9 @@ class SyntaxQuoteReader():
                 ret = sym
             elif sym.ns is None and sym.name.startswith("."):
                 ret = sym
+            elif sym.ns is not None:
+                ret = sym
+
             else:
                 comp = currentCompiler.get(lambda: None)
                 if comp is None:
