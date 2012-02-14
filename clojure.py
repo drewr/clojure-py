@@ -86,6 +86,9 @@ def main():
                 print comp.executeCode(res)
             except Exception:
                 import traceback; traceback.print_exc()
+    else:
+        for x in sys.argv[1:]:
+            requireClj(x)
 
 
 def unbalanced(s):

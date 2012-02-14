@@ -41,6 +41,7 @@ class Cons(ASeq):
                 return c + len(s)
             c += 1
             s = s.next()
+        return c
 
     def __repr__(self):
         s = self

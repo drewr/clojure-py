@@ -23,7 +23,7 @@ class ASeq(Obj, Sequential, ISeq, IHashEq, Iterable):
         return ms is None
 
     def __hash__(self):
-        if self._hash == -1:
+        if not hasattr(self, "_hash") or self._hash == -1:
             hval = -1
             for s in self:
                 curhash = 0
@@ -49,7 +49,7 @@ class ASeq(Obj, Sequential, ISeq, IHashEq, Iterable):
         if s is None:
             from py.clojure.lang.persistentlist import EMPTY
             return EMPTY
-        return True
+        return s
 
     def first(self):
         raise AbstractMethodCall(self)

@@ -13,10 +13,8 @@ def setMeta(f, meta):
 def cons(x, s):
     from py.clojure.lang.cons import Cons
     from py.clojure.lang.persistentlist import PersistentList, EMPTY as EMPTY_LIST
-    from py.clojure.lang.aseq import ASeq
-    if isinstance(s, PersistentList):
-        return s.cons(x)
-    if isinstance(s, ASeq):
+    from py.clojure.lang.iseq import ISeq
+    if isinstance(s, ISeq):
         return Cons(x, s)
     if s is None:
         return EMPTY_LIST.cons(x)

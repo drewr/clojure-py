@@ -96,12 +96,14 @@
    :added "1.0"
    :static true}
  first (fn first [s]
- 	 			 (py/if s
-					 (py/if (instance? ISeq s)
-						 (.first s)
-						 (let [s (seq s)]
-							  (.first s)))
-					 nil)))
+	   (py/if (py.bytecode/COMPARE_OP "is not" s nil)
+	     (py/if (instance? ISeq s)
+	       (.first s)
+	       (let [s (seq s)]
+	            (py/if (py.bytecode/COMPARE_OP "is not" s nil)
+	                   (.first s)
+			   nil)))
+	    nil)))
 
 (def
  ^{:arglists '([coll])
@@ -125,11 +127,11 @@
   argument."
    :added "1.0"
    :static true}  
- rest (fn rest [x] (py/if (py/isinstance ISeq x)
+ rest (fn rest [x] (py/if (py/isinstance x ISeq)
                        (.more x)
-                       (let [s (.seq x)]
-                           (py/if seq
-                               (.more seq)
+                       (let [s (seq x)]
+                           (py/if s
+                               (.more s)
                                clojure.lang.persistentlist.EMPTY)))))
 
 (def
@@ -557,12 +559,40 @@
   ([a b c d & more]
      (cons a (cons b (cons c (cons d (spread more)))))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defn =
+  "Equality. Returns true if x equals y, false if not. Same as
+  Java x.equals(y) except it also works for nil, and compares
+  numbers and collections in a type-independent manner.  Clojure's immutable data
+  structures define equals() (and thus =) as a value, not an identity,
+  comparison."
+  {:added "1.0"}
+  ([x] true)
+  ([x y] (py.bytecode/COMPARE_OP "==" x y))
+  ([x y & more]
+   (py/if (py.bytecode/COMPARE_OP "==" x y)
+     (py/if (next more)
+       (recur y (first more) (next more))
+       (py.bytecode/COMPARE_OP "==" y (first more)))
+     false)))
+
+
+(defn not=
+  "Same as (not (= obj1 obj2))"
+  {:added "1.0"}
+  ([x] false)
+  ([x y] (not (= x y)))
+  ([x y & more]
+   (not (apply = x y more))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defn make-class
     "Creates a new clas with the given name, that is inherited from
     classes and has the given member functions."
     [name classes members]
-    (py/type (.-name name) (apply tuple classes) (.toDict members)))
+    (py/type (.-name name) (apply tuple (conj classes py/object)) (.toDict members)))
 
 (defn make-init
     "Creates a __init__ method for use in deftype"
@@ -591,18 +621,52 @@
 
 (defn prop-wrap-fn
     [members f]
-    (list 'let-macro (make-props members (first (fnext f)))
-                            (cons 'fn f)))
+    (list 'fn 
+ 	  (first f) 
+	  (second f)
+          (list* 'let-macro 
+		(make-props members 
+			    (first (fnext f)))
+		(next (next f)))))
 
+(defn prop-wrap-multi
+    [members f]
+    (let [name (first f)
+          f (next f)
+          wrapped (loop [remain f
+                         wr []]
+			(py/if remain
+			    (let [cur (first remain)
+				   args (first cur)
+				   body (next cur)]
+				  (recur (next remain) 
+ 			               (cons (list args
+					          (list* 'let-macro
+						      (make-props members
+								  (first args))
+						      body))
+					     wr)))
+			    wr))]
+	(list* 'fn name wrapped)))
+                        
+         
+(defn prop-wrap
+    [members f]
+    (if (vector? (fnext f))
+	(prop-wrap-fn members f)
+	(prop-wrap-multi members f)))
 
 
 (defmacro deftype
     [name fields & specs]
     (loop [specs (seq specs)
-           inherits [py/object]
-           fns {"__init__" (make-init fields)}]
+           inherits []
+           fns (if (= (len fields) 0) {} {"__init__" (make-init fields)})]
           (cond (not specs)
-                    (list 'def name (list 'make-class (list 'quote name) inherits fns))
+                    (list 'def name (list 'py/type (.-name name) 
+                                                   (list 'py/tuple 
+                                                         (conj inherits py/object))
+                                                   (list '.toDict fns)))
                 (symbol? (first specs))
                     (recur (next specs) 
                            (conj inherits (first specs))
@@ -611,65 +675,63 @@
                     (recur (next specs)
                            inherits
                            (assoc fns (py/str (ffirst specs))
-                           	   	      (prop-wrap-fn fields (first specs)))))))
-
+                           	   	      (prop-wrap fields (first specs)))))))
+(def definterface deftype) 
 
 ;;;;;;;;;;;;;;;;;Lazy Seq and Chunked Seq;;;;;;;;;;;;;;;;
 
 
-;(deftype IPending []
-;	(isRealized [self]
-;	(throw (AbstractMethodCall))))
+(definterface IPending []
+	(isRealized [self] nil))
 
-;(deftype LazySeq [fnc sv s _meta]
-;	(withMeta [self meta]
-;		(LazySeq nil nil (.seq self) meta))
-;	(sval [self]
-;		(when (not (nil? fnc))
-;			  (setattr self "sv" (fnc))
-;			  (setattr self "fnc" nil))
-;		(py/if (not (nil? sv))
-;			sv
-;		s))
-;	(seq [self]
-;		(.sval self)
-;		(when (not (nil? sv))
-;			(let [ls sv]
-;				 (setattr self "sv" nil)
- ;       		 (setattr self
-;        		 	 	  "s"
- ;       		 	 	  (loop [ls sv]
-;							    (py/if (instance? LazySeq ls)
-;								    (recur (.sval ls))
-;								    (.seq ls))))))
-;		s)
-;
-;	(__len__ [self]
-;	    (loop [c 0
-;	           s (.seq self)]
-;	          (py/if (nil? s)
-;	              c
-;	              (recur (.__add__ c 1) (next s)))))
-;	(first [self]
-;	    (.seq self)
-;	    (py/if (nil? s)
-;	        nil
-;	        (.first s)))
-;	(next [self]
-;	    (.seq self)
-;	    (py/if (nil? s)
-;	        nil
-;	        (.next s)))
-;	(more [self]
-;	    (.seq self)
-;	    (py/if (nil? s)
-;	        (list)
-;	        (.more self)))
-;	(cons [self o]
-;	    (cons o (.seq self)))
-;	(empty [self]
-;	    (list)))
-;
+(deftype LazySeq [fnc sv s _meta]
+	(withMeta [self meta]
+		(LazySeq nil nil (.seq self) meta))
+	(sval [self]
+		(when (not (nil? fnc))
+			  (setattr self "sv" (fnc))
+			  (setattr self "fnc" nil))
+		(py/if (not (nil? sv))
+			sv
+		s))
+	clojure.lang.iseq.ISeq
+	(seq [self]
+		(.sval self)
+		(when (not (nil? sv))
+		      (let [ls sv]
+		           (setattr self "sv" nil)
+          		   (setattr self "s"
+       		 	 	         (loop [ls ls]
+					   (py/if (instance? LazySeq ls)
+					          (recur (.sval ls))
+					          (seq ls))))))
+		s)
+	(__len__ [self]
+	    (loop [c 0
+	           s (.seq self)]
+	          (py/if (nil? s)
+	              c
+	              (recur (.__add__ c 1) (next s)))))
+	(first [self]
+	    (.seq self)
+	    (py/if (nil? s)
+	        nil
+	        (.first s)))
+	(next [self]
+	    (.seq self)
+	    (py/if (nil? s)
+	        nil
+	        (.next s)))
+	(more [self]
+	    (.seq self)
+	    (py/if (nil? s)
+	        (list)
+	        (.more self)))
+	(cons [self o]
+	    (cons o (.seq self)))
+	(empty [self]
+	    (list)))
+
 (defmacro lazy-seq
   "Takes a body of expressions that returns an ISeq or nil, and yields
   a Seqable object that will invoke the body only the first time seq
@@ -680,47 +742,143 @@
   (list 'clojure.core.LazySeq (list* '^{:once true} fn* [] body) nil nil nil))    
 
 
+(definterface IChunkedSeq [] 
+	clojure.lang.sequential.Sequential
+	clojure.lang.iseq.ISeq
+	(chunkedFirst [self] nil)
+	(chunkedNext [self] nil)
+	(chunkedMore [self] nil))
 
-;(deftype ChunkBuffer [buffer end]
-;    (add [self o]
-;        (setattr self "end" (inc end))
-;        (get buffer end))
-;    (chunk [self]
-;        (let [ret (ArrayChunk buffer 0 end)]
-;             (setattr self "buffer" nil)
-;             ret))
-;    (count [self] end))
 
-;(deftype ArrayChunk [array off end]
-;    (nth [self i]
-;        (get array (inc of))))
+(deftype ChunkBuffer [buffer end]
+    (add [self o]
+        (setattr self "end" (inc end))
+        (py.bytecode/STORE_SUBSCR buffer end o))
+    (chunk [self]
+        (let [ret (ArrayChunk buffer 0 end)]
+             (setattr self "buffer" nil)
+             ret))
+    (count [self] end))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(deftype ArrayChunk [array off end]
+    (__getitem__ ([self i]
+          (get array (inc of)))
+         ([self i not-found]
+	  (if (py.bytecode/COMPARE_OP ">=" i 0)
+	      (if (py.bytecode/COMPARE_OP "<" i (len self))
+		  (nth self i)
+		  not-found)
+	      not-found)))
 
-(defn =
-  "Equality. Returns true if x equals y, false if not. Same as
-  Java x.equals(y) except it also works for nil, and compares
-  numbers and collections in a type-independent manner.  Clojure's immutable data
-  structures define equals() (and thus =) as a value, not an identity,
-  comparison."
+    (__len__ [self]
+        (py.bytecode/BINARY_SUBTRACT end off))
+
+    (dropFirst [self]
+	(if (= off end)
+	    (throw (IllegalStateException "dropFirst of empty chunk")))
+	(ArrayChunk array (inc off) end))
+
+    (reduce [self f start]
+	(loop [ret (f start (get array off))
+	       x (inc off)]
+	     (if (py.bytecode/COMPARE_OP "<" x end)
+		 (recur (f ret (get array x)) 
+			(inc x))
+		 ret))))
+
+
+
+(deftype ChunkedCons [_meta chunk _more]
+
+	clojure.lang.aseq.ASeq
+	(first [self]
+	       (.nth chunk 0))
+	(withMeta [self meta]
+	  (if (py.bytecode/COMPARE_OP "is" meta _meta)
+	        (ChunkedCons meta chunk _more)
+		self))
+
+
+	(next [self]
+	  (if (py.bytecode/COMPARE_OP ">" (len chunk) 1)
+	      (ChunkedCons nil (.dropFirst chunk) _more)
+	      (.chunkedNext self)))
+
+	(more [self]
+	  (cond (py.bytecode/COMPARE_OP ">" (len chunk) 1)
+		  (ChunkedCons nil (.dropFirst chunk) _more)
+		(py.bytecode/COMPARE_OP "is" _more nil)
+		  '()
+		:else
+		  _more))
+
+	IChunkedSeq
+	(chunkedFirst [self] chunk)
+
+	(chunkedNext [self]
+	  (.seq (.chunkedMore self)))
+
+	(chunkedMore [self]
+	  (if (is? _more nil)
+	        '()
+		_more)))
+
+
+
+
+(defn chunk-buffer [capacity]
+     (ChunkBuffer (py.bytecode/BINARY_MULTIPLY (list [None]) capacity)
+		  0))
+(defn chunk-append [b x]
+     (.add b x))
+
+(defn chunk [b]
+     (.chunk b))
+
+(defn chunk-first [s]
+     (.chunkedFirst s))
+
+(defn chunk-rest [s]
+     (.chunkedMore s))
+
+(defn chunk-next [s]
+     (.chunkedNext s))
+
+(defn chunk-cons [chunk rest]
+     (if (= (len chunk) 0)
+	 rest
+	 (ChunkedCons chunk rest)))
+
+(defn chunked-seq? [s]
+     (instance? IChunkedSeq s))
+
+
+(defn concat
+  "Returns a lazy seq representing the concatenation of the elements in the supplied colls."
   {:added "1.0"}
-  ([x] true)
-  ([x y] (py.bytecode/COMPARE_OP "==" x y))
-  ([x y & more]
-   (py/if (py.bytecode/COMPARE_OP "==" x y)
-     (py/if (next more)
-       (recur y (first more) (next more))
-       (py.bytecode/COMPARE_OP "==" y (first more)))
-     false)))
+  ([] (lazy-seq nil))
+  ([x] (lazy-seq x))
+  ([x y]
+    (lazy-seq
+      (let [s (seq x)]
+        (if s
+          (if (chunked-seq? s)
+            (chunk-cons (chunk-first s) (concat (chunk-rest s) y))
+            (cons (first s) (concat (rest s) y)))
+          y))))
+  ([x y & zs]
+     (let [cat (fn cat [xys zs]
+                 (lazy-seq
+                   (let [xys (seq xys)]
+                     (if xys
+                       (if (chunked-seq? xys)
+                         (chunk-cons (chunk-first xys)
+                                     (cat (chunk-rest xys) zs))
+                         (cons (first xys) (cat (rest xys) zs)))
+                       (when zs
+                         (cat (first zs) (next zs)))))))]
+       (cat (concat x y) zs))))
 
-
-(defn not=
-  "Same as (not (= obj1 obj2))"
-  {:added "1.0"}
-  ([x] false)
-  ([x y] (not (= x y)))
-  ([x y & more]
-   (not (apply = x y more))))
 
 (defmacro if-not
   "Evaluates test. If logical false, evaluates and returns then expr, 
@@ -742,4 +900,12 @@
    `(let [and# ~x]
       (py/if and# (and ~@next) and#))))
 
-
+(defmacro import
+  ([module] 
+    (let [module (.-name module)]
+          `(py.bytecode/STORE_GLOBAL ~module
+				      (py/__import__ ~module
+						     (py/globals)
+						     (py/locals)
+					  	     (py/list)
+						     -1)))))
