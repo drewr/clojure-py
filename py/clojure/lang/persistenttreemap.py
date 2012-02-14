@@ -1,5 +1,6 @@
 from py.clojure.lang.apersistentmap import APersistentMap
 from py.clojure.lang.iobj import IObj
+from py.clojure.lang.cljexceptions import ArityException
 from py.clojure.lang.reversible import Reversible
 from py.clojure.lang.aseq import ASeq
 import py.clojure.lang.rt as RT
@@ -32,6 +33,8 @@ class PersistentTreeMap(APersistentMap, IObj, Reversible):
             self.comp = comp
             self.tree = tree
             self._count = count
+        else:
+            raise ArityException()
 
     def withMeta(self, meta):
         return PersistentTreeMap(meta, self.comp, self.tree, self._count)
