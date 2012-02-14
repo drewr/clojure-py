@@ -148,4 +148,7 @@ def init():
 
 DEFAULT_IMPORTS = None
 
+class DefaultComparator:
+    pass
+
 from py.clojure.lang.ipersistentvector import IPersistentVector
