@@ -44,7 +44,6 @@ def compileDef(comp, form):
     code.extend(comp.compile(value))
     code.append((DUP_TOP, 0))
     code.append((STORE_GLOBAL, sym.name))
-
     if sym.meta() is not None:
         code.extend(comp.compileAccessList(Symbol.intern("clojure.lang.rt.setMeta")))
         code.append((ROT_TWO, 0))

@@ -661,9 +661,12 @@
     [name fields & specs]
     (loop [specs (seq specs)
            inherits []
-           fns {"__init__" (make-init fields)}]
+           fns (if (= (len fields) 0) {} {"__init__" (make-init fields)})]
           (cond (not specs)
-                    (list 'def name (list 'make-class (list 'quote name) inherits fns))
+                    (list 'def name (list 'py/type (.-name name) 
+                                                   (list 'py/tuple 
+                                                         (conj inherits py/object))
+                                                   (list '.toDict fns)))
                 (symbol? (first specs))
                     (recur (next specs) 
                            (conj inherits (first specs))
@@ -898,9 +901,11 @@
       (py/if and# (and ~@next) and#))))
 
 (defmacro import
-  ([module] `(py.bytecode/STORE_GLOBAL ~module
+  ([module] 
+    (let [module (.-name module)]
+          `(py.bytecode/STORE_GLOBAL ~module
 				      (py/__import__ ~module
 						     (py/globals)
 						     (py/locals)
 					  	     (py/list)
-						     -1))))
+						     -1)))))
