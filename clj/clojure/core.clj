@@ -886,7 +886,7 @@
   {:added "1.0"}
   ([test then] `(if-not ~test ~then nil))
   ([test then else]
-   `(py/if (not ~test) ~then ~else)))
+   `(if (not ~test) ~then ~else)))
 
 (defmacro and
   "Evaluates exprs one at a time, from left to right. If a form
@@ -898,7 +898,7 @@
   ([x] x)
   ([x & next]
    `(let [and# ~x]
-      (py/if and# (and ~@next) and#))))
+      (if and# (and ~@next) and#))))
 
 (defmacro import
   ([module] 
