@@ -312,7 +312,7 @@ def compileFn(comp, name, form, orgform):
     comp.popAliases(locals)
 
     clist = map(lambda x: x.sym.name, comp.closureList())
-    c = Code(code, clist, args, lastisargs, False, True, str(Symbol.intern(comp.getNS().__name__, name.name)), "./clj/clojure/core.clj", 0, None)
+    c = Code(code, clist, args, lastisargs, False, True, str(Symbol.intern(comp.getNS().__name__, name.name)), comp.filename, 0, None)
     if not clist:
         c = new.function(c.to_code(), comp.ns.__dict__, name.name)
 
@@ -394,7 +394,7 @@ def compileMultiFn(comp, name, form):
         code.append((RAISE_VARARGS, 1))
 
     clist = map(lambda x: x.sym.name, comp.closureList())
-    c = Code(code, clist, argslist, hasvararg, False, True, str(Symbol.intern(comp.getNS().__name__, name.name)), "./clj/clojure/core.clj", 0, None)
+    c = Code(code, clist, argslist, hasvararg, False, True, str(Symbol.intern(comp.getNS().__name__, name.name)), comp.filename, 0, None)
     if not clist:
         c = new.function(c.to_code(), comp.ns.__dict__, name.name)
 
@@ -727,6 +727,10 @@ class Compiler():
         self.ns = None
         self.lastlineno = -1
         self.aliases = {}
+        self.filename = "<unknown>"
+
+    def setFile(self, filename):
+        self.filename = filename
 
     def pushAlias(self, sym, alias):
         """ Pushes this alias onto the alias stack for the entry sym.
@@ -806,10 +810,13 @@ class Compiler():
 
             if macro is not None:
                 if not isinstance(macro, type) \
-		and (hasattr(macro, "meta") and macro.meta()[_MACRO_])\
+		        and (hasattr(macro, "meta") and macro.meta()[_MACRO_])\
                 or (hasattr(macro, "macro?") and getattr(macro, "macro?")):
                     args = RT.seqToTuple(form.next())
                     mresult = macro(macro, self, *args)
+                    if hasattr(mresult, "withMeta") \
+                       and hasattr(form, "meta"):
+                        mresult = mresult.withMeta(form.meta())
                     s = repr(mresult)
                     return self.compile(mresult)
         if isinstance(form.first(), Symbol):
@@ -922,7 +929,7 @@ class Compiler():
             return None
         newcode = code[:]
         newcode.append((RETURN_VALUE, None))
-        c = Code(newcode, [], [], False, False, False, str(Symbol.intern(self.getNS().__name__, "<string>")), "./clj/clojure/core.clj", 0, None)
+        c = Code(newcode, [], [], False, False, False, str(Symbol.intern(self.getNS().__name__, "<string>")), self.filename, 0, None)
         retval = eval(c.to_code(), self.getNS().__dict__)
         return retval
 
@@ -953,7 +960,7 @@ class Compiler():
 
     def executeModule(self, code):
         code.append((RETURN_VALUE, None))
-        c = Code(code, [], [], False, False, False, str(Symbol.intern(self.getNS().__name__, "<string>")), "./clj/clojure/core.clj", 0, None)
+        c = Code(code, [], [], False, False, False, str(Symbol.intern(self.getNS().__name__, "<string>")), self.filename, 0, None)
         import marshal
         import pickle
         import py_compile

@@ -21,6 +21,7 @@ def requireClj(filename, stopafter = None):
 
     RT.init()
     comp = Compiler()
+    comp.setFile(filename)
     currentCompiler.set(comp)
 
     try:
