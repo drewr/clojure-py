@@ -16,7 +16,7 @@
 (deftest if-not-tests
     (assert-true (if-not false true))
     (assert-false (if-not true true false))
-    (assert-false (if not true false true)))
+    (assert-true (if-not true false true)))
 
 (deftest and-tests
     (assert-true (and true true true))
