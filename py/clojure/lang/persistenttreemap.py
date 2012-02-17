@@ -92,7 +92,7 @@ class PersistentTreeMap(APersistentMap, IObj, Reversible):
 
     def without(self, key):
         found = Box(None)
-        t = remove(self.tree, key, found)
+        t = self.remove(self.tree, key, found)
         if t is None:
             if found.val is None: # None == doesn't contain key
                 return self
