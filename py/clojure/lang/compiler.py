@@ -878,7 +878,7 @@ class Compiler():
         return closures
 
     def compile(self, itm):
-        from py.clojure.lang.persistentlist import PersistentList
+        from py.clojure.lang.persistentlist import PersistentList, EmptyList
         from py.clojure.lang.cons import Cons
 
         c = []
@@ -906,6 +906,8 @@ class Compiler():
             c.extend(compileKeyword(self, itm))
         elif isinstance(itm, bool):
             c.extend(compileBool(self, itm))
+        elif isinstance(itm, EmptyList):
+            c.append((LOAD_CONST, itm))
         else:
             raise CompilerException("Don't know how to compile" + str(type(itm)), None)
 

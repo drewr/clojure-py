@@ -909,3 +909,221 @@
 						     (py/locals)
 					  	     (py/list)
 						     -1)))))
+
+(defn identical?
+  "Tests if 2 arguments are the same object"
+  {:added "1.0"}
+  ([x y] (py.bytecode/COMPARE_OP "is" x y)))
+
+(defn compare
+  "Comparator. Returns a negative number, zero, or a positive number
+  when x is logically 'less than', 'equal to', or 'greater than'
+  y. Same as Java x.compareTo(y) except it also works for nil, and
+  compares numbers and collections in a type-independent manner. x
+  must implement Comparable"
+  {:added "1.0"}
+  [x y] (py/cmp x y))
+
+(defmacro or
+  "Evaluates exprs one at a time, from left to right. If a form
+  returns a logical true value, or returns that value and doesn't
+  evaluate any of the other expressions, otherwise it returns the
+  value of the last expression. (or) returns nil."
+  {:added "1.0"}
+  ([] nil)
+  ([x] x)
+  ([x & next]
+      `(let [or# ~x]
+         (if or# or# (or ~@next)))))
+
+(defn zero?
+  "Returns true if num is zero, else false"
+  {:added "1.0"}
+  [x] (py.bytecode/COMPARE_OP "==" x 0))
+
+(defn count
+  "Returns the number of items in the collection. (count nil) returns
+  0.  Also works on strings, arrays, and Java Collections and Maps"
+  {:added "1.0"}
+  [coll] (py/len coll))
+
+(defn int
+  "Coerce to int"
+  {:added "1.0"}
+  [x] (py/int x))
+
+(defn <
+  "Returns non-nil if nums are in monotonically increasing order,
+  otherwise false."
+  {:added "1.0"}
+  ([x] true)
+  ([x y] (py.bytecode/COMPARE_OP "<" x y))
+  ([x y & more]
+   (if (< x y)
+     (if (next more)
+       (recur y (first more) (next more))
+       (< y (first more)))
+     false)))
+
+;; reduce is defined again later after InternalReduce loads
+(defn reduce1
+       ([f coll]
+             (let [s (seq coll)]
+               (if s
+         (reduce1 f (first s) (next s))
+                 (f))))
+       ([f val coll]
+          (let [s (seq coll)]
+            (if s
+              (if (chunked-seq? s)
+                (recur f 
+                       (.reduce (chunk-first s) f val)
+                       (chunk-next s))
+                (recur f (f val (first s)) (next s)))
+         val))))
+
+(defn reverse
+  "Returns a seq of the items in coll in reverse order. Not lazy."
+  {:added "1.0"}
+  [coll]
+    (reduce1 conj () coll))
+
+(defn >1? [n] (py.bytecode/COMPARE_OP ">" n 1))
+(defn >0? [n] (py.bytecode/COMPARE_OP ">" n 0))
+
+(defn +
+  "Returns the sum of nums. (+) returns 0. Does not auto-promote
+  longs, will throw on overflow. See also: +'"
+  {:added "1.2"}
+  ([] 0)
+  ([x] x)
+  ([x y] (py.bytecode/BINARY_ADD x y))
+  ([x y & more]
+     (reduce1 + (+ x y) more)))
+
+(defn *
+  "Returns the product of nums. (*) returns 1. Does not auto-promote
+  longs, will throw on overflow. See also: *'"
+  {:added "1.2"}
+  ([] 1)
+  ([x] x)
+  ([x y] (py.bytecode/BINARY_MULTIPLY x y))
+  ([x y & more]
+     (reduce1 * (* x y) more)))
+
+(defn /
+  "If no denominators are supplied, returns 1/numerator,
+  else returns numerator divided by all of the denominators."
+  {:added "1.0"}
+  ([x] (/ 1 x))
+  ([x y] (py.bytecode/BINARY_DIVIDE x y))
+  ([x y & more]
+   (reduce1 / (/ x y) more)))
+
+(defn -
+  "If no ys are supplied, returns the negation of x, else subtracts
+  the ys from x and returns the result. Does not auto-promote
+  longs, will throw on overflow. See also: -'"
+  {:added "1.2"}
+  ([x] (py.bytecode/UNARY_NEGATIVE x))
+  ([x y] (py.bytecode/BINARY_SUBTRACT x y))
+  ([x y & more]
+     (reduce1 - (- x y) more)))
+
+(defn <=
+  "Returns non-nil if nums are in monotonically non-decreasing order,
+  otherwise false."
+  {:added "1.0"}
+  ([x] true)
+  ([x y] (py.bytecode/COMPARE_OP "<=" x y))
+  ([x y & more]
+   (if (<= x y)
+     (if (next more)
+       (recur y (first more) (next more))
+       (<= y (first more)))
+     false)))
+
+(defn >
+  "Returns non-nil if nums are in monotonically decreasing order,
+  otherwise false."
+  {:added "1.0"}
+  ([x] true)
+  ([x y] (py.bytecode/COMPARE_OP ">" x y))
+  ([x y & more]
+   (if (> x y)
+     (if (next more)
+       (recur y (first more) (next more))
+       (> y (first more)))
+     false)))
+
+(defn >=
+  "Returns non-nil if nums are in monotonically non-increasing order,
+  otherwise false."
+  {:added "1.0"}
+  ([x] true)
+  ([x y] (py.bytecode/COMPARE_OP ">=" x y))
+  ([x y & more]
+   (if (>= x y)
+     (if (next more)
+       (recur y (first more) (next more))
+       (>= y (first more)))
+     false)))
+
+(defn ==
+  "Returns non-nil if nums all have the equivalent
+  value (type-independent), otherwise false"
+  {:added "1.0"}
+  ([x] true)
+  ([x y] (py.bytecode/COMPARE_OP "==" x y))
+  ([x y & more]
+   (if (== x y)
+     (if (next more)
+       (recur y (first more) (next more))
+       (== y (first more)))
+     false)))
+
+(defn dec
+  "Returns a number one less than num. Does not auto-promote
+  longs, will throw on overflow. See also: dec'"
+  {:added "1.2"}
+  [x] (py.bytecode/BINARY_SUBTRACT x 1))
+
+(defn max
+  "Returns the greatest of the nums."
+  {:added "1.0"}
+  ([x] x)
+  ([x y] (py/max x y))
+  ([x y & more]
+   (reduce1 max (max x y) more)))
+
+(defn min
+  "Returns the least of the nums."
+  {:added "1.0"}
+  ([x] x)
+  ([x y] (py/min x y))
+  ([x y & more]
+   (reduce1 min (min x y) more)))
+
+(defn pos?
+  "Returns true if num is greater than zero, else false"
+  {:added "1.0"}
+  [x] (> x 0))
+
+(defn neg?
+  "Returns true if num is less than zero, else false"
+  {:added "1.0"}
+  [x] (< x 0))
+
+(defn quot
+  "quot[ient] of dividing numerator by denominator."
+  {:added "1.0"}
+  [num div]
+    (py.bytecode/BINARY_FLOOR_DIVIDE num div))
+
+(defn rem
+  "remainder of dividing numerator by denominator."
+  {:added "1.0"}
+  [num div]
+    (py.bytecode/BINARY_MODULO num div))
+
+
