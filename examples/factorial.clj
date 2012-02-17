@@ -9,7 +9,7 @@
 (defn test [times]
     (loop [rem times]
         (if (> rem 0)
-            (do (fact 20000)
+            (do (fact 20)
                 (recur (dec rem))))))
 
-(test 20)
+(test 200000)

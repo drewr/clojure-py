@@ -53,15 +53,22 @@ def compileDef(comp, form):
         ns = comp.getNS()
     else:
         ns = sym.ns
+
+    comp.pushName(sym.name)
+
     code = []
     code.extend(comp.compile(value))
     code.append((DUP_TOP, 0))
     code.append((STORE_GLOBAL, sym.name))
+
+
     if sym.meta() is not None:
         code.extend(comp.compileAccessList(Symbol.intern("clojure.lang.rt.setMeta")))
         code.append((ROT_TWO, 0))
         code.append((LOAD_CONST, sym.meta()))
         code.append((CALL_FUNCTION, 2))
+
+    comp.popName()
     return code
 
 def compileGet(comp, form):
@@ -442,16 +449,17 @@ def compileFNStar(comp, form):
     name = form.first()
     pushed = False
     if not isinstance(name, Symbol):
-        comp.pushName(name)
-        pushed = True
-        name = Symbol.intern("fn" + str(RT.nextID()))
+        name = comp.getNamesString()
     else:
+        comp.pushName(name.name)
+        pushed = True
         form = form.next()
 
+    name = Symbol.intern(name)
     gensym = Symbol.intern("_"+name.name + str(RT.nextID()))
 
     if haslocalcaptures:
-	comp.pushAlias(name, LocalMacro(name, gensym))
+        comp.pushAlias(name, LocalMacro(name, gensym))
 
     if isinstance(form.first(), IPersistentVector):
         code = compileFn(comp, name, form, orgform)
@@ -462,6 +470,7 @@ def compileFNStar(comp, form):
 
     if pushed:
         comp.popName()
+
     clist = comp.closureList()
     fcode = []
 
@@ -728,6 +737,26 @@ class LocalMacro(AAlias):
         code = comp.compile(self.macroform)
         return code
 
+class Name(object):
+    """Slot for a name"""
+    def __init__(self, name, rest=None):
+        self.name = name
+        self.isused = False
+        self.rest = rest
+    
+    def __str__(self):
+        v = []
+        r = self
+        while r is not None:
+            v.append(r.name)
+            r = r.rest
+        v.reverse()
+        s = "_".join(v)
+        if self.isused:
+            s = s + str(RT.nextID())
+        return s
+
+
 def evalForm(form, ns):
     comp = Compiler()
     comp.ns = ns
@@ -736,7 +765,7 @@ def evalForm(form, ns):
 class Compiler():
     def __init__(self):
         self.recurPoint = RT.list()
-        self.names = RT.list()
+        self.names = None
         self.ns = None
         self.lastlineno = -1
         self.aliases = {}
@@ -782,17 +811,18 @@ class Compiler():
 
     def pushName(self, name):
         if self.names is None:
-            self.names = RT.list((name))
-        self.names = self.names.cons(name)
+            self.names = Name(name)
+        else:
+            self.names = Name(name, self.names)
 
     def popName(self):
-        self.names = self.names.next()
+        self.names = self.names.rest
 
-    def getNamesString(self):
-        n = []
-        for x in self.names:
-            n.append(str(x.first()))
-        return "_".join(n)
+    def getNamesString(self, markused=True):
+        s = str(self.names)
+        if markused:
+            self.names.isused = True
+        return s
 
     def compileMethodAccess(self, form):
         attrname = form.first().name[1:]
