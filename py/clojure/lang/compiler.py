@@ -16,11 +16,24 @@ from py.clojure.lang.namespace import findItem
 from py.clojure.lang.lispreader import LINE_KEY, garg
 import re
 import new
-
+import sys
 
 _MACRO_ = Keyword.intern(Symbol.intern(":macro"))
+version = (sys.version_info[0] * 10) + sys.version_info[1]
 
+def emitJump(label):
+    if version == 26:
+        return [(JUMP_IF_FALSE, label),
+                (POP_TOP, None)]
+    else:
+        return [(POP_JUMP_IF_FALSE, label)]
 
+def emitLanding(label):
+    if version == 26:
+        return [(label, None),
+                (POP_TOP, None)]
+    else:
+        return [(label, None)]
 
 def compileNS(comp, form):
     rest = form.next()
@@ -225,10 +238,10 @@ def compilePyIf(comp, form):
     elseLabel = Label("IfElse")
     endlabel = Label("IfEnd")
     code = cmp
-    code.append((POP_JUMP_IF_FALSE, elseLabel))
+    code.extend(emitJump(elseLabel))
     code.extend(body)
     code.append((JUMP_ABSOLUTE, endlabel))
-    code.append((elseLabel, None))
+    code.extend(emitLanding(elseLabel))
     code.extend(body2)
     code.append((endlabel, None))
     return code
@@ -251,14 +264,14 @@ def compileIf(comp, form):
     code.append((LOAD_FAST, condition_name))
     code.append((LOAD_CONST, None))
     code.append((COMPARE_OP, 'is not'))
-    code.append((POP_JUMP_IF_FALSE, elseLabel))
+    code.extend(emitJump(elseLabel))
     code.append((LOAD_FAST, condition_name))
     code.append((LOAD_CONST, False))
     code.append((COMPARE_OP, '!='))
-    code.append((POP_JUMP_IF_FALSE, elseLabel))
+    code.extend(emitJump(elseLabel))
     code.extend(body)
     code.append((JUMP_ABSOLUTE, endlabel))
-    code.append((elseLabel, None))
+    code.extend(emitLanding(elseLabel))
     code.extend(body2)
     code.append((endlabel, None))
     return code
@@ -334,8 +347,8 @@ class MultiFn(object):
             (LOAD_ATTR, '__len__'),
             (CALL_FUNCTION, 0),
             (LOAD_CONST, len(self.args) - (1 if self.lastisargs else 0)),
-            (COMPARE_OP, ">=" if self.lastisargs else "=="),
-            (POP_JUMP_IF_FALSE, endLabel)]
+            (COMPARE_OP, ">=" if self.lastisargs else "==")]
+        argcode.extend(emitJump(endLabel))
         for x in range(len(self.args)):
             if self.lastisargs and x == len(self.args) - 1:
                 offset = len(self.args) - 1
@@ -359,7 +372,7 @@ class MultiFn(object):
         comp.pushRecur(recur)
         bodycode.extend(compileImplcitDo(comp, body))
         bodycode.append((RETURN_VALUE, None))
-        bodycode.append((endLabel, None))
+        bodycode.extend(emitLanding(endLabel))
         comp.popRecur()
         comp.popAliases(self.locals)
 
