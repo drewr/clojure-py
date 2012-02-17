@@ -1,4 +1,5 @@
 from py.clojure.lang.cljexceptions import AbstractMethodCall, InvalidArgumentException
+from py.clojure.lang.comparator import Comparator
 from py.clojure.lang.threadutil import AtomicInteger
 
 from py.clojure.lang.iseq import ISeq
@@ -148,7 +149,7 @@ def init():
 
 DEFAULT_IMPORTS = None
 
-class DefaultComparator:
+class DefaultComparator(Comparator):
     pass
 
 from py.clojure.lang.ipersistentvector import IPersistentVector

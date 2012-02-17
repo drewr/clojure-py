@@ -1,8 +1,11 @@
 from py.clojure.lang.apersistentmap import APersistentMap
-from py.clojure.lang.iobj import IObj
-from py.clojure.lang.cljexceptions import ArityException
-from py.clojure.lang.reversible import Reversible
 from py.clojure.lang.aseq import ASeq
+from py.clojure.lang.box import Box
+from py.clojure.lang.cljexceptions import ArityException
+from py.clojure.lang.comparator import Comparator
+from py.clojure.lang.iobj import IObj
+from py.clojure.lang.ipersistentmap import IPersistentMap
+from py.clojure.lang.reversible import Reversible
 import py.clojure.lang.rt as RT
 
 
@@ -29,10 +32,10 @@ class PersistentTreeMap(APersistentMap, IObj, Reversible):
             self.tree = args[2]
             self._count = args[2]
         elif len(args) == 4 and isinstance(args[0], Comparator):
-            self._meta = meta
-            self.comp = comp
-            self.tree = tree
-            self._count = count
+            self.comp = args[0]
+            self.tree = args[1]
+            self._count = args[2]
+            self._meta = args[3]
         else:
             raise ArityException()
 
@@ -72,14 +75,14 @@ class PersistentTreeMap(APersistentMap, IObj, Reversible):
 
     def assocEx(self, key, val):
         found = Box(None)
-        t = add(self.tree, key, val, found)
+        t = self.add(self.tree, key, val, found)
         if t is None:   # None == already contains key
             raise Util.runtimeException("Key already present")
         return PersistentTreeMap(comp, t.blacken(), self._count + 1, self.meta())
 
     def assoc(self, key, val):
         found = Box(None)
-        t = add(self.tree, key, val, found)
+        t = self.add(self.tree, key, val, found)
         if t is None: # None == already contains key
             foundNode = found.val
             if foundNode.val() is val: # note only get same collection on identity of val, not equals()
@@ -429,7 +432,7 @@ class PersistentTreeMap(APersistentMap, IObj, Reversible):
 
     class BlackVal(Black):
         def __init__(self, key, val):
-            super(key)
+            super(PersistentTreeMap.BlackVal, self).__init__(key)
             self.val = val
 
         def val(self):
@@ -488,14 +491,14 @@ class PersistentTreeMap(APersistentMap, IObj, Reversible):
 
     class RedVal(Red):
         def __init__(self, key, val):
-            super(key)
+            super(PersistentTreeMap.RedVal, self).__init__(key)
             self.val = val
 
         def val(self):
             return self.val
 
         def blacken(self):
-            return BlackVal(self.key, self.val)
+            return PersistentTreeMap.BlackVal(self.key, self.val)
 
     class RedBranch(Red):
         def __init__(self, key, left, right):
