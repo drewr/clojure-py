@@ -100,10 +100,18 @@ class PersistentTreeMap(APersistentMap, IObj, Reversible):
             return PersistentTreeMap(self.meta(), self.comp)
         return PersistentTreeMap(self.comp, t.blacken(), self._count - 1, self.meta())
 
-    def seq(self):
-        if self._count > 0:
-            return self.Seq.create(self.tree, True, self._count)
-        return None
+    def seq(self, *args):
+        if len(args) == 0:
+            if self._count > 0:
+                return self.Seq.create(self.tree, True, self._count)
+            return None
+        elif len(args) == 1:
+            ascending = args[0]
+            if self._count > 0:
+                return self.Seq.create(self.tree, ascending, self._count)
+            return None
+        else:
+            raise ArityException()
 
     def empty(self):
         return PersistentTreeMap(self.meta(), self.comp);	
@@ -118,11 +126,6 @@ class PersistentTreeMap(APersistentMap, IObj, Reversible):
 
     def entryKey(self, entry):
         return entry.key()
-
-    def seq(self, ascending):
-        if self._count > 0:
-            return self.Seq.create(self.tree, ascending, self._count)
-        return None
 
     def seqFrom(self, key, ascending):
         if self._count > 0:
@@ -545,32 +548,34 @@ class PersistentTreeMap(APersistentMap, IObj, Reversible):
             return BlackBranchVal(self.key, self.val, self.left, self.right)
 
     class Seq(ASeq):
-        def __init__(self, stack, asc):
-            self.stack = stack
-            self.asc = asc
-            self.cnt = -1
-        def __init__(self, stack, asc, cnt):
-            self.stack = stack
-            self.asc = asc
-            self.cnt = cnt
-        def __init__(self, meta, stack, asc, cnt):
-            super(meta)
-            self.stack = stack
-            self.asc = asc
-            self.cnt = cnt
+        def __init__(self, *args):
+            if len(args) == 2:
+                self.stack = args[0]
+                self.asc = args[1]
+                self.cnt = -1
+            elif len(args) == 3:
+                self.stack = args[0]
+                self.asc = args[1]
+                self.cnt = args[2]
+            elif len(args) == 4:
+                super(PersistentTreeMap.Seq, self).__init__(args[0])
+                self.stack = args[1]
+                self.asc = args[2]
+                self.cnt = args[3]
 
         @staticmethod
         def create(t, asc, cnt):
-            return Seq(self.push(t, None, asc), asc, cnt)
+            return PersistentTreeMap.Seq(PersistentTreeMap.Seq.push(t, None, asc), asc, cnt)
 
-        def push(self, t, stack, asc):
+        @staticmethod
+        def push(t, stack, asc):
             while t is not None:
                 stack = RT.cons(t, stack)
                 t = t.left() if asc else t.right()
             return stack
 
         def first(self):
-            return stack.first()
+            return self.stack.first()
 
         def next(self):
             t = self.stack.first()
