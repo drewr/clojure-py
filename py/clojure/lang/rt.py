@@ -150,6 +150,7 @@ def init():
 DEFAULT_IMPORTS = None
 
 class DefaultComparator(Comparator):
-    pass
+    def compare(self, a, b):
+        return a < b
 
 from py.clojure.lang.ipersistentvector import IPersistentVector
