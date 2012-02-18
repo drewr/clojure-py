@@ -217,9 +217,18 @@
     (assert-true ((complement (fn [x y] false)) 1 2))
     (assert-true ((complement (fn [x y z] false)) 1 2 3)))
 
-(deftest constantly
+(deftest constantly-tests
     (assert-equal ((constantly 1) 1 2 3 4 5) 1))
 
-(deftest identity
+(deftest identityi-tests
     (assert-equal (identity 3) 3)
     (assert-equal (identity 4) 4))
+
+(deftest peek-tests
+    (assert-equal (peek '(1 2)) 1)
+    (assert-equal (peek nil) nil))
+
+(deftest pop-tests
+    (assert-equal (pop '(1 2)) '(2))
+    (assert-equal (pop nil) nil))
+
