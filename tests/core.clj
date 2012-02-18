@@ -244,3 +244,26 @@
     (assert-equal (get {:a 1} :a) 1)
     (assert-equal (get "abc" 1) "b"))
 
+(deftest dissoc-tests
+    (assert-equal (dissoc {:a 1 :b 2} :b) {:a 1})
+    (assert-equal (dissoc {:a 1 :b 2} :a :b) {}))
+
+(deftest find-tests
+    (assert-equal (.getKey (find {:a 1} :a)) :a)
+    (assert-equal (.getValue (find {:a 1} :a)) 1))
+
+(deftest select-keys-tests
+    (assert-equal (select-keys {:a 1 :b 2 :c 3} [:a]) {:a 1}))
+
+(deftest keys-tests
+    (assert-equal (keys {:a 1 :b 2}) [:b :a]))
+
+(deftest vals-tests
+    (assert-equal (vals {:a 1 :b 2}) [2 1]))
+
+(deftest key-tests
+    (assert-equal (key (find {:a 1 :b 2} :b)) :b))
+
+(deftest val-tests
+    (assert-equal (val (find {:a 1 :b 2} :b)) 2))
+

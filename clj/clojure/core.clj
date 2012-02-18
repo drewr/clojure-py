@@ -1302,3 +1302,75 @@
                (py.bytecode/BINARY_SUBSCR map key)
                not-found))))
 
+(defn dissoc
+  "dissoc[iate]. Returns a new map of the same (hashed/sorted) type,
+  that does not contain a mapping for key(s)."
+  {:added "1.0"
+   :static true}
+  ([map] map)
+  ([map key]
+   (if (nil? map) nil (.without map key)))
+  ([map key & ks]
+   (let [ret (dissoc map key)]
+     (if ks
+       (recur ret (first ks) (next ks))
+       ret))))
+
+(defn find
+  "Returns the map entry for key, or nil if key not present."
+  {:added "1.0"}
+  [map key] 
+    (cond (nil? map)
+           nil
+          (instance? clojure.lang.associative.Associative map)
+           (.entryAt map key)
+          :else
+           (if (contains? map key)
+               (clojure.lang.mapentry.MapEntry key (get map key))
+               nil)))
+
+(defn select-keys
+  "Returns a map containing only those entries in map whose key is in keys"
+  {:added "1.0"}
+  [map keyseq]
+    (loop [ret {} keys (seq keyseq)]
+      (if keys
+        (let [entry (find map (first keys))]
+          (recur
+           (if entry
+             (conj ret entry)
+             ret)
+           (next keys)))
+        ret)))
+
+(defn keys
+  "Returns a sequence of the map's keys."
+  {:added "1.0"
+   :static true}
+  [map] 
+    (if (map? map)
+         (clojure.lang.apersistentmap.APersistentMap.KeySeq.create (seq map))
+         (seq (.keys map))))
+
+(defn vals 
+  "Returns a sequence of the map's keys."
+  {:added "1.0"
+   :static true}
+  [map] 
+    (if (map? map)
+         (clojure.lang.apersistentmap.APersistentMap.ValueSeq.create (seq map))
+         (seq (.items map))))
+
+(defn key
+  "Returns the key of the map entry."
+  {:added "1.0"
+   :static true}
+  [e]
+    (.getKey e))
+
+(defn val
+  "Returns the value in the map entry."
+  {:added "1.0"
+   :static true}
+  [e]
+    (. e (getValue)))

@@ -75,10 +75,10 @@ class APersistentMap(IPersistentMap):
     class KeySeq(ASeq):
         def __init__(self, *args):
             if len(args) == 1:
-                self.seq = args[0]
+                self._seq = args[0]
             elif len(args) == 2:
                 self._meta = args[0]
-                self.seq = args[1]
+                self._seq = args[1]
             else:
                 raise ArityException()
 
@@ -89,19 +89,24 @@ class APersistentMap(IPersistentMap):
             return APersistentMap.KeySeq(s)
 
         def first(self):
-            return self.first().getKey()
+            return self._seq.first().getKey()
         def next(self):
-            return APersistentMap.KeySeq.create(self.seq.next())
+            return APersistentMap.KeySeq.create(self._seq.next())
         def withMeta(self, meta):
-            return APersistentMap.KeySeq(meta, self.seq)
+            return APersistentMap.KeySeq(meta, self._seq)
+        def __iter__(self):
+            s = self
+            while s is not None:
+                yield s.first()
+                s = s.next()
 
     class ValueSeq(ASeq):
         def __init__(self, *args):
             if len(args) == 1:
-                self.seq = args[0]
+                self._seq = args[0]
             elif len(args) == 2:
                 self._meta = args[0]
-                self.seq = args[1]
+                self._seq = args[1]
             else:
                 raise ArityException()
 
@@ -112,11 +117,17 @@ class APersistentMap(IPersistentMap):
             return APersistentMap.ValueSeq(s)
 
         def first(self):
-            return self.first().getValue()
+            return self._seq.first().getValue()
         def next(self):
-            return APersistentMap.ValueSeq.create(self.seq.next())
+            return APersistentMap.ValueSeq.create(self._seq.next())
         def withMeta(self, meta):
-            return APersistentMap.ValueSeq(meta, self.seq)
+            return APersistentMap.ValueSeq(meta, self._seq)
+        def __iter__(self):
+            s = self
+            while s is not None:
+                yield s.first()
+                s = s.next()
+
 
     def __call__(self, *args, **kwargs):
         return apply(self.valAt, args)
@@ -126,3 +137,4 @@ class APersistentMap(IPersistentMap):
 
     def __contains__(self, item):
         return self.containsKey(item)
+
