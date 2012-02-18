@@ -71,16 +71,6 @@ def compileDef(comp, form):
     comp.popName()
     return code
 
-def compileGet(comp, form):
-    if len(form) != 3:
-        raise CompilerException("get requires 2 arguments", form)
-    col = form.next().first()
-    itm = form.next().next().first()
-    code = comp.compile(col)
-    code.extend(comp.compile(itm))
-    code.append((BINARY_SUBSCR, None))
-    return code
-
 def compileBytecode(comp, form):
     codename = form.first().name
     if not hasattr(byteplay, codename):
@@ -537,16 +527,6 @@ def compileIs(comp, form):
     return code
 
 
-def compileContains(comp, form):
-    if len(form) != 3:
-        raise CompilerException("contains? requires 2 arguments", form)
-    coll = form.next().first()
-    itm = form.next().next().first()
-    code = comp.compile(itm)
-    code.extend( comp.compile(coll))
-    code.append((COMPARE_OP, "in"))
-    return code
-
 def compileMap(comp, form):
     s = form.seq()
     c = 0
@@ -603,7 +583,7 @@ def getBuiltin(name):
     elif hasattr(__builtins__, name):
         return getattr(__builtins__, name)
 
-    raise CompilerException("Python builtin not found", name)
+    raise CompilerException("Python builtin not found " + name, name)
 
 def compileLetMacro(comp, form):
     if len(form) < 3:
@@ -645,10 +625,8 @@ builtins = {Symbol.intern("ns"): compileNS,
             Symbol.intern("recur"): compileRecur,
             Symbol.intern("do"): compileDo,
             Symbol.intern("let*"): compileLetStar,
-            Symbol.intern("get"): compileGet,
             Symbol.intern("loop*"): compileLoopStar,
             Symbol.intern("is?"): compileIs,
-            Symbol.intern("contains?"): compileContains,
             Symbol.intern("throw"): compileThrow,
             Symbol.intern("apply"): compileApply,
             Symbol.intern("let-macro"): compileLetMacro}

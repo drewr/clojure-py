@@ -232,3 +232,15 @@
     (assert-equal (pop '(1 2)) '(2))
     (assert-equal (pop nil) nil))
 
+;;map stuff
+
+(deftest contains?-tests
+    (assert-true (contains? [4 4 4 4] 3))
+    (assert-true (contains? {:a 1 :b 2} :a))
+    (assert-false (contains? [1 1 1] 4))
+    (assert-false (contains? {:a 4} :b)))
+
+(deftest get-tests
+    (assert-equal (get {:a 1} :a) 1)
+    (assert-equal (get "abc" 1) "b"))
+

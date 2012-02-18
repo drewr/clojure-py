@@ -69,8 +69,8 @@ class APersistentMap(IPersistentMap):
                       map.interator(),
                       0)
 
-    def __hash__(self):
-        return APersistentMap.mapHash(self)
+#    def __hash__(self):
+#        return APersistentMap.mapHash(self)
 
     class KeySeq(ASeq):
         def __init__(self, *args):

@@ -505,7 +505,7 @@
                   coll
                   (do (py/if (.__eq__ (py/len keyvals) 1)
                           (throw (py/Exception "Even number of args required to hash-map")))
-                      (py/if (contains? coll (first keyvals))
+                      (py/if (py.bytecode/COMPARE_OP "in" (first keyvals) coll)
                           (throw (py/Exception "Duplicate keys found in hash-map")))
                       (recur (nnext keyvals) 
                              (.assoc coll 
@@ -762,7 +762,7 @@
 
 (deftype ArrayChunk [array off end]
     (__getitem__ ([self i]
-          (get array (inc of)))
+          (py.bytecode/BINARY_SUBSCR array (inc of)))
          ([self i not-found]
 	  (if (py.bytecode/COMPARE_OP ">=" i 0)
 	      (if (py.bytecode/COMPARE_OP "<" i (len self))
@@ -779,10 +779,10 @@
 	(ArrayChunk array (inc off) end))
 
     (reduce [self f start]
-	(loop [ret (f start (get array off))
+	(loop [ret (f start (py.bytecode/BINARY_SUBSCR array off))
 	       x (inc off)]
 	     (if (py.bytecode/COMPARE_OP "<" x end)
-		 (recur (f ret (get array x)) 
+		 (recur (f ret (py.bytecode/BINARY_SUBSCR array x)) 
 			(inc x))
 		 ret))))
 
@@ -1247,5 +1247,58 @@
              nil
              (.pop coll)))
 
+;; map stuff
 
+(defn coll?
+  "Returns true if x implements IPersistentCollection"
+  {:added "1.0"}
+  [x] (instance? clojure.lang.ipersistentcollection.IPersistentCollection x))
+
+(defn list?
+  "Returns true if x implements IPersistentList"
+  {:added "1.0"}
+  [x] (instance? clojure.lang.ipersistentlist.IPersistentList x))
+
+(defn set?
+  "Returns true if x implements IPersistentSet"
+  {:added "1.0"}
+  [x] (instance? clojure.lang.ipersistentset.IPersistentSet x))
+
+(defn pylist?
+  "Returns true if coll is a native python list"
+  [coll] (instance? py/list coll))
+
+(defn tuple?
+  "Returns true if toll is a native python tuple"
+  [coll] (instance? py/tuple coll))
+
+(defn contains?
+  "Returns true if key is present in the given collection, otherwise
+  returns false.  Note that for numerically indexed collections like
+  vectors and Java arrays, this tests if the numeric key is within the
+  range of indexes. 'contains?' operates constant or logarithmic time;
+  it will not perform a linear search for a value.  See also 'some'."
+  {:added "1.0"}
+  [coll key] (py/if (or (vector? coll)
+                        (list? coll)
+                        (tuple? coll)
+                        (pylist? coll)
+                        (string? coll))
+                    (and (>= key 0) (< key (count coll)))
+                    (py.bytecode/COMPARE_OP "in" key coll)))    
+
+
+(defn get
+  "Returns the value mapped to key, not-found or nil if key not present."
+  {:added "1.0"}
+  ([map key]
+   (get map key nil))
+  ([map key not-found]
+   (cond (instance? clojure.lang.ilookup.ILookup map)
+           (.valAt map key not-found)
+         
+         :else
+           (if (contains? map key)
+               (py.bytecode/BINARY_SUBSCR map key)
+               not-found))))
 
