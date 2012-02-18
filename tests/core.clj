@@ -157,10 +157,69 @@
     (assert-false (neg? 1))
     (assert-false (neg? 0)))
 
-(deftest quot
+(deftest quot-tests
     (assert-equal (quot 23 7) 3))
 
-(deftest rem
+(deftest rem-tests
     (assert-equal (rem 23 7) 2))
 
+(deftest bit-not-tests
+    (assert-equal (bit-not 5) -6))
 
+(deftest bit-and-tests
+    (assert-equal (bit-and 5 4) 4)
+    (assert-equal (bit-and 5 4 1) 0))
+
+(deftest bit-or-tests
+    (assert-equal (bit-or 6 5 4 2) 7))
+
+(deftest bit-xor-tests
+    (assert-equal (bit-xor 2 3 4) 5))
+
+(deftest bit-and-not-tests
+    (assert-equal (bit-and-not 3 1 2) 0))
+
+(deftest bit-shift-left-tests
+    (assert-equal (bit-shift-left 1 3) 8))
+
+(deftest bit-shift-right-tests
+    (assert-equal (bit-shift-right 8 3) 1))
+
+(deftest bit-clear-tests
+    (assert-equal (bit-clear 3 1) 1))
+
+(deftest bit-set-tests
+    (assert-equal (bit-set 0 1) 2))
+
+(deftest bit-flip-tests
+    (assert-equal (bit-flip 0 1) 2)
+    (assert-equal (bit-flip 2 1) 0))
+
+(deftest bit-flip-tests
+    (assert-true (bit-test 3 1))
+    (assert-false (bit-test 1 1)))
+
+(deftest integer?-tests
+    (assert-true (integer? 1))
+    (assert-false (integer? "1")))
+
+(deftest even?-tests
+    (assert-true (even? 2))
+    (assert-false (even? 1)))
+
+(deftest odd?-tests
+    (assert-true (odd? 1))
+    (assert-false (odd? 2)))
+
+(deftest complement-tests
+    (assert-true ((complement (fn [] false))))
+    (assert-true ((complement (fn [x] false)) 1))
+    (assert-true ((complement (fn [x y] false)) 1 2))
+    (assert-true ((complement (fn [x y z] false)) 1 2 3)))
+
+(deftest constantly
+    (assert-equal ((constantly 1) 1 2 3 4 5) 1))
+
+(deftest identity
+    (assert-equal (identity 3) 3)
+    (assert-equal (identity 4) 4))

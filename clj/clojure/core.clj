@@ -1126,4 +1126,105 @@
   [num div]
     (py.bytecode/BINARY_MODULO num div))
 
+(defn bit-not
+  "Bitwise complement"
+  {:added "1.0"}
+  [x] (py.bytecode/UNARY_INVERT x))
+
+(defn bit-and
+  "Bitwise and"
+   {:added "1.0"}
+   ([x y] (py.bytecode/BINARY_AND x y))
+   ([x y & more]
+      (reduce1 bit-and (bit-and x y) more)))
+
+(defn bit-or
+  "Bitwise or"
+  {:added "1.0"}
+  ([x y] (py.bytecode/BINARY_OR x y))
+  ([x y & more]
+    (reduce1 bit-or (bit-or x y) more)))
+
+(defn bit-xor
+  "Bitwise exclusive or"
+  {:added "1.0"}
+  ([x y] (py.bytecode/BINARY_XOR x y))
+  ([x y & more]
+    (reduce1 bit-xor (bit-xor x y) more)))
+
+(defn bit-and-not
+  "Bitwise and with complement"
+  {:added "1.0"}
+  ([x y] (py.bytecode/BINARY_AND  x (py.bytecode/UNARY_NOT y)))
+  ([x y & more]
+    (reduce1 bit-and-not (bit-and-not x y) more)))
+
+(defn bit-shift-left
+  "Bitwise shift left"
+  {:added "1.0"}
+  [x n] (py.bytecode/BINARY_LSHIFT x n))
+
+(defn bit-shift-right
+  "Bitwise shift right"
+  {:added "1.0"}
+  [x n] (py.bytecode/BINARY_RSHIFT x n))
+
+(defn bit-clear
+  "Clear bit at index n"
+  {:added "1.0"}
+  [x n] (bit-and x (bit-not (bit-shift-left 1 n))))
+
+(defn bit-set
+  "Set bit at index n"
+  {:added "1.0"}
+  [x n] (bit-or x (bit-shift-left 1 n)))
+
+(defn bit-flip
+  "Flip bit at index n"
+  {:added "1.0"}
+  [x n] (bit-xor x (bit-shift-left 1 n)))
+
+(defn bit-test
+  "Test bit at index n"
+  {:added "1.0"}
+  [x n] (py.bytecode/COMPARE_OP "==" (bit-and (bit-shift-right x n) 1) 1))
+
+(defn integer?
+  "Returns true if n is an integer"
+  {:added "1.0"}
+  [n]
+  (or (instance? py/int n)))
+
+(defn even?
+  "Returns true if n is even, throws an exception if n is not an integer"
+  {:added "1.0"}
+   [n] (if (integer? n)
+        (zero? (bit-and n 1))
+        (throw (TypeError (str "Argument must be an integer: " n)))))
+
+(defn odd?
+  "Returns true if n is odd, throws an exception if n is not an integer"
+  {:added "1.0"}
+  [n] (not (even? n)))
+
+(defn complement
+  "Takes a fn f and returns a fn that takes the same arguments as f,
+  has the same effects, if any, and returns the opposite truth value."
+  {:added "1.0"}
+  [f] 
+  (fn 
+    ([] (not (f)))
+    ([x] (not (f x)))
+    ([x y] (not (f x y)))
+    ([x y & zs] (not (apply f x y zs)))))
+
+(defn constantly
+  "Returns a function that takes any number of arguments and returns x."
+  {:added "1.0"}
+  [x] (fn [& args] x))
+
+(defn identity
+  "Returns its argument."
+  {:added "1.0"}
+  [x] x)
 
