@@ -1,9 +1,10 @@
 from py.clojure.lang.ipersistentmap import IPersistentMap
 from py.clojure.lang.ipersistentvector import IPersistentVector
 from py.clojure.lang.mapentry import MapEntry
-from py.clojure.lang.cljexceptions import AbstractMethodCall, ArityException, InvalidArgumentException
+from py.clojure.lang.cljexceptions import (ArityException,
+                                           InvalidArgumentException)
 from py.clojure.lang.aseq import ASeq
-import py.clojure.lang.rt as RT
+
 
 class APersistentMap(IPersistentMap):
     def cons(self, o):
@@ -11,8 +12,9 @@ class APersistentMap(IPersistentMap):
             return self.assoc(o.getKey(), o.getValue())
         if isinstance(o, IPersistentVector):
             if len(o) != 2:
-                raise InvalidArgumentException("Vector arg to map conj must be a pair")
-            return self.assoc(v[0], v[1])
+                raise InvalidArgumentException("Vector arg to map conj must "
+                                               + "be a pair")
+            return self.assoc(o[0], o[1])
         ret = self
         s = o.seq()
         while s is not None:
@@ -63,10 +65,12 @@ class APersistentMap(IPersistentMap):
         return True
 
     @staticmethod
-    def mapHash(map):
-        return reduce(lambda h, v: h + (0 if v.getKey() is None else hash(v.getKey()))
-                                     ^ (0 if v.getValue() is None else hash(v.getValue())),
-                      map.interator(),
+    def mapHash(m):
+        return reduce(lambda h, v: h + (0 if v.getKey() is None
+                                          else hash(v.getKey()))
+                                     ^ (0 if v.getValue() is None
+                                          else hash(v.getValue())),
+                      m.interator(),
                       0)
 
 #    def __hash__(self):
@@ -90,10 +94,13 @@ class APersistentMap(IPersistentMap):
 
         def first(self):
             return self._seq.first().getKey()
+
         def next(self):
             return APersistentMap.KeySeq.create(self._seq.next())
+
         def withMeta(self, meta):
             return APersistentMap.KeySeq(meta, self._seq)
+
         def __iter__(self):
             s = self
             while s is not None:
@@ -118,23 +125,21 @@ class APersistentMap(IPersistentMap):
 
         def first(self):
             return self._seq.first().getValue()
+
         def next(self):
             return APersistentMap.ValueSeq.create(self._seq.next())
+
         def withMeta(self, meta):
             return APersistentMap.ValueSeq(meta, self._seq)
+
         def __iter__(self):
             s = self
             while s is not None:
                 yield s.first()
                 s = s.next()
 
-
     def __call__(self, *args, **kwargs):
         return apply(self.valAt, args)
 
-    def __getitem__(self, item):
-        return self.valAt(item)
-
     def __contains__(self, item):
         return self.containsKey(item)
-

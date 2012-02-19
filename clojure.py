@@ -2,6 +2,8 @@
 
 import sys
 import os.path
+import traceback
+
 
 try:
     import readline
@@ -28,7 +30,8 @@ from py.clojure.lang.symbol import Symbol
 
 VERSION = "0.0.0"
 
-def requireClj(filename, stopafter = None):
+
+def requireClj(filename, stopafter=None):
     with open(filename) as fl:
         r = StringReader(fl.read())
 
@@ -99,7 +102,7 @@ def main():
                 res = comp.compile(s)
                 print comp.executeCode(res)
             except Exception:
-                import traceback; traceback.print_exc()
+                traceback.print_exc()
     else:
         for x in sys.argv[1:]:
             requireClj(x)
@@ -109,7 +112,6 @@ def unbalanced(s):
     return (s.count('(') != s.count(')')
             or s.count('[') != s.count(']')
             or s.count('{') != s.count('}'))
-
 
 
 if __name__ == "__main__":
