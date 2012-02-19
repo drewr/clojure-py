@@ -12,14 +12,14 @@ Check out the Wiki for more information about the roadmap for this project. Then
 
 ## Installation
 
-    $ ./setup.py develop  # or ./setup.py install for 'production'
+    ./setup.py develop  # or ./setup.py install for 'production'
 
 ## Unit tests
 
     (must 'easy_install nose' or 'pip install nose' first)
-    $ nosetests
+    nosetests
 
 ## Running
 
-    $ clojurepy
+    clojurepy
 
