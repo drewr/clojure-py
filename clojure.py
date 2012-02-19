@@ -1,11 +1,23 @@
 #!/usr/bin/env python
 
+import sys
+import os.path
+
 try:
     import readline
 except ImportError:
     pass
-
-import sys
+else:
+    import os
+    import atexit
+    histfile = os.path.join(os.path.expanduser("~"), ".clojurepyhist")
+    try:
+        readline.read_history_file(histfile)
+    except IOError:
+        # Pass here as there isn't any history file, so one will be
+        # written by atexit
+        pass
+    atexit.register(readline.write_history_file, histfile)
 
 from py.clojure.lang.lispreader import read
 from py.clojure.lang.fileseq import StringReader
@@ -53,7 +65,7 @@ def requireClj(filename, stopafter = None):
 
 
 def main():
-    requireClj("./clj/clojure/core.clj")
+    requireClj(os.path.dirname(__file__) + "/clj/clojure/core.clj")
 
     RT.init()
     comp = Compiler()
