@@ -16,7 +16,7 @@ Check out the Wiki for more information about the roadmap for this project. Then
 
 ## Unit tests
 
-    (must 'easy_install nose' or 'pip install nose' first)
+    # (must 'easy_install nose' or 'pip install nose' first)
     nosetests
 
 ## Running
