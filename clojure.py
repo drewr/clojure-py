@@ -14,6 +14,7 @@ import py.clojure.lang.rt as RT
 from py.clojure.lang.compiler import Compiler
 from py.clojure.lang.symbol import Symbol
 
+VERSION = "0.0.0"
 
 def requireClj(filename, stopafter = None):
     with open(filename) as fl:
