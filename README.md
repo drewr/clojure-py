@@ -10,6 +10,16 @@ It is our belief that static virtual machines make very poor runtimes for dynami
 
 Check out the Wiki for more information about the roadmap for this project. Then check out the issues list for any items marked "isolated change". These are changes that should be somewhat easy for a newcommer to pick up and will not involve messing around with the internals of the implementation much. Also feel free to join our [mailing list](http://groups.google.com/group/clojure-py-dev)
 
+## Installation
+
+    $ ./setup.py develop  # or ./setup.py install for 'production'
+
+## Unit tests
+
+    (must 'easy_install nose' or 'pip install nose' first)
+    $ nosetests
+
 ## Running
 
-    python clojure.py
+    $ clojurepy
+
