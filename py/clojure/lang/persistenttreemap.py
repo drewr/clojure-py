@@ -231,77 +231,77 @@ class PersistentTreeMap(APersistentMap, IObj, Reversible):
             if isinstance(t.left(), Black):
                 return self.balanceLeftDel(t.key(), t.val(), del_, t.right())
             else:
-                return self.red(t.key(), t.val(), del_, t.right())
+                return red(t.key(), t.val(), del_, t.right())
         if isinstance(t.right(), Black):
             return self.balanceRightDel(t.key(), t.val(), t.left(), del_)
-        return self.red(t.key(), t.val(), t.left(), del_)
+        return red(t.key(), t.val(), t.left(), del_)
 
     def append(self, left, right):
         if left is None:
             return right
         elif right is None:
             return left
-        elif isinstance(left, self.Red):
-            if isinstance(right, self.Red):
+        elif isinstance(left, Red):
+            if isinstance(right, Red):
                 app = self.append(left.right(), right.left())
-                if isinstance(app, self.Red):
-                    return self.red(app.key(), app.val(),
-                                    self.red(left.key(), left.val(), left.left(), app.left()),
-                                    self.red(right.key(), right.val(), app.right(), right.right()))
+                if isinstance(app, Red):
+                    return red(app.key(), app.val(),
+                                    red(left.key(), left.val(), left.left(), app.left()),
+                                    red(right.key(), right.val(), app.right(), right.right()))
                 else:
-                    return self.red(left.key(), left.val(), left.left(), self.red(right.key(), right.val(), app, right.right()))
+                    return red(left.key(), left.val(), left.left(), red(right.key(), right.val(), app, right.right()))
             else:
-                return self.red(left.key(), left.val(), left.left(), self.append(left.right(), right))
-        elif isinstance(right, self.Red):
-            return red(right.key(), right.val(), append(left, right.left()), right.right())
+                return red(left.key(), left.val(), left.left(), self.append(left.right(), right))
+        elif isinstance(right, Red):
+            return red(right.key(), right.val(), self.append(left, right.left()), right.right())
         else: # black/black
             app = self.append(left.right(), right.left())
-            if isinstance(app, self.Red):
-                return self.red(app.key(), app.val(),
+            if isinstance(app, Red):
+                return red(app.key(), app.val(),
                                 black(left.key(), left.val(), left.left(), app.left()),
                                 black(right.key(), right.val(), app.right(), right.right()))
             else:
                 return self.balanceLeftDel(left.key(), left.val(), left.left(), black(right.key(), right.val(), app, right.right()))
 
     def balanceLeftDel(self, key, val, del_, right):
-        if isinstance(del_, self.Red):
+        if isinstance(del_, Red):
             return red(key, val, del_.blacken(), right)
-        elif isinstance(right, self.Black):
+        elif isinstance(right, Black):
             return self.rightBalance(key, val, del_, right.redden())
-        elif isinstance(right, self.Red) and isinstance(right.left(), self.Black):
-            return self.red(right.left().key(), right.left().val(),
+        elif isinstance(right, Red) and isinstance(right.left(), Black):
+            return red(right.left().key(), right.left().val(),
                             black(key, val, del_, right.left().left()),
                             self.rightBalance(right.key(), right.val(), right.left().right(), right.right().redden()))
         else:
             raise UnsupportedOperationException("Invariant violation")
 
     def balanceRightDel(self, key, val, left, del_):
-        if isinstance(del_, self.Red):
-            return self.red(key, val, left, del_.blacken())
-        elif isinstance(left, self.Black):
+        if isinstance(del_, Red):
+            return red(key, val, left, del_.blacken())
+        elif isinstance(left, Black):
             return self.leftBalance(key, val, left.redden(), del_)
-        elif isinstance(left, self.Red) and isinstance(left.right(), self.Black):
-            return self.red(left.right().key(), left.right().val(),
+        elif isinstance(left, Red) and isinstance(left.right(), Black):
+            return red(left.right().key(), left.right().val(),
                     self.leftBalance(left.key(), left.val(), left.left().redden(), left.right().left()),
                     black(key, val, left.right().right(), del_))
         else:
             raise UnsupportedOperationException("Invariant violation")
 
     def leftBalance(self, key, val, ins, right):
-        if isinstance(ins, self.Red) and isinstance(ins.left(), self.Red):
-            return self.red(ins.key(), ins.val(), ins.left().blacken(), black(key, val, ins.right(), right))
-        elif isinstance(ins, self.Red) and isinstance(ins.right(), self.Red):
-            return self.red(ins.right().key(), ins.right().val(),
+        if isinstance(ins, Red) and isinstance(ins.left(), Red):
+            return red(ins.key(), ins.val(), ins.left().blacken(), black(key, val, ins.right(), right))
+        elif isinstance(ins, Red) and isinstance(ins.right(), Red):
+            return red(ins.right().key(), ins.right().val(),
                             black(ins.key(), ins.val(), ins.left(), ins.right().left()),
                             black(key, val, ins.right().right(), right))
         else:
             return black(key, val, ins, right)
 
     def rightBalance(self, key, val, left, ins):
-        if isinstance(ins, self.Red) and isinstance(ins.right(), self.Red):
-            return self.red(ins.key(), ins.val(), black(key, val, left, ins.left()), ins.right().blacken())
-        elif isinstance(ins, self.Red) and isinstance(ins.left(), self.Red):
-            return self.red(ins.left().key(), ins.left().val(),
+        if isinstance(ins, Red) and isinstance(ins.right(), Red):
+            return red(ins.key(), ins.val(), black(key, val, left, ins.left()), ins.right().blacken())
+        elif isinstance(ins, Red) and isinstance(ins.left(), Red):
+            return red(ins.left().key(), ins.left().val(),
                             black(key, val, left, ins.left().left()),
                             black(ins.key(), ins.val(), ins.left().right(), ins.right()))
         else:
