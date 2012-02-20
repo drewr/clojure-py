@@ -178,7 +178,7 @@ class PersistentTreeMap(APersistentMap, IObj, Reversible):
         return t.key() if t is not None else None
 
     def min(self):
-        t = tree
+        t = self.tree
         if t is not None:
             while t.left() is not None:
                 t = t.left()
@@ -189,7 +189,7 @@ class PersistentTreeMap(APersistentMap, IObj, Reversible):
         return t.key() if t is not None else None
 
     def max(self):
-        t = tree
+        t = self.tree
         if t is not None:
             while t.right() is not None:
                 t = t.right()

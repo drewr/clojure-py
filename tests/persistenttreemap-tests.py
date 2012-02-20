@@ -30,3 +30,11 @@ class PresistentTreeMapTests(unittest.TestCase):
         vals = m.vals()
         self.assertEqual(vals.next(), 1)
         self.assertEqual(vals.next(), 2)
+
+    def testMinKey(self):
+        m = PersistentTreeMap().assoc('a', 1).assoc('b', 2)
+        self.assertEqual(m.minKey(), 'a')
+
+    def testMaxKey(self):
+        m = PersistentTreeMap().assoc('a', 1).assoc('b', 2)
+        self.assertEqual(m.maxKey(), 'b')
