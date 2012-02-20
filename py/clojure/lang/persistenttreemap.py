@@ -75,12 +75,12 @@ class PersistentTreeMap(APersistentMap, IObj, Reversible):
     def seq(self, *args):
         if len(args) == 0:
             if self._count > 0:
-                return Seq.create(self.tree, True, self._count)
+                return createSeq(self.tree, True, self._count)
             return None
         elif len(args) == 1:
             ascending = args[0]
             if self._count > 0:
-                return Seq.create(self.tree, ascending, self._count)
+                return createSeq(self.tree, ascending, self._count)
             return None
         else:
             raise ArityException()
@@ -90,7 +90,7 @@ class PersistentTreeMap(APersistentMap, IObj, Reversible):
 
     def rseq(self):
         if self._count > 0:
-            return Seq.create(self.tree, False, self._count)
+            return createSeq(self.tree, False, self._count)
         return None
 
     def comparator(self):
@@ -575,23 +575,12 @@ class Seq(ASeq):
             self.asc = args[2]
             self.cnt = args[3]
 
-    @staticmethod
-    def create(t, asc, cnt):
-        return Seq(Seq.push(t, None, asc), asc, cnt)
-
-    @staticmethod
-    def push(t, stack, asc):
-        while t is not None:
-            stack = RT.cons(t, stack)
-            t = t.left() if asc else t.right()
-        return stack
-
     def first(self):
         return self.stack.first()
 
     def next(self):
         t = self.stack.first()
-        nextstack = self.push(t.right() if self.asc else t.left(), self.stack.next(), self.asc)
+        nextstack = pushSeq(t.right() if self.asc else t.left(), self.stack.next(), self.asc)
         if nextstack is not None:
             return Seq(nextstack, self.asc, self.cnt - 1)
         return None
@@ -603,6 +592,15 @@ class Seq(ASeq):
 
     def withMeta(self, meta):
         return Seq(meta, self.stack, self.asc, self.cnt)
+
+def createSeq(t, asc, cnt):
+    return Seq(pushSeq(t, None, asc), asc, cnt)
+
+def pushSeq(t, stack, asc):
+    while t is not None:
+        stack = RT.cons(t, stack)
+        t = t.left() if asc else t.right()
+    return stack
 
 
 class NodeIterator(object):
