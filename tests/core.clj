@@ -256,14 +256,33 @@
     (assert-equal (select-keys {:a 1 :b 2 :c 3} [:a]) {:a 1}))
 
 (deftest keys-tests
-    (assert-equal (keys {:a 1 :b 2}) [:b :a]))
+    (assert-equal (keys {:a 1}) [:a]))
 
 (deftest vals-tests
-    (assert-equal (vals {:a 1 :b 2}) [2 1]))
+    (assert-equal (vals {:a 1}) [1]))
 
 (deftest key-tests
     (assert-equal (key (find {:a 1 :b 2} :b)) :b))
 
 (deftest val-tests
     (assert-equal (val (find {:a 1 :b 2} :b)) 2))
+
+(deftest name-tests
+    (assert-equal (name 'Foo) "Foo")
+    (assert-equal (name "Foo") "Foo"))
+
+(deftest namespace-tests
+    (assert-equal (namespace 'baz/Foo) "baz")
+    (assert-equal (namespace 'Foo) nil))
+
+; broken need to fix
+;(deftest dot-dot-tests
+;    (assert-equal (.. :foo (.-sym) (.-name)) ":foo"))
+
+(deftest ->-tests
+    (assert-equal (-> " baz " (.rstrip) (.lstrip)) "baz"))
+
+(deftest ->>-tests ; haven't a clue how to test this
+    )
+
 

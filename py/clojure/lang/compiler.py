@@ -866,12 +866,15 @@ class Compiler():
 
     def getAccessList(self, sym):
         if sym.ns is not None\
-        and sym.ns == self.getNS().__name__:
+            and sym.ns == self.getNS().__name__:
             return [sym.name]
         splt = []
         if sym.ns is not None:
             splt.extend(sym.ns.split("."))
-        splt.extend(sym.name.split("."))
+        if len(sym.name.replace(".", "")):
+            splt.extend(sym.name.split("."))
+        else:
+            splt.append(sym.name)
         return splt
 
     def compileSymbol(self, sym):

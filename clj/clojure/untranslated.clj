@@ -369,94 +369,6 @@
 ;;Bit ops
 
 
-
-(defn get
-  "Returns the value mapped to key, not-found or nil if key not present."
-  {:inline (fn  [m k & nf] `(. clojure.lang.rt (get ~m ~k ~@nf)))
-   :inline-arities #{2 3}
-   :added "1.0"}
-  ([map key]
-   (. clojure.lang.rt (get map key)))
-  ([map key not-found]
-   (. clojure.lang.rt (get map key not-found))))
-
-(defn dissoc
-  "dissoc[iate]. Returns a new map of the same (hashed/sorted) type,
-  that does not contain a mapping for key(s)."
-  {:added "1.0"
-   :static true}
-  ([map] map)
-  ([map key]
-   (. clojure.lang.rt (dissoc map key)))
-  ([map key & ks]
-   (let [ret (dissoc map key)]
-     (if ks
-       (recur ret (first ks) (next ks))
-       ret))))
-
-(defn disj
-  "disj[oin]. Returns a new set of the same (hashed/sorted) type, that
-  does not contain key(s)."
-  {:added "1.0"
-   :static true}
-  ([set] set)
-  ([^clojure.lang.IPersistentSet set key]
-   (when set
-     (. set (disjoin key))))
-  ([set key & ks]
-   (when set
-     (let [ret (disj set key)]
-       (if ks
-         (recur ret (first ks) (next ks))
-         ret)))))
-
-(defn find
-  "Returns the map entry for key, or nil if key not present."
-  {:added "1.0"
-   :static true}
-  [map key] (. clojure.lang.rt (find map key)))
-
-(defn select-keys
-  "Returns a map containing only those entries in map whose key is in keys"
-  {:added "1.0"
-   :static true}
-  [map keyseq]
-    (loop [ret {} keys (seq keyseq)]
-      (if keys
-        (let [entry (. clojure.lang.rt (find map (first keys)))]
-          (recur
-           (if entry
-             (conj ret entry)
-             ret)
-           (next keys)))
-        ret)))
-
-(defn keys
-  "Returns a sequence of the map's keys."
-  {:added "1.0"
-   :static true}
-  [map] (. clojure.lang.rt (keys map)))
-
-(defn vals
-  "Returns a sequence of the map's values."
-  {:added "1.0"
-   :static true}
-  [map] (. clojure.lang.rt (vals map)))
-
-(defn key
-  "Returns the key of the map entry."
-  {:added "1.0"
-   :static true}
-  [^java.util.Map$Entry e]
-    (. e (getKey)))
-
-(defn val
-  "Returns the value in the map entry."
-  {:added "1.0"
-   :static true}
-  [^java.util.Map$Entry e]
-    (. e (getValue)))
-
 (defn rseq
   "Returns, in constant time, a seq of the items in rev (which
   can be a vector or sorted-map), in reverse order. If rev is empty returns nil"
@@ -464,22 +376,6 @@
    :static true}
   [^clojure.lang.Reversible rev]
     (. rev (rseq)))
-
-(defn name
-  "Returns the name String of a string, symbol or keyword."
-  {:tag String
-   :added "1.0"
-   :static true}
-  [x]
-  (if (string? x) x (. ^clojure.lang.Named x (getName))))
-
-(defn namespace
-  "Returns the namespace String of a symbol or keyword, or nil if not present."
-  {:tag String
-   :added "1.0"
-   :static true}
-  [^clojure.lang.Named x]
-    (. x (getNamespace)))
 
 (defmacro locking
   "Executes exprs in an implicit do, while holding the monitor of x.
@@ -493,46 +389,6 @@
       (finally
        (monitor-exit lockee#)))))
 
-(defmacro ..
-  "form => fieldName-symbol or (instanceMethodName-symbol args*)
-
-  Expands into a member access (.) of the first member on the first
-  argument, followed by the next member on the result, etc. For
-  instance:
-
-  (.. System (getProperties) (get \"os.name\"))
-
-  expands to:
-
-  (. (. System (getProperties)) (get \"os.name\"))
-
-  but is easier to write, read, and understand."
-  {:added "1.0"}
-  ([x form] `(. ~x ~form))
-  ([x form & more] `(.. (. ~x ~form) ~@more)))
-
-(defmacro ->
-  "Threads the expr through the forms. Inserts x as the
-  second item in the first form, making a list of it if it is not a
-  list already. If there are more forms, inserts the first form as the
-  second item in second form, etc."
-  {:added "1.0"}
-  ([x] x)
-  ([x form] (if (seq? form)
-              (with-meta `(~(first form) ~x ~@(next form)) (meta form))
-              (list form x)))
-  ([x form & more] `(-> (-> ~x ~form) ~@more)))
-
-(defmacro ->>
-  "Threads the expr through the forms. Inserts x as the
-  last item in the first form, making a list of it if it is not a
-  list already. If there are more forms, inserts the first form as the
-  last item in second form, etc."
-  {:added "1.1"} 
-  ([x form] (if (seq? form)
-              (with-meta `(~(first form) ~@(next form)  ~x) (meta form))
-              (list form x)))
-  ([x form & more] `(->> (->> ~x ~form) ~@more)))
 
 (def map)
 

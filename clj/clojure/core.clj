@@ -17,13 +17,13 @@
  ^{:arglists '([& items])
    :doc "Creates a new list containing the items."
    :added "1.0"}
-  list clojure.lang.persistentlist.PersistentList.creator)
+  list clojure.lang.persistentlist.PersistentList/creator)
 
 (def
  ^{:arglists '([& items])
    :doc "Creates a new vector containing the items."
    :added "1.0"}
-  vector clojure.lang.rt.vector)
+  vector clojure.lang.rt/vector)
 
 (def
  #^{:arglists '([x seq])
@@ -1374,3 +1374,59 @@
    :static true}
   [e]
     (. e (getValue)))
+
+
+(defn name
+  "Returns the name String of a string, symbol or keyword."
+  {:added "1.0"}
+  [x]
+  (if (string? x) x (.getName x )))
+
+(defn namespace
+  "Returns the namespace String of a symbol or keyword, or nil if not present."
+  {:tag String
+   :added "1.0"
+   :static true}
+  [x]
+    (.getNamespace x))
+
+(defmacro ..
+  "form => fieldName-symbol or (instanceMethodName-symbol args*)
+
+  Expands into a member access (.) of the first member on the first
+  argument, followed by the next member on the result, etc. For
+  instance:
+
+  (.. System (getProperties) (get \"os.name\"))
+
+  expands to:
+
+  (. (. System (getProperties)) (get \"os.name\"))
+
+  but is easier to write, read, and understand."
+  {:added "1.0"}
+  ([x form] `(. ~x ~form))
+  ([x form & more] `(.. (. ~x ~form) ~@more)))
+
+(defmacro ->
+  "Threads the expr through the forms. Inserts x as the
+  second item in the first form, making a list of it if it is not a
+  list already. If there are more forms, inserts the first form as the
+  second item in second form, etc."
+  {:added "1.0"}
+  ([x] x)
+  ([x form] (if (seq? form)
+              (with-meta `(~(first form) ~x ~@(next form)) (meta form))
+              (list form x)))
+  ([x form & more] `(-> (-> ~x ~form) ~@more)))
+
+(defmacro ->>
+  "Threads the expr through the forms. Inserts x as the
+  last item in the first form, making a list of it if it is not a
+  list already. If there are more forms, inserts the first form as the
+  last item in second form, etc."
+  {:added "1.1"} 
+  ([x form] (if (seq? form)
+              (with-meta `(~(first form) ~@(next form)  ~x) (meta form))
+              (list form x)))
+  ([x form & more] `(->> (->> ~x ~form) ~@more)))
