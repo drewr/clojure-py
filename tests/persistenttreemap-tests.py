@@ -3,7 +3,7 @@ import unittest
 from py.clojure.lang.persistenttreemap import PersistentTreeMap
 
 
-class PresistentTreeMapTests(unittest.TestCase):
+class PersistentTreeMapTests(unittest.TestCase):
     def testAssoc(self):
         m = PersistentTreeMap().assoc('a', 1)
         self.assertTrue(m.containsKey('a'))
@@ -40,5 +40,5 @@ class PresistentTreeMapTests(unittest.TestCase):
         self.assertEqual(m.maxKey(), 'b')
 
     def testValAt(self):
-        m = PersistentTreeMap().assoc('a', 1).assoc('b', 2)
+        m = PersistentTreeMap().assoc('a', 1)
         self.assertEqual(m.valAt('a'), 1)
