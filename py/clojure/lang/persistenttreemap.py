@@ -42,34 +42,6 @@ class PersistentTreeMap(APersistentMap, IObj, Reversible):
     def withMeta(self, meta):
         return PersistentTreeMap(meta, self.comp, self.tree, self._count)
 
-    @staticmethod
-    def create(self, *args):
-        if len(args) == 1 and isinstance(args[0], Map):
-            other = args[0]
-            ret = EMPTY
-            for o in other.entrySet():
-                ret = ret.assoc(o.getKey(), o.getValue())
-            return ret
-        elif len(args) == 1 and isinstance(args[0], ISeq):
-            items = args[0]
-            ret = EMPTY
-            while items is not None:
-                if items.next() is None:
-                    raise IllegalArgumentException("No value supplied for key: %s" % items.first())
-                ret = ret.assoc(items.first(), RT.second(items))
-                items = items.next().next()
-            return ret
-        elif len(args) == 2:
-            comp = args[0]
-            items = args[1]
-            ret = PersistentTreeMap(comp)
-            while items is not None:
-                if items.next() is None:
-                    raise IllegalArgumentException("No value supplied for key: %s" % items.first())
-                ret = ret.assoc(items.first(), RT.second(items))
-                items = items.next().next()
-            return ret
-
     def containsKey(self, key):
         return self.entryAt(key) is not None
 
@@ -108,7 +80,7 @@ class PersistentTreeMap(APersistentMap, IObj, Reversible):
         elif len(args) == 1:
             ascending = args[0]
             if self._count > 0:
-                return self.Seq.create(self.tree, ascending, self._count)
+                return Seq.create(self.tree, ascending, self._count)
             return None
         else:
             raise ArityException()
@@ -118,15 +90,11 @@ class PersistentTreeMap(APersistentMap, IObj, Reversible):
 
     def rseq(self):
         if self._count > 0:
-            return self.Seq.create(self.tree, False, self._count)
+            return Seq.create(self.tree, False, self._count)
         return None
 
     def comparator(self):
         return self.comp
-
-    @staticmethod
-    def entryKey(entry):
-        return entry.key()
 
     def seqFrom(self, key, ascending):
         if self._count > 0:
@@ -290,10 +258,10 @@ class PersistentTreeMap(APersistentMap, IObj, Reversible):
             app = self.append(left.right(), right.left())
             if isinstance(app, self.Red):
                 return self.red(app.key(), app.val(),
-                                self.black(left.key(), left.val(), left.left(), app.left()),
-                                self.black(right.key(), right.val(), app.right(), right.right()))
+                                black(left.key(), left.val(), left.left(), app.left()),
+                                black(right.key(), right.val(), app.right(), right.right()))
             else:
-                return self.balanceLeftDel(left.key(), left.val(), left.left(), self.black(right.key(), right.val(), app, right.right()))
+                return self.balanceLeftDel(left.key(), left.val(), left.left(), black(right.key(), right.val(), app, right.right()))
 
     def balanceLeftDel(self, key, val, del_, right):
         if isinstance(del_, self.Red):
@@ -302,7 +270,7 @@ class PersistentTreeMap(APersistentMap, IObj, Reversible):
             return self.rightBalance(key, val, del_, right.redden())
         elif isinstance(right, self.Red) and isinstance(right.left(), self.Black):
             return self.red(right.left().key(), right.left().val(),
-                            self.black(key, val, del_, right.left().left()),
+                            black(key, val, del_, right.left().left()),
                             self.rightBalance(right.key(), right.val(), right.left().right(), right.right().redden()))
         else:
             raise UnsupportedOperationException("Invariant violation")
@@ -315,29 +283,29 @@ class PersistentTreeMap(APersistentMap, IObj, Reversible):
         elif isinstance(left, self.Red) and isinstance(left.right(), self.Black):
             return self.red(left.right().key(), left.right().val(),
                     self.leftBalance(left.key(), left.val(), left.left().redden(), left.right().left()),
-                    self.black(key, val, left.right().right(), del_))
+                    black(key, val, left.right().right(), del_))
         else:
             raise UnsupportedOperationException("Invariant violation")
 
     def leftBalance(self, key, val, ins, right):
         if isinstance(ins, self.Red) and isinstance(ins.left(), self.Red):
-            return self.red(ins.key(), ins.val(), ins.left().blacken(), self.black(key, val, ins.right(), right))
+            return self.red(ins.key(), ins.val(), ins.left().blacken(), black(key, val, ins.right(), right))
         elif isinstance(ins, self.Red) and isinstance(ins.right(), self.Red):
             return self.red(ins.right().key(), ins.right().val(),
-                            self.black(ins.key(), ins.val(), ins.left(), ins.right().left()),
-                            self.black(key, val, ins.right().right(), right))
+                            black(ins.key(), ins.val(), ins.left(), ins.right().left()),
+                            black(key, val, ins.right().right(), right))
         else:
-            return self.black(key, val, ins, right)
+            return black(key, val, ins, right)
 
     def rightBalance(self, key, val, left, ins):
         if isinstance(ins, self.Red) and isinstance(ins.right(), self.Red):
             return self.red(ins.key(), ins.val(), black(key, val, left, ins.left()), ins.right().blacken())
         elif isinstance(ins, self.Red) and isinstance(ins.left(), self.Red):
             return self.red(ins.left().key(), ins.left().val(),
-                            self.black(key, val, left, ins.left().left()),
-                            self.black(ins.key(), ins.val(), ins.left().right(), ins.right()))
+                            black(key, val, left, ins.left().left()),
+                            black(ins.key(), ins.val(), ins.left().right(), ins.right()))
         else:
-            return self.black(key, val, left, ins)
+            return black(key, val, left, ins)
 
     def replace(self, t, key, val):
         c = self.doCompare(key, t.key())
@@ -346,30 +314,59 @@ class PersistentTreeMap(APersistentMap, IObj, Reversible):
                          replace(t.left(), key, val) if c < 0 else t.left(),
                          replace(t.right(), key, val) if c > 0 else t.right())
 
-    @staticmethod
-    def red(key, val, left, right):
-        if left is None and right is None:
-            if val is None:
-                return Red(key)
-            return RedVal(key, val)
-        if val is None:
-            return RedBranch(key, left, right)
-        return RedBranchVal(key, val, left, right)
-
-    @staticmethod
-    def black(key, val, left, right):
-        if left is None and right is None:
-            if val is None:
-                return self.Black(key)
-            return BlackVal(key, val)
-        if val is None:
-            return BlackBranch(key, left, right)
-        return BlackBranchVal(key, val, left, right)
-
     def meta(self):
         return self._meta
 
 EMPTY = PersistentTreeMap()
+
+
+def create(self, *args):
+    if len(args) == 1 and isinstance(args[0], Map):
+        other = args[0]
+        ret = EMPTY
+        for o in other.entrySet():
+            ret = ret.assoc(o.getKey(), o.getValue())
+        return ret
+    elif len(args) == 1 and isinstance(args[0], ISeq):
+        items = args[0]
+        ret = EMPTY
+        while items is not None:
+            if items.next() is None:
+                raise IllegalArgumentException("No value supplied for key: %s" % items.first())
+            ret = ret.assoc(items.first(), RT.second(items))
+            items = items.next().next()
+        return ret
+    elif len(args) == 2:
+        comp = args[0]
+        items = args[1]
+        ret = PersistentTreeMap(comp)
+        while items is not None:
+            if items.next() is None:
+                raise IllegalArgumentException("No value supplied for key: %s" % items.first())
+            ret = ret.assoc(items.first(), RT.second(items))
+            items = items.next().next()
+        return ret
+
+def entryKey(entry):
+    return entry.key()
+
+def red(key, val, left, right):
+    if left is None and right is None:
+        if val is None:
+            return Red(key)
+        return RedVal(key, val)
+    if val is None:
+        return RedBranch(key, left, right)
+    return RedBranchVal(key, val, left, right)
+
+def black(key, val, left, right):
+    if left is None and right is None:
+        if val is None:
+            return Black(key)
+        return BlackVal(key, val)
+    if val is None:
+        return BlackBranch(key, left, right)
+    return BlackBranchVal(key, val, left, right)
 
 
 class Node(object):
@@ -409,10 +406,10 @@ class Node(object):
         raise AbstractMethodCall()
 
     def balanceLeft(self, parent):
-        return self.black(parent.key(), parent.val(), self, parent.right())
+        return black(parent.key(), parent.val(), self, parent.right())
 
     def balanceRight(self, parent):
-        return PersistentTreeMap.black(parent.key(), parent.val(), parent.left(), self)
+        return black(parent.key(), parent.val(), parent.left(), self)
 
     def replace(self, key, val, left, right):
         raise AbstractMethodCall()
@@ -438,7 +435,7 @@ class Black(Node):
         return Red(key)
 
     def replace(self, key, val, left, right):
-        return PersistentTreeMap.black(key, val, left, right)
+        return black(key, val, left, right)
 
 
 class BlackVal(Black):
@@ -483,16 +480,16 @@ class BlackBranchVal(BlackBranch):
 
 class Red(Node):
     def addLeft(self, ins):
-        return PersistentTreeMap.red(self._key, self.val(), ins, self.right())
+        return red(self._key, self.val(), ins, self.right())
 
     def addRight(self, ins):
-        return PersistentTreeMap.red(self._key, self.val(), self.left(), ins)
+        return red(self._key, self.val(), self.left(), ins)
 
     def removeLeft(self, del_):
-        return PersistentTreeMap.red(self._key, self.val(), del_, self.right())
+        return red(self._key, self.val(), del_, self.right())
 
     def removeRight(self, del_):
-        return PersistentTreeMap.red(self._key, self.val(), self.left(), del_)
+        return red(self._key, self.val(), self.left(), del_)
 
     def blacken(self):
         return Black(self._key)
@@ -501,7 +498,7 @@ class Red(Node):
         raise UnsupportedOperationException("Invariant violation")
 
     def replace(self, key, val, left, right):
-        return PersistentTreeMap.red(key, val, left, right)
+        return red(key, val, left, right)
 
 
 class RedVal(Red):
@@ -539,10 +536,10 @@ class RedBranch(Red):
 
     def balanceRight(self, parent):
         if isinstance(self._right, Red):
-            return PersistentTreeMap.red(self._key, self.val(), PersistentTreeMap.black(parent._key, parent.val(), parent.left(), self._left), self._right.blacken())
+            return red(self._key, self.val(), black(parent._key, parent.val(), parent.left(), self._left), self._right.blacken())
         elif isinstance(self._left, Red):
-            return PersistentTreeMap.red(self._left._key, self._left.val(), PersistentTreeMap.black(parent._key, parent.val(), parent.left(), self._left.left()),
-                                         PersistentTreeMap.black(self._key, self.val(), self._left.right(), self._right))
+            return red(self._left._key, self._left.val(), black(parent._key, parent.val(), parent.left(), self._left.left()),
+                                         black(self._key, self.val(), self._left.right(), self._right))
         else:
             return super(RedBranch, self).balanceRight(parent)
 
