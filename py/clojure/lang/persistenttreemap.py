@@ -346,14 +346,15 @@ class PersistentTreeMap(APersistentMap, IObj, Reversible):
                          replace(t.left(), key, val) if c < 0 else t.left(),
                          replace(t.right(), key, val) if c > 0 else t.right())
 
-    def red(self, key, val, left, right):
+    @staticmethod
+    def red(key, val, left, right):
         if left is None and right is None:
             if val is None:
-                return self.Red(key)
-            return self.RedVal(key, val)
+                return PersistentTreeMap.Red(key)
+            return PersistentTreeMap.RedVal(key, val)
         if val is None:
-            return self.RedBranch(key, left, right)
-        return self.RedBranchVal(key, val, left, right)
+            return PersistentTreeMap.RedBranch(key, left, right)
+        return PersistentTreeMap.RedBranchVal(key, val, left, right)
 
     @staticmethod
     def black(key, val, left, right):
@@ -474,25 +475,25 @@ class PersistentTreeMap(APersistentMap, IObj, Reversible):
 
     class Red(Node):
         def addLeft(self, ins):
-            return red(self._key, self.val(), ins, self.right())
+            return PersistentTreeMap.red(self._key, self.val(), ins, self.right())
 
         def addRight(self, ins):
-            return red(self._key, self.val(), self.left(), ins)
+            return PersistentTreeMap.red(self._key, self.val(), self.left(), ins)
 
         def removeLeft(self, del_):
-            return red(self._key, self.val(), del_, self.right())
+            return PersistentTreeMap.red(self._key, self.val(), del_, self.right())
 
         def removeRight(self, del_):
-            return red(self._key, self.val(), self.left(), del_)
+            return PersistentTreeMap.red(self._key, self.val(), self.left(), del_)
 
         def blacken(self):
-            return Black(self._key)
+            return PersistentTreeMap.Black(self._key)
 
         def redden(self):
             raise UnsupportedOperationException("Invariant violation")
 
         def replace(self, key, val, left, right):
-            return red(key, val, left, right)
+            return PersistentTreeMap.red(key, val, left, right)
 
     class RedVal(Red):
         def __init__(self, key, val):
@@ -507,7 +508,7 @@ class PersistentTreeMap(APersistentMap, IObj, Reversible):
 
     class RedBranch(Red):
         def __init__(self, key, left, right):
-            super(key)
+            super(PersistentTreeMap.RedBranch, self).__init__(key)
             self._left = left
             self._right = right
 
@@ -527,27 +528,27 @@ class PersistentTreeMap(APersistentMap, IObj, Reversible):
                 return super(RedBranch, self).balanceLeft(parent)
 
         def balanceRight(self, parent):
-            if isinstance(self._right, Red):
-                return red(self._key, self.val(), black(parent._key, parent.val(), parent.left(), self._left), self._right.blacken())
-            elif isinstance(self._left, Red):
-                return red(self._left._key, self._left.val(), black(parent._key, parent.val(), parent.left(), self._left.left()),
-                           black(self._key, self.val(), self._left.right(), self._right))
+            if isinstance(self._right, PersistentTreeMap.Red):
+                return PersistentTreeMap.red(self._key, self.val(), PersistentTreeMap.black(parent._key, parent.val(), parent.left(), self._left), self._right.blacken())
+            elif isinstance(self._left, PersistentTreeMap.Red):
+                return PersistentTreeMap.red(self._left._key, self._left.val(), PersistentTreeMap.black(parent._key, parent.val(), parent.left(), self._left.left()),
+                                             PersistentTreeMap.black(self._key, self.val(), self._left.right(), self._right))
             else:
-                return super(RedBranch, self).balanceRight(parent)
+                return super(PersistentTreeMap.RedBranch, self).balanceRight(parent)
 
         def blacken(self):
             return BlackBranch(self._key, self._left, self._right)
 
     class RedBranchVal(RedBranch):
-        def RedBranchVal(self, key, val, left, right):
-            super(key, left, right)
+        def __init__(self, key, val, left, right):
+            super(PersistentTreeMap.RedBranchVal, self).__init__(key, left, right)
             self._val = val
 
         def val(self):
             return self._val
 
         def blacken(self):
-            return BlackBranchVal(self._key, self._val, self._left, self._right)
+            return PersistentTreeMap.BlackBranchVal(self._key, self._val, self._left, self._right)
 
     class Seq(ASeq):
         def __init__(self, *args):

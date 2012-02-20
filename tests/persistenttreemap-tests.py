@@ -1,9 +1,16 @@
+from random import randint
 import unittest
 
 from py.clojure.lang.persistenttreemap import PersistentTreeMap
 
 
 class PersistentTreeMapTests(unittest.TestCase):
+    def testScaling(self):
+        m = PersistentTreeMap()
+        for i in range(1000):
+            m = m.assoc(i, randint(1, 10))
+        self.assertEqual(m.count(), 1000)
+
     def testAssoc(self):
         m = PersistentTreeMap().assoc('a', 1)
         self.assertTrue(m.containsKey('a'))
