@@ -124,7 +124,8 @@ class PersistentTreeMap(APersistentMap, IObj, Reversible):
     def comparator(self):
         return self.comp
 
-    def entryKey(self, entry):
+    @staticmethod
+    def entryKey(entry):
         return entry.key()
 
     def seqFrom(self, key, ascending):

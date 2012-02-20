@@ -23,3 +23,11 @@ class PresistentTreeMapTests(unittest.TestCase):
         m2 = m1.assoc('b', 2)
         self.assertEqual(m2.seq().first().key(), 'a')
         self.assertEqual(m2.seq().next().first().key(), 'b')
+
+    def testKeys(self):
+        m = PersistentTreeMap()
+        m1 = m.assoc('a', 1)
+        m2 = m1.assoc('b', 2)
+        keys = m2.keys()
+        self.assertEqual(keys.next(), 'a')
+        self.assertEqual(keys.next(), 'b')
