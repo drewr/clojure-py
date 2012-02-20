@@ -171,7 +171,7 @@ class PersistentTreeMap(APersistentMap, IObj, Reversible):
             return self.vals(self.iterator())
         elif len(args) == 1:
             it = args[0]
-            return ValIterator(it)
+            return PersistentTreeMap.ValIterator(it)
 
     def minKey(self):
         t = self.min()
