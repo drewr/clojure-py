@@ -33,12 +33,14 @@ class ClojureCoreTests(unittest.TestCase):
     def testList(self):
         self.assertEqual(self.eval('(list 1 2 3)'), [1, 2, 3])
         self.assertEqual(self.eval('(list)'), [])
-        self.assertIsInstance(self.eval('(list 1 2 3)'), PersistentList)
+        self.assertTrue(isinstance(self.eval('(list 1 2 3)'),
+                                   PersistentList))
 
     def testVector(self):
         self.assertEqual(self.eval('(vector 1 2 3)'), [1, 2, 3])
         self.assertEqual(self.eval('(vector)'), [])
-        self.assertIsInstance(self.eval('(vector 1 2 3)'), PersistentVector)
+        self.assertTrue(isinstance(self.eval('(vector 1 2 3)'),
+                                   PersistentVector))
 
     def testCons(self):
         self.assertEqual(self.eval('(cons 1 nil)'), [1])
