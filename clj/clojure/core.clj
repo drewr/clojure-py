@@ -17,13 +17,13 @@
  ^{:arglists '([& items])
    :doc "Creates a new list containing the items."
    :added "1.0"}
-  list clojure.lang.persistentlist.PersistentList.creator)
+  list clojure.lang.persistentlist.PersistentList/creator)
 
 (def
  ^{:arglists '([& items])
    :doc "Creates a new vector containing the items."
    :added "1.0"}
-  vector clojure.lang.rt.vector)
+  vector clojure.lang.rt/vector)
 
 (def
  #^{:arglists '([x seq])
@@ -505,7 +505,7 @@
                   coll
                   (do (py/if (.__eq__ (py/len keyvals) 1)
                           (throw (py/Exception "Even number of args required to hash-map")))
-                      (py/if (contains? coll (first keyvals))
+                      (py/if (py.bytecode/COMPARE_OP "in" (first keyvals) coll)
                           (throw (py/Exception "Duplicate keys found in hash-map")))
                       (recur (nnext keyvals) 
                              (.assoc coll 
@@ -762,7 +762,7 @@
 
 (deftype ArrayChunk [array off end]
     (__getitem__ ([self i]
-          (get array (inc of)))
+          (py.bytecode/BINARY_SUBSCR array (inc of)))
          ([self i not-found]
 	  (if (py.bytecode/COMPARE_OP ">=" i 0)
 	      (if (py.bytecode/COMPARE_OP "<" i (len self))
@@ -779,10 +779,10 @@
 	(ArrayChunk array (inc off) end))
 
     (reduce [self f start]
-	(loop [ret (f start (get array off))
+	(loop [ret (f start (py.bytecode/BINARY_SUBSCR array off))
 	       x (inc off)]
 	     (if (py.bytecode/COMPARE_OP "<" x end)
-		 (recur (f ret (get array x)) 
+		 (recur (f ret (py.bytecode/BINARY_SUBSCR array x)) 
 			(inc x))
 		 ret))))
 
@@ -1126,4 +1126,307 @@
   [num div]
     (py.bytecode/BINARY_MODULO num div))
 
+(defn bit-not
+  "Bitwise complement"
+  {:added "1.0"}
+  [x] (py.bytecode/UNARY_INVERT x))
 
+(defn bit-and
+  "Bitwise and"
+   {:added "1.0"}
+   ([x y] (py.bytecode/BINARY_AND x y))
+   ([x y & more]
+      (reduce1 bit-and (bit-and x y) more)))
+
+(defn bit-or
+  "Bitwise or"
+  {:added "1.0"}
+  ([x y] (py.bytecode/BINARY_OR x y))
+  ([x y & more]
+    (reduce1 bit-or (bit-or x y) more)))
+
+(defn bit-xor
+  "Bitwise exclusive or"
+  {:added "1.0"}
+  ([x y] (py.bytecode/BINARY_XOR x y))
+  ([x y & more]
+    (reduce1 bit-xor (bit-xor x y) more)))
+
+(defn bit-and-not
+  "Bitwise and with complement"
+  {:added "1.0"}
+  ([x y] (py.bytecode/BINARY_AND  x (py.bytecode/UNARY_NOT y)))
+  ([x y & more]
+    (reduce1 bit-and-not (bit-and-not x y) more)))
+
+(defn bit-shift-left
+  "Bitwise shift left"
+  {:added "1.0"}
+  [x n] (py.bytecode/BINARY_LSHIFT x n))
+
+(defn bit-shift-right
+  "Bitwise shift right"
+  {:added "1.0"}
+  [x n] (py.bytecode/BINARY_RSHIFT x n))
+
+(defn bit-clear
+  "Clear bit at index n"
+  {:added "1.0"}
+  [x n] (bit-and x (bit-not (bit-shift-left 1 n))))
+
+(defn bit-set
+  "Set bit at index n"
+  {:added "1.0"}
+  [x n] (bit-or x (bit-shift-left 1 n)))
+
+(defn bit-flip
+  "Flip bit at index n"
+  {:added "1.0"}
+  [x n] (bit-xor x (bit-shift-left 1 n)))
+
+(defn bit-test
+  "Test bit at index n"
+  {:added "1.0"}
+  [x n] (py.bytecode/COMPARE_OP "==" (bit-and (bit-shift-right x n) 1) 1))
+
+(defn integer?
+  "Returns true if n is an integer"
+  {:added "1.0"}
+  [n]
+  (or (instance? py/int n)))
+
+(defn even?
+  "Returns true if n is even, throws an exception if n is not an integer"
+  {:added "1.0"}
+   [n] (if (integer? n)
+        (zero? (bit-and n 1))
+        (throw (TypeError (str "Argument must be an integer: " n)))))
+
+(defn odd?
+  "Returns true if n is odd, throws an exception if n is not an integer"
+  {:added "1.0"}
+  [n] (not (even? n)))
+
+(defn complement
+  "Takes a fn f and returns a fn that takes the same arguments as f,
+  has the same effects, if any, and returns the opposite truth value."
+  {:added "1.0"}
+  [f] 
+  (fn 
+    ([] (not (f)))
+    ([x] (not (f x)))
+    ([x y] (not (f x y)))
+    ([x y & zs] (not (apply f x y zs)))))
+
+(defn constantly
+  "Returns a function that takes any number of arguments and returns x."
+  {:added "1.0"}
+  [x] (fn [& args] x))
+
+(defn identity
+  "Returns its argument."
+  {:added "1.0"}
+  [x] x)
+
+;; list stuff
+(defn peek
+  "For a list or queue, same as first, for a vector, same as, but much
+  more efficient than, last. If the collection is empty, returns nil."
+  {:added "1.0"}
+  [coll] (if (nil? coll) 
+             nil
+             (.peek coll)))
+
+(defn pop
+  "For a list or queue, returns a new list/queue without the first
+  item, for a vector, returns a new vector without the last item. If
+  the collection is empty, throws an exception.  Note - not the same
+  as next/butlast."
+  {:added "1.0"}
+  [coll] (if (nil? coll)
+             nil
+             (.pop coll)))
+
+;; map stuff
+
+(defn coll?
+  "Returns true if x implements IPersistentCollection"
+  {:added "1.0"}
+  [x] (instance? clojure.lang.ipersistentcollection.IPersistentCollection x))
+
+(defn list?
+  "Returns true if x implements IPersistentList"
+  {:added "1.0"}
+  [x] (instance? clojure.lang.ipersistentlist.IPersistentList x))
+
+(defn set?
+  "Returns true if x implements IPersistentSet"
+  {:added "1.0"}
+  [x] (instance? clojure.lang.ipersistentset.IPersistentSet x))
+
+(defn pylist?
+  "Returns true if coll is a native python list"
+  [coll] (instance? py/list coll))
+
+(defn tuple?
+  "Returns true if toll is a native python tuple"
+  [coll] (instance? py/tuple coll))
+
+(defn contains?
+  "Returns true if key is present in the given collection, otherwise
+  returns false.  Note that for numerically indexed collections like
+  vectors and Java arrays, this tests if the numeric key is within the
+  range of indexes. 'contains?' operates constant or logarithmic time;
+  it will not perform a linear search for a value.  See also 'some'."
+  {:added "1.0"}
+  [coll key] (py/if (or (vector? coll)
+                        (list? coll)
+                        (tuple? coll)
+                        (pylist? coll)
+                        (string? coll))
+                    (and (>= key 0) (< key (count coll)))
+                    (py.bytecode/COMPARE_OP "in" key coll)))    
+
+
+(defn get
+  "Returns the value mapped to key, not-found or nil if key not present."
+  {:added "1.0"}
+  ([map key]
+   (get map key nil))
+  ([map key not-found]
+   (cond (instance? clojure.lang.ilookup.ILookup map)
+           (.valAt map key not-found)
+         
+         :else
+           (if (contains? map key)
+               (py.bytecode/BINARY_SUBSCR map key)
+               not-found))))
+
+(defn dissoc
+  "dissoc[iate]. Returns a new map of the same (hashed/sorted) type,
+  that does not contain a mapping for key(s)."
+  {:added "1.0"
+   :static true}
+  ([map] map)
+  ([map key]
+   (if (nil? map) nil (.without map key)))
+  ([map key & ks]
+   (let [ret (dissoc map key)]
+     (if ks
+       (recur ret (first ks) (next ks))
+       ret))))
+
+(defn find
+  "Returns the map entry for key, or nil if key not present."
+  {:added "1.0"}
+  [map key] 
+    (cond (nil? map)
+           nil
+          (instance? clojure.lang.associative.Associative map)
+           (.entryAt map key)
+          :else
+           (if (contains? map key)
+               (clojure.lang.mapentry.MapEntry key (get map key))
+               nil)))
+
+(defn select-keys
+  "Returns a map containing only those entries in map whose key is in keys"
+  {:added "1.0"}
+  [map keyseq]
+    (loop [ret {} keys (seq keyseq)]
+      (if keys
+        (let [entry (find map (first keys))]
+          (recur
+           (if entry
+             (conj ret entry)
+             ret)
+           (next keys)))
+        ret)))
+
+(defn keys
+  "Returns a sequence of the map's keys."
+  {:added "1.0"
+   :static true}
+  [map] 
+    (if (map? map)
+         (clojure.lang.apersistentmap.APersistentMap.KeySeq.create (seq map))
+         (seq (.keys map))))
+
+(defn vals 
+  "Returns a sequence of the map's keys."
+  {:added "1.0"
+   :static true}
+  [map] 
+    (if (map? map)
+         (clojure.lang.apersistentmap.APersistentMap.ValueSeq.create (seq map))
+         (seq (.items map))))
+
+(defn key
+  "Returns the key of the map entry."
+  {:added "1.0"
+   :static true}
+  [e]
+    (.getKey e))
+
+(defn val
+  "Returns the value in the map entry."
+  {:added "1.0"
+   :static true}
+  [e]
+    (. e (getValue)))
+
+
+(defn name
+  "Returns the name String of a string, symbol or keyword."
+  {:added "1.0"}
+  [x]
+  (if (string? x) x (.getName x )))
+
+(defn namespace
+  "Returns the namespace String of a symbol or keyword, or nil if not present."
+  {:tag String
+   :added "1.0"
+   :static true}
+  [x]
+    (.getNamespace x))
+
+(defmacro ..
+  "form => fieldName-symbol or (instanceMethodName-symbol args*)
+
+  Expands into a member access (.) of the first member on the first
+  argument, followed by the next member on the result, etc. For
+  instance:
+
+  (.. System (getProperties) (get \"os.name\"))
+
+  expands to:
+
+  (. (. System (getProperties)) (get \"os.name\"))
+
+  but is easier to write, read, and understand."
+  {:added "1.0"}
+  ([x form] `(. ~x ~form))
+  ([x form & more] `(.. (. ~x ~form) ~@more)))
+
+(defmacro ->
+  "Threads the expr through the forms. Inserts x as the
+  second item in the first form, making a list of it if it is not a
+  list already. If there are more forms, inserts the first form as the
+  second item in second form, etc."
+  {:added "1.0"}
+  ([x] x)
+  ([x form] (if (seq? form)
+              (with-meta `(~(first form) ~x ~@(next form)) (meta form))
+              (list form x)))
+  ([x form & more] `(-> (-> ~x ~form) ~@more)))
+
+(defmacro ->>
+  "Threads the expr through the forms. Inserts x as the
+  last item in the first form, making a list of it if it is not a
+  list already. If there are more forms, inserts the first form as the
+  last item in second form, etc."
+  {:added "1.1"} 
+  ([x form] (if (seq? form)
+              (with-meta `(~(first form) ~@(next form)  ~x) (meta form))
+              (list form x)))
+  ([x form & more] `(->> (->> ~x ~form) ~@more)))

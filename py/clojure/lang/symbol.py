@@ -18,6 +18,12 @@ class Symbol(object, IObj):
             raise ArityException()
         if isinstance(self.ns, types.ModuleType):
             pass
+        
+    def getNamespace(self):
+        return self.ns
+    
+    def getName(self):
+        return self.name
 
     def withMeta(self, meta):
         if meta is self.meta():

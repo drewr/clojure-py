@@ -16,6 +16,16 @@ from py.clojure.util.byteplay import Code, Label, SetLineno
 requireClj('./clj/clojure/core.clj')
 
 
+# for Python 2.6
+try:
+    skip = unittest.skip
+except AttributeError:
+    def skip(f):
+        def ret():
+            pass
+        return ret
+
+
 class NonOverloadedFunctions(unittest.TestCase):
     def setUp(self):
         RT.init()
@@ -111,7 +121,7 @@ class TruthinessTests(unittest.TestCase):
         self.assertTrue(self.eval('(if {} true false)'))
         self.assertTrue(self.eval('(if {1 2} true false)'))
 
-    @unittest.skip # hash sets aren't implemented yet
+    @skip # hash sets aren't implemented yet
     def testSet(self):
         self.assertTrue(self.eval('(if #{} true false)'))
         self.assertTrue(self.eval('(if #{1} true false)'))

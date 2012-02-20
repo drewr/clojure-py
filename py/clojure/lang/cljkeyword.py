@@ -29,6 +29,12 @@ class Keyword(IFn, Named):
             return Keyword.intern(Symbol.intern(*args))
         else:
             raise ArityException()
+            
+    def getNamespace(self):
+        return self.sym.getNameSpace()
+    
+    def getName(self):
+        return self.sym.getName()
 
     def __init__(self, sym):
         self.sym = sym
