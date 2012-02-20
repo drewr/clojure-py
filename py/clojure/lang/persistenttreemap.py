@@ -527,7 +527,7 @@ class RedBranch(Red):
 
     def balanceLeft(self, parent):
         if isinstance(self._left, Red):
-            return red(self._key, self.val(), self._left.blacken(), black(parent._key, parent.val(), right, parent.right()))
+            return red(self._key, self.val(), self._left.blacken(), black(parent._key, parent.val(), self.right(), parent.right()))
         elif isinstance(self._right, Red):
             return red(self._right._key, self._right.val(), black(self._key, self.val(), self._left, self._right.left()),
                        black(parent._key, parent.val(), self._right.right(), parent.right()))

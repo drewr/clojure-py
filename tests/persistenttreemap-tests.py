@@ -1,4 +1,4 @@
-from random import randint
+from random import randint, shuffle
 import unittest
 
 from py.clojure.lang.persistenttreemap import PersistentTreeMap
@@ -7,7 +7,9 @@ from py.clojure.lang.persistenttreemap import PersistentTreeMap
 class PersistentTreeMapTests(unittest.TestCase):
     def testScaling(self):
         m = PersistentTreeMap()
-        for i in range(1000):
+        ints = range(1000)
+        shuffle(ints)
+        for i in ints:
             m = m.assoc(i, randint(1, 10))
         self.assertEqual(m.count(), 1000)
 
