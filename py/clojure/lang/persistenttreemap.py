@@ -207,7 +207,7 @@ class PersistentTreeMap(APersistentMap, IObj, Reversible):
     def valAt(self, *args):
         if len(args) == 1:
             key = args[0]
-            return valAt(key, None)
+            return self.valAt(key, None)
         elif len(args) == 2:
             key = args[0]
             notFound = args[1]

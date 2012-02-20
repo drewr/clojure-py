@@ -38,3 +38,7 @@ class PresistentTreeMapTests(unittest.TestCase):
     def testMaxKey(self):
         m = PersistentTreeMap().assoc('a', 1).assoc('b', 2)
         self.assertEqual(m.maxKey(), 'b')
+
+    def testValAt(self):
+        m = PersistentTreeMap().assoc('a', 1).assoc('b', 2)
+        self.assertEqual(m.valAt('a'), 1)
