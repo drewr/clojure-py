@@ -104,7 +104,7 @@ class PersistentTreeMap(APersistentMap, IObj, Reversible):
                 c = self.doCompare(key, t.key())
                 if c == 0:
                     stack = RT.cons(t, stack)
-                    return self.Seq(stack, ascending)
+                    return Seq(stack, ascending)
                 elif ascending:
                     if c < 0:
                         stack = RT.cons(t, stack)
@@ -118,7 +118,7 @@ class PersistentTreeMap(APersistentMap, IObj, Reversible):
                     else:
                         t = t.left()
             if stack is not None:
-                return self.Seq(stack, ascending)
+                return Seq(stack, ascending)
         return None
 
     def iterator(self):
