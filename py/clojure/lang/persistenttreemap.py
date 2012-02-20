@@ -246,8 +246,8 @@ class PersistentTreeMap(APersistentMap, IObj, Reversible):
                 app = self.append(left.right(), right.left())
                 if isinstance(app, Red):
                     return red(app.key(), app.val(),
-                                    red(left.key(), left.val(), left.left(), app.left()),
-                                    red(right.key(), right.val(), app.right(), right.right()))
+                               red(left.key(), left.val(), left.left(), app.left()),
+                               red(right.key(), right.val(), app.right(), right.right()))
                 else:
                     return red(left.key(), left.val(), left.left(), red(right.key(), right.val(), app, right.right()))
             else:
@@ -258,8 +258,8 @@ class PersistentTreeMap(APersistentMap, IObj, Reversible):
             app = self.append(left.right(), right.left())
             if isinstance(app, Red):
                 return red(app.key(), app.val(),
-                                black(left.key(), left.val(), left.left(), app.left()),
-                                black(right.key(), right.val(), app.right(), right.right()))
+                           black(left.key(), left.val(), left.left(), app.left()),
+                           black(right.key(), right.val(), app.right(), right.right()))
             else:
                 return self.balanceLeftDel(left.key(), left.val(), left.left(), black(right.key(), right.val(), app, right.right()))
 
@@ -270,8 +270,8 @@ class PersistentTreeMap(APersistentMap, IObj, Reversible):
             return self.rightBalance(key, val, del_, right.redden())
         elif isinstance(right, Red) and isinstance(right.left(), Black):
             return red(right.left().key(), right.left().val(),
-                            black(key, val, del_, right.left().left()),
-                            self.rightBalance(right.key(), right.val(), right.left().right(), right.right().redden()))
+                       black(key, val, del_, right.left().left()),
+                       self.rightBalance(right.key(), right.val(), right.left().right(), right.right().redden()))
         else:
             raise UnsupportedOperationException("Invariant violation")
 
@@ -282,8 +282,8 @@ class PersistentTreeMap(APersistentMap, IObj, Reversible):
             return self.leftBalance(key, val, left.redden(), del_)
         elif isinstance(left, Red) and isinstance(left.right(), Black):
             return red(left.right().key(), left.right().val(),
-                    self.leftBalance(left.key(), left.val(), left.left().redden(), left.right().left()),
-                    black(key, val, left.right().right(), del_))
+                       self.leftBalance(left.key(), left.val(), left.left().redden(), left.right().left()),
+                       black(key, val, left.right().right(), del_))
         else:
             raise UnsupportedOperationException("Invariant violation")
 
@@ -292,8 +292,8 @@ class PersistentTreeMap(APersistentMap, IObj, Reversible):
             return red(ins.key(), ins.val(), ins.left().blacken(), black(key, val, ins.right(), right))
         elif isinstance(ins, Red) and isinstance(ins.right(), Red):
             return red(ins.right().key(), ins.right().val(),
-                            black(ins.key(), ins.val(), ins.left(), ins.right().left()),
-                            black(key, val, ins.right().right(), right))
+                       black(ins.key(), ins.val(), ins.left(), ins.right().left()),
+                       black(key, val, ins.right().right(), right))
         else:
             return black(key, val, ins, right)
 
@@ -302,8 +302,8 @@ class PersistentTreeMap(APersistentMap, IObj, Reversible):
             return red(ins.key(), ins.val(), black(key, val, left, ins.left()), ins.right().blacken())
         elif isinstance(ins, Red) and isinstance(ins.left(), Red):
             return red(ins.left().key(), ins.left().val(),
-                            black(key, val, left, ins.left().left()),
-                            black(ins.key(), ins.val(), ins.left().right(), ins.right()))
+                       black(key, val, left, ins.left().left()),
+                       black(ins.key(), ins.val(), ins.left().right(), ins.right()))
         else:
             return black(key, val, left, ins)
 
@@ -539,7 +539,7 @@ class RedBranch(Red):
             return red(self._key, self.val(), black(parent._key, parent.val(), parent.left(), self._left), self._right.blacken())
         elif isinstance(self._left, Red):
             return red(self._left._key, self._left.val(), black(parent._key, parent.val(), parent.left(), self._left.left()),
-                                         black(self._key, self.val(), self._left.right(), self._right))
+                       black(self._key, self.val(), self._left.right(), self._right))
         else:
             return super(RedBranch, self).balanceRight(parent)
 
