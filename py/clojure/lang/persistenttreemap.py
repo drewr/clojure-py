@@ -103,7 +103,7 @@ class PersistentTreeMap(APersistentMap, IObj, Reversible):
     def seq(self, *args):
         if len(args) == 0:
             if self._count > 0:
-                return self.Seq.create(self.tree, True, self._count)
+                return Seq.create(self.tree, True, self._count)
             return None
         elif len(args) == 1:
             ascending = args[0]
@@ -154,24 +154,24 @@ class PersistentTreeMap(APersistentMap, IObj, Reversible):
         return None
 
     def iterator(self):
-        return self.NodeIterator(self.tree, True)
+        return NodeIterator(self.tree, True)
 
     def reverseIterator(self):
-        return self.NodeIterator(self.tree, False)
+        return NodeIterator(self.tree, False)
 
     def keys(self, *args):
         if len(args) == 0:
             return self.keys(self.iterator())
         elif len(args) == 1:
             it = args[0]
-            return PersistentTreeMap.KeyIterator(it)
+            return KeyIterator(it)
 
     def vals(self, *args):
         if len(args) == 0:
             return self.vals(self.iterator())
         elif len(args) == 1:
             it = args[0]
-            return PersistentTreeMap.ValIterator(it)
+            return ValIterator(it)
 
     def minKey(self):
         t = self.min()
@@ -236,8 +236,8 @@ class PersistentTreeMap(APersistentMap, IObj, Reversible):
     def add(self, t, key, val, found):
         if t is None:
             if val is None:
-                return self.Red(key)
-            return self.RedVal(key, val)
+                return Red(key)
+            return RedVal(key, val)
         c = self.doCompare(key, t.key())
         if c == 0:
             found.val = t
@@ -350,297 +350,310 @@ class PersistentTreeMap(APersistentMap, IObj, Reversible):
     def red(key, val, left, right):
         if left is None and right is None:
             if val is None:
-                return PersistentTreeMap.Red(key)
-            return PersistentTreeMap.RedVal(key, val)
+                return Red(key)
+            return RedVal(key, val)
         if val is None:
-            return PersistentTreeMap.RedBranch(key, left, right)
-        return PersistentTreeMap.RedBranchVal(key, val, left, right)
+            return RedBranch(key, left, right)
+        return RedBranchVal(key, val, left, right)
 
     @staticmethod
     def black(key, val, left, right):
         if left is None and right is None:
             if val is None:
                 return self.Black(key)
-            return PersistentTreeMap.BlackVal(key, val)
+            return BlackVal(key, val)
         if val is None:
-            return PersistentTreeMap.BlackBranch(key, left, right)
-        return PersistentTreeMap.BlackBranchVal(key, val, left, right)
+            return BlackBranch(key, left, right)
+        return BlackBranchVal(key, val, left, right)
 
     def meta(self):
         return self._meta
 
-    class Node(object):
-        def __init__(self, key):
-            self._key = key
-
-        def key(self):
-            return self._key
-        getKey = key
-
-        def val(self):
-            return None
-        getValue = val
-
-        def left(self):
-            return None
-
-        def right(self):
-            return None
-
-        def addLeft(self, ins):
-            raise AbstractMethodCall()
-
-        def addRight(self, ins):
-            raise AbstractMethodCall()
-
-        def removeLeft(self, del_):
-            raise AbstractMethodCall()
-
-        def removeRight(self, del_):
-            raise AbstractMethodCall()
-
-        def blacken(self):
-            raise AbstractMethodCall()
-
-        def redden(self):
-            raise AbstractMethodCall()
-
-        def balanceLeft(self, parent):
-            return self.black(parent.key(), parent.val(), self, parent.right())
-
-        def balanceRight(self, parent):
-            return PersistentTreeMap.black(parent.key(), parent.val(), parent.left(), self)
-
-        def replace(self, key, val, left, right):
-            raise AbstractMethodCall()
-
-    class Black(Node):
-        def addLeft(self, ins):
-            return ins.balanceLeft(self)
-
-        def addRight(self, ins):
-            return ins.balanceRight(self)
-
-        def removeLeft(self, del_):
-            return self.balanceLeftDel(self.key(), self.val(), del_, self.right())
-
-        def removeRight(self, del_):
-            return self.balanceRightDel(self.key(), self.val(), self.left(), del_)
-
-        def blacken(self):
-            return self
-
-        def redden(self):
-            return Red(key)
-
-        def replace(self, key, val, left, right):
-            return PersistentTreeMap.black(key, val, left, right)
-
-    class BlackVal(Black):
-        def __init__(self, key, val):
-            super(PersistentTreeMap.BlackVal, self).__init__(key)
-            self._val = val
-
-        def val(self):
-            return self._val
-
-        def redden(self):
-            return PersistentTreeMap.RedVal(self._key, self._val)
-
-    class BlackBranch(Black):
-        def __init__(self, key, left, right):
-            super(PersistentTreeMap.BlackBranch, self).__init__(key)
-            self._left = left
-            self._right = right
-
-        def left(self):
-            return self._left
-
-        def right(self):
-            return self._right
-
-        def redden(self):
-            return PersistentTreeMap.RedBranch(self._key, self._left, self._right)
-
-    class BlackBranchVal(BlackBranch):
-        def __init__(self, key, val, left, right):
-            super(PersistentTreeMap.BlackBranchVal, self).__init__(key, left, right)
-            self._val = val
-
-        def val(self):
-            return self._val
-
-        def redden(self):
-            return PersistentTreeMap.RedBranchVal(self._key, self._val, self._left, self._right)
-
-    class Red(Node):
-        def addLeft(self, ins):
-            return PersistentTreeMap.red(self._key, self.val(), ins, self.right())
-
-        def addRight(self, ins):
-            return PersistentTreeMap.red(self._key, self.val(), self.left(), ins)
-
-        def removeLeft(self, del_):
-            return PersistentTreeMap.red(self._key, self.val(), del_, self.right())
-
-        def removeRight(self, del_):
-            return PersistentTreeMap.red(self._key, self.val(), self.left(), del_)
-
-        def blacken(self):
-            return PersistentTreeMap.Black(self._key)
-
-        def redden(self):
-            raise UnsupportedOperationException("Invariant violation")
-
-        def replace(self, key, val, left, right):
-            return PersistentTreeMap.red(key, val, left, right)
-
-    class RedVal(Red):
-        def __init__(self, key, val):
-            super(PersistentTreeMap.RedVal, self).__init__(key)
-            self._val = val
-
-        def val(self):
-            return self._val
-
-        def blacken(self):
-            return PersistentTreeMap.BlackVal(self._key, self._val)
-
-    class RedBranch(Red):
-        def __init__(self, key, left, right):
-            super(PersistentTreeMap.RedBranch, self).__init__(key)
-            self._left = left
-            self._right = right
-
-        def left(self):
-            return self._left
-
-        def right(self):
-            return self._right
-
-        def balanceLeft(self, parent):
-            if isinstance(self._left, Red):
-                return red(self._key, self.val(), self._left.blacken(), black(parent._key, parent.val(), right, parent.right()))
-            elif isinstance(self._right, Red):
-                return red(self._right._key, self._right.val(), black(self._key, self.val(), self._left, self._right.left()),
-                           black(parent._key, parent.val(), self._right.right(), parent.right()))
-            else:
-                return super(RedBranch, self).balanceLeft(parent)
-
-        def balanceRight(self, parent):
-            if isinstance(self._right, PersistentTreeMap.Red):
-                return PersistentTreeMap.red(self._key, self.val(), PersistentTreeMap.black(parent._key, parent.val(), parent.left(), self._left), self._right.blacken())
-            elif isinstance(self._left, PersistentTreeMap.Red):
-                return PersistentTreeMap.red(self._left._key, self._left.val(), PersistentTreeMap.black(parent._key, parent.val(), parent.left(), self._left.left()),
-                                             PersistentTreeMap.black(self._key, self.val(), self._left.right(), self._right))
-            else:
-                return super(PersistentTreeMap.RedBranch, self).balanceRight(parent)
-
-        def blacken(self):
-            return BlackBranch(self._key, self._left, self._right)
-
-    class RedBranchVal(RedBranch):
-        def __init__(self, key, val, left, right):
-            super(PersistentTreeMap.RedBranchVal, self).__init__(key, left, right)
-            self._val = val
-
-        def val(self):
-            return self._val
-
-        def blacken(self):
-            return PersistentTreeMap.BlackBranchVal(self._key, self._val, self._left, self._right)
-
-    class Seq(ASeq):
-        def __init__(self, *args):
-            if len(args) == 2:
-                self.stack = args[0]
-                self.asc = args[1]
-                self.cnt = -1
-            elif len(args) == 3:
-                self.stack = args[0]
-                self.asc = args[1]
-                self.cnt = args[2]
-            elif len(args) == 4:
-                super(PersistentTreeMap.Seq, self).__init__(args[0])
-                self.stack = args[1]
-                self.asc = args[2]
-                self.cnt = args[3]
-
-        @staticmethod
-        def create(t, asc, cnt):
-            return PersistentTreeMap.Seq(PersistentTreeMap.Seq.push(t, None, asc), asc, cnt)
-
-        @staticmethod
-        def push(t, stack, asc):
-            while t is not None:
-                stack = RT.cons(t, stack)
-                t = t.left() if asc else t.right()
-            return stack
-
-        def first(self):
-            return self.stack.first()
-
-        def next(self):
-            t = self.stack.first()
-            nextstack = self.push(t.right() if self.asc else t.left(), self.stack.next(), self.asc)
-            if nextstack is not None:
-                return PersistentTreeMap.Seq(nextstack, self.asc, self.cnt - 1)
-            return None
-
-        def count(self):
-            if self.cnt < 0:
-                return super(Seq, self).count()
-            return self.cnt
-
-        def withMeta(self, meta):
-            return Seq(meta, self.stack, self.asc, self.cnt)
-
-    class NodeIterator(object):
-        def __init__(self, t, asc):
-            self.asc = asc
-            self.stack = []
-            self.push(t)
-
-        def push(self, t):
-            while t is not None:
-                self.stack.append(t)
-                t = t.left() if self.asc else t.right()
-
-        def hasNext(self):
-            return not self.stack.isEmpty()
-
-        def next(self):
-            t = self.stack.pop()
-            self.push(t.right() if self.asc else t.left())
-            return t
-
-        def remove(self):
-            raise UnsupportedOperationException()
-
-    class KeyIterator(object):
-        def __init__(self, it):
-            self._it = it
-
-        def hasNext(self):
-            return self._it.hasNext()
-
-        def next(self):
-            return self._it.next().key()
-
-        def remove(self):
-            raise UnsupportedOperationException()
-
-    class ValIterator(object):
-        def __init__(self, it):
-            self._it = it
-
-        def hasNext(self):
-            return self._it.hasNext()
-
-        def next(self):
-            return self._it.next().val()
-
-        def remove(self):
-            raise UnsupportedOperationException()
-        
 EMPTY = PersistentTreeMap()
+
+
+class Node(object):
+    def __init__(self, key):
+        self._key = key
+
+    def key(self):
+        return self._key
+    getKey = key
+
+    def val(self):
+        return None
+    getValue = val
+
+    def left(self):
+        return None
+
+    def right(self):
+        return None
+
+    def addLeft(self, ins):
+        raise AbstractMethodCall()
+
+    def addRight(self, ins):
+        raise AbstractMethodCall()
+
+    def removeLeft(self, del_):
+        raise AbstractMethodCall()
+
+    def removeRight(self, del_):
+        raise AbstractMethodCall()
+
+    def blacken(self):
+        raise AbstractMethodCall()
+
+    def redden(self):
+        raise AbstractMethodCall()
+
+    def balanceLeft(self, parent):
+        return self.black(parent.key(), parent.val(), self, parent.right())
+
+    def balanceRight(self, parent):
+        return PersistentTreeMap.black(parent.key(), parent.val(), parent.left(), self)
+
+    def replace(self, key, val, left, right):
+        raise AbstractMethodCall()
+
+
+class Black(Node):
+    def addLeft(self, ins):
+        return ins.balanceLeft(self)
+
+    def addRight(self, ins):
+        return ins.balanceRight(self)
+
+    def removeLeft(self, del_):
+        return self.balanceLeftDel(self.key(), self.val(), del_, self.right())
+
+    def removeRight(self, del_):
+        return self.balanceRightDel(self.key(), self.val(), self.left(), del_)
+
+    def blacken(self):
+        return self
+
+    def redden(self):
+        return Red(key)
+
+    def replace(self, key, val, left, right):
+        return PersistentTreeMap.black(key, val, left, right)
+
+
+class BlackVal(Black):
+    def __init__(self, key, val):
+        super(BlackVal, self).__init__(key)
+        self._val = val
+
+    def val(self):
+        return self._val
+
+    def redden(self):
+        return RedVal(self._key, self._val)
+
+
+class BlackBranch(Black):
+    def __init__(self, key, left, right):
+        super(BlackBranch, self).__init__(key)
+        self._left = left
+        self._right = right
+
+    def left(self):
+        return self._left
+
+    def right(self):
+        return self._right
+
+    def redden(self):
+        return RedBranch(self._key, self._left, self._right)
+
+
+class BlackBranchVal(BlackBranch):
+    def __init__(self, key, val, left, right):
+        super(BlackBranchVal, self).__init__(key, left, right)
+        self._val = val
+
+    def val(self):
+        return self._val
+
+    def redden(self):
+        return RedBranchVal(self._key, self._val, self._left, self._right)
+
+
+class Red(Node):
+    def addLeft(self, ins):
+        return PersistentTreeMap.red(self._key, self.val(), ins, self.right())
+
+    def addRight(self, ins):
+        return PersistentTreeMap.red(self._key, self.val(), self.left(), ins)
+
+    def removeLeft(self, del_):
+        return PersistentTreeMap.red(self._key, self.val(), del_, self.right())
+
+    def removeRight(self, del_):
+        return PersistentTreeMap.red(self._key, self.val(), self.left(), del_)
+
+    def blacken(self):
+        return Black(self._key)
+
+    def redden(self):
+        raise UnsupportedOperationException("Invariant violation")
+
+    def replace(self, key, val, left, right):
+        return PersistentTreeMap.red(key, val, left, right)
+
+
+class RedVal(Red):
+    def __init__(self, key, val):
+        super(RedVal, self).__init__(key)
+        self._val = val
+
+    def val(self):
+        return self._val
+
+    def blacken(self):
+        return BlackVal(self._key, self._val)
+
+
+class RedBranch(Red):
+    def __init__(self, key, left, right):
+        super(RedBranch, self).__init__(key)
+        self._left = left
+        self._right = right
+
+    def left(self):
+        return self._left
+
+    def right(self):
+        return self._right
+
+    def balanceLeft(self, parent):
+        if isinstance(self._left, Red):
+            return red(self._key, self.val(), self._left.blacken(), black(parent._key, parent.val(), right, parent.right()))
+        elif isinstance(self._right, Red):
+            return red(self._right._key, self._right.val(), black(self._key, self.val(), self._left, self._right.left()),
+                       black(parent._key, parent.val(), self._right.right(), parent.right()))
+        else:
+            return super(RedBranch, self).balanceLeft(parent)
+
+    def balanceRight(self, parent):
+        if isinstance(self._right, Red):
+            return PersistentTreeMap.red(self._key, self.val(), PersistentTreeMap.black(parent._key, parent.val(), parent.left(), self._left), self._right.blacken())
+        elif isinstance(self._left, Red):
+            return PersistentTreeMap.red(self._left._key, self._left.val(), PersistentTreeMap.black(parent._key, parent.val(), parent.left(), self._left.left()),
+                                         PersistentTreeMap.black(self._key, self.val(), self._left.right(), self._right))
+        else:
+            return super(RedBranch, self).balanceRight(parent)
+
+    def blacken(self):
+        return BlackBranch(self._key, self._left, self._right)
+
+
+class RedBranchVal(RedBranch):
+    def __init__(self, key, val, left, right):
+        super(RedBranchVal, self).__init__(key, left, right)
+        self._val = val
+
+    def val(self):
+        return self._val
+
+    def blacken(self):
+        return BlackBranchVal(self._key, self._val, self._left, self._right)
+
+
+class Seq(ASeq):
+    def __init__(self, *args):
+        if len(args) == 2:
+            self.stack = args[0]
+            self.asc = args[1]
+            self.cnt = -1
+        elif len(args) == 3:
+            self.stack = args[0]
+            self.asc = args[1]
+            self.cnt = args[2]
+        elif len(args) == 4:
+            super(Seq, self).__init__(args[0])
+            self.stack = args[1]
+            self.asc = args[2]
+            self.cnt = args[3]
+
+    @staticmethod
+    def create(t, asc, cnt):
+        return Seq(Seq.push(t, None, asc), asc, cnt)
+
+    @staticmethod
+    def push(t, stack, asc):
+        while t is not None:
+            stack = RT.cons(t, stack)
+            t = t.left() if asc else t.right()
+        return stack
+
+    def first(self):
+        return self.stack.first()
+
+    def next(self):
+        t = self.stack.first()
+        nextstack = self.push(t.right() if self.asc else t.left(), self.stack.next(), self.asc)
+        if nextstack is not None:
+            return Seq(nextstack, self.asc, self.cnt - 1)
+        return None
+
+    def count(self):
+        if self.cnt < 0:
+            return super(Seq, self).count()
+        return self.cnt
+
+    def withMeta(self, meta):
+        return Seq(meta, self.stack, self.asc, self.cnt)
+
+
+class NodeIterator(object):
+    def __init__(self, t, asc):
+        self.asc = asc
+        self.stack = []
+        self.push(t)
+
+    def push(self, t):
+        while t is not None:
+            self.stack.append(t)
+            t = t.left() if self.asc else t.right()
+
+    def hasNext(self):
+        return not self.stack.isEmpty()
+
+    def next(self):
+        t = self.stack.pop()
+        self.push(t.right() if self.asc else t.left())
+        return t
+
+    def remove(self):
+        raise UnsupportedOperationException()
+
+
+class KeyIterator(object):
+    def __init__(self, it):
+        self._it = it
+
+    def hasNext(self):
+        return self._it.hasNext()
+
+    def next(self):
+        return self._it.next().key()
+
+    def remove(self):
+        raise UnsupportedOperationException()
+
+
+class ValIterator(object):
+    def __init__(self, it):
+        self._it = it
+
+    def hasNext(self):
+        return self._it.hasNext()
+
+    def next(self):
+        return self._it.next().val()
+
+    def remove(self):
+        raise UnsupportedOperationException()
