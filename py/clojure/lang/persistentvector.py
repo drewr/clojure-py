@@ -16,6 +16,9 @@ class PersistentVector(APersistentVector):
         self.shift = shift
         self.root = root
         self.tail = tail
+        
+    def __call__(self, idx):
+        return self.nth(idx)
 
     class Node:
         def __init__(self, edit, array = None):

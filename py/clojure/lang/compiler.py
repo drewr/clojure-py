@@ -309,6 +309,9 @@ def compileFn(comp, name, form, orgform):
     else:
         line = 0
     code = [(SetLineno,line if line is not None else 0)]
+    if lastisargs:
+        code.extend(cleanRest(argsname.name))
+
     recurlabel = Label("recurLabel")
     recur = {"label": recurlabel,
              "args": args}
@@ -327,6 +330,20 @@ def compileFn(comp, name, form, orgform):
         c = new.function(c.to_code(), comp.ns.__dict__, name.name)
 
     return [(LOAD_CONST, c)]
+    
+def cleanRest(name):
+    label = Label("isclean")
+    code = []
+    code.append((LOAD_GLOBAL, "len"))
+    code.append((LOAD_FAST, name))
+    code.append((CALL_FUNCTION, 1))
+    code.append((LOAD_CONST, 0))
+    code.append((COMPARE_OP, "=="))
+    code.extend(emitJump(label))
+    code.append((LOAD_CONST, None))
+    code.append((STORE_FAST, name))
+    code.extend(emitLanding(label))
+    return code
 
 class MultiFn(object):
     def __init__(self, comp, form):
@@ -353,6 +370,7 @@ class MultiFn(object):
                     (LOAD_CONST, offset),
                     (SLICE_1, None),
                     (STORE_FAST, self.argsname.name)])
+                argcode.extend(cleanRest(self.argsname.name))
             else:
                 argcode.extend([(LOAD_FAST, '__argsv__'),
                     (LOAD_CONST, x),
@@ -828,13 +846,20 @@ class Compiler():
             return builtins[form.first()](self, form)
         if isinstance(form.first(), Symbol):
             macro = findItem(self.getNS(), form.first())
-
+            # Handle macros here
+            # TODO: Break this out into a seperate function
             if macro is not None:
                 if not isinstance(macro, type) \
 		        and (hasattr(macro, "meta") and macro.meta()[_MACRO_])\
                 or (hasattr(macro, "macro?") and getattr(macro, "macro?")):
                     args = RT.seqToTuple(form.next())
-                    mresult = macro(macro, self, *args)
+                    
+                    macroform = macro
+                    if hasattr(macro, "_macro-form"):
+                    	macroform = getattr(macro, "_macro-form")
+
+                    mresult = macro(macroform, self, *args)
+                    
                     if hasattr(mresult, "withMeta") \
                        and hasattr(form, "meta"):
                         mresult = mresult.withMeta(form.meta())
@@ -995,7 +1020,6 @@ class Compiler():
 
         dis.dis(c)
         codeobject = c.to_code()
-        print codeobject.__class__ is compileDef.__class__
 
         with open('output.pyc', 'wb') as fc:
             fc.write(py_compile.MAGIC)

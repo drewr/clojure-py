@@ -416,6 +416,7 @@
                (list 'do
                      (cons `defn decl)
                      (list 'set-macro name)
+                     (list 'py/setattr name "_macro-form" (list 'quote decl))
                      name))))
 
 
@@ -1430,3 +1431,51 @@
               (with-meta `(~(first form) ~@(next form)  ~x) (meta form))
               (list form x)))
   ([x form & more] `(->> (->> ~x ~form) ~@more)))
+
+
+;;; var stuff
+
+
+(defmacro assert-args
+  [& pairs]
+  `(do (when-not ~(first pairs)
+         (throw (Exception
+                  (str (first ~'&form) " requires " ~(second pairs) " in " ~'__name__ ":" (:line (meta ~'&form))))))
+     ~(let [more (nnext pairs)]
+        (when more
+          (list* `assert-args more)))))
+
+
+(defmacro if-let
+  "bindings => binding-form test
+
+  If test is true, evaluates then with binding-form bound to the value of 
+  test, if not, yields else"
+  {:added "1.0"}
+  ([bindings then]
+   `(if-let ~bindings ~then nil))
+  ([bindings then else & oldform]
+   (assert-args
+     (and (vector? bindings) (nil? oldform)) "a vector for its binding"
+     (= 2 (count bindings)) "exactly 2 forms in binding vector")
+   (let [form (bindings 0) tst (bindings 1)]
+     `(let [temp# ~tst]
+        (if temp#
+          (let [~form temp#]
+            ~then)
+          ~else)))))
+
+(defmacro when-let
+  "bindings => binding-form test
+
+  When test is true, evaluates body with binding-form bound to the value of test"
+  {:added "1.0"}
+  [bindings & body]
+  (assert-args
+     (vector? bindings) "a vector for its binding"
+     (= 2 (count bindings)) "exactly 2 forms in binding vector")
+   (let [form (bindings 0) tst (bindings 1)]
+    `(let [temp# ~tst]
+       (when temp#
+         (let [~form temp#]
+           ~@body)))))

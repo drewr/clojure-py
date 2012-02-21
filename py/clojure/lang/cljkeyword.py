@@ -44,6 +44,9 @@ class Keyword(IFn, Named):
         return self.hash
 
     def __call__(self, obj, notFound = None):
+        if obj is None:
+            return None
+            
         if self not in obj:
             return notFound
         return obj[self]
