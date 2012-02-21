@@ -11,5 +11,3 @@ class IPersistentCollection(Seqable):
     def empty(self):
         raise AbstractMethodCall(self)
 
-    def __eq__(self, other):
-        raise AbstractMethodCall(self)

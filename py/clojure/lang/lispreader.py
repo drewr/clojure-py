@@ -385,7 +385,7 @@ def fnReader(rdr, lparen):
     sargs = sorted(list(filter(lambda x: x != -1, drefed)))
     args = []
     if len(sargs):
-        for x in range(int(str(sargs[-1]))):
+        for x in range(1, int(str(sargs[-1])) + 1):
             if x in drefed:
                 args.append(drefed[x])
             else:
@@ -395,7 +395,7 @@ def fnReader(rdr, lparen):
             args.append(_AMP_)
             args.append(retsym)
 
-    vargs = RT.vector(args)
+    vargs = RT.vector(*args)
     popThreadBindings()
     return RT.list(_FN_, vargs, form)
 

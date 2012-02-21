@@ -287,7 +287,8 @@ def unpackArgs(form):
         if lastisargs:
             argsname = x
         if not isinstance(x, Symbol) or x.ns is not None:
-            raise CompilerException("fn* arguments must be non namespaced symbols", form)
+            raise CompilerException("fn* arguments must be non namespaced symbols " +
+                                    " got " + str(form) + " instead", form)
         locals[x] = RT.list(x)
         args.append(x.name)
 
@@ -815,8 +816,10 @@ class Compiler():
         self.names = self.names.rest
 
     def getNamesString(self, markused=True):
+        if self.names is None:
+            return "fn_"+str(RT.nextID())
         s = str(self.names)
-        if markused:
+        if markused and self.names is not None:
             self.names.isused = True
         return s
 

@@ -713,6 +713,16 @@
 	          (py/if (nil? s)
 	              c
 	              (recur (.__add__ c 1) (next s)))))
+	(__eq__ [self other]
+	    (loop [s (seq self)
+	           o (seq other)]
+	           (if (not (nil? s))
+	               (if (not (nil? o))
+	                   (if (py.bytecode/COMPARE_OP "==" (first s) (first o))
+	                       (recur (next s) (next o)))))
+	           (if (nil? s)
+	               true
+	               false)))
 	(first [self]
 	    (.seq self)
 	    (py/if (nil? s)
@@ -1479,3 +1489,189 @@
        (when temp#
          (let [~form temp#]
            ~@body)))))
+
+;;; functional stuff
+
+(defn comp
+  "Takes a set of functions and returns a fn that is the composition
+  of those fns.  The returned fn takes a variable number of args,
+  applies the rightmost of fns to the args, the next
+  fn (right-to-left) to the result, etc."
+  {:added "1.0"}
+  ([] identity)
+  ([f] f)
+  ([f g] 
+     (fn 
+       ([] (f (g)))
+       ([x] (f (g x)))
+       ([x y] (f (g x y)))
+       ([x y z] (f (g x y z)))
+       ([x y z & args] (f (apply g x y z args)))))
+  ([f g h] 
+     (fn 
+       ([] (f (g (h))))
+       ([x] (f (g (h x))))
+       ([x y] (f (g (h x y))))
+       ([x y z] (f (g (h x y z))))
+       ([x y z & args] (f (g (apply h x y z args))))))
+  ([f1 f2 f3 & fs]
+    (let [fs (reverse (list* f1 f2 f3 fs))]
+      (fn [& args]
+        (loop [ret (apply (first fs) args) fs (next fs)]
+          (if fs
+            (recur ((first fs) ret) (next fs))
+            ret))))))
+
+
+(defn juxt 
+  "Takes a set of functions and returns a fn that is the juxtaposition
+  of those fns.  The returned fn takes a variable number of args, and
+  returns a vector containing the result of applying each fn to the
+  args (left-to-right).
+  ((juxt a b c) x) => [(a x) (b x) (c x)]"
+  {:added "1.1"}
+  ([f] 
+     (fn
+       ([] [(f)])
+       ([x] [(f x)])
+       ([x y] [(f x y)])
+       ([x y z] [(f x y z)])
+       ([x y z & args] [(apply f x y z args)])))
+  ([f g] 
+     (fn
+       ([] [(f) (g)])
+       ([x] [(f x) (g x)])
+       ([x y] [(f x y) (g x y)])
+       ([x y z] [(f x y z) (g x y z)])
+       ([x y z & args] [(apply f x y z args) (apply g x y z args)])))
+  ([f g h] 
+     (fn
+       ([] [(f) (g) (h)])
+       ([x] [(f x) (g x) (h x)])
+       ([x y] [(f x y) (g x y) (h x y)])
+       ([x y z] [(f x y z) (g x y z) (h x y z)])
+       ([x y z & args] [(apply f x y z args) (apply g x y z args) (apply h x y z args)])))
+  ([f g h & fs]
+     (let [fs (list* f g h fs)]
+       (fn
+         ([] (reduce1 #(conj %1 (%2)) [] fs))
+         ([x] (reduce1 #(conj %1 (%2 x)) [] fs))
+         ([x y] (reduce1 #(conj %1 (%2 x y)) [] fs))
+         ([x y z] (reduce1 #(conj %1 (%2 x y z)) [] fs))
+         ([x y z & args] (reduce1 #(conj %1 (apply %2 x y z args)) [] fs))))))
+
+
+(defn partial
+  "Takes a function f and fewer than the normal arguments to f, and
+  returns a fn that takes a variable number of additional args. When
+  called, the returned function calls f with args + additional args."
+  {:added "1.0"}
+  ([f arg1]
+   (fn [& args] (apply f arg1 args)))
+  ([f arg1 arg2]
+   (fn [& args] (apply f arg1 arg2 args)))
+  ([f arg1 arg2 arg3]
+   (fn [& args] (apply f arg1 arg2 arg3 args)))
+  ([f arg1 arg2 arg3 & more]
+   (fn [& args] (apply f arg1 arg2 arg3 (concat more args)))))
+
+
+;;;;;;;;;;;;;;;;;;; sequence fns  ;;;;;;;;;;;;;;;;;;;;;;;
+(defn sequence
+  "Coerces coll to a (possibly empty) sequence, if it is not already
+  one. Will not force a lazy seq. (sequence nil) yields ()"
+  {:added "1.0"}
+  [coll]
+   (if (seq? coll) coll
+    (or (seq coll) ())))
+
+(defn every?
+  "Returns true if (pred x) is logical true for every x in coll, else
+  false."
+  {:added "1.0"}
+  [pred coll]
+  (cond
+   (nil? (seq coll)) true
+   (pred (first coll)) (recur pred (next coll))
+   :else false))
+
+(def
+ ^{:doc "Returns false if (pred x) is logical true for every x in
+  coll, else true."
+   :added "1.0"}
+ not-every? (comp not every?))
+
+
+(defn some
+  "Returns the first logical true value of (pred x) for any x in coll,
+  else nil.  One common idiom is to use a set as pred, for example
+  this will return :fred if :fred is in the sequence, otherwise nil:
+  (some #{:fred} coll)"
+  {:added "1.0"}
+  [pred coll]
+    (when (seq coll)
+      (or (pred (first coll)) (recur pred (next coll)))))
+
+(def
+ ^{:doc "Returns false if (pred x) is logical true for any x in coll,
+  else true."
+   :added "1.0"}
+ not-any? (comp not some))
+
+;will be redefed later with arg checks
+(defmacro dotimes
+  "bindings => name n
+
+  Repeatedly executes body (presumably for side-effects) with name
+  bound to integers from 0 through n-1."
+  {:added "1.0"}
+  [bindings & body]
+  (let [i (first bindings)
+        n (second bindings)]
+    `(let [n# ~n]
+       (loop [~i 0]
+         (when (< ~i n#)
+           ~@body
+           (recur (inc ~i)))))))
+
+
+
+(defn map
+  "Returns a lazy sequence consisting of the result of applying f to the
+  set of first items of each coll, followed by applying f to the set
+  of second items in each coll, until any one of the colls is
+  exhausted.  Any remaining items in other colls are ignored. Function
+  f should accept number-of-colls arguments."
+  {:added "1.0"
+   :static true}
+  ([f coll]
+   (lazy-seq
+    (when-let [s (seq coll)]
+      (if (chunked-seq? s)
+        (let [c (chunk-first s)
+              size (int (count c))
+              b (chunk-buffer size)]
+          (dotimes [i size]
+              (chunk-append b (f (.nth c i))))
+          (chunk-cons (chunk b) (map f (chunk-rest s))))
+        (cons (f (first s)) (map f (rest s)))))))
+  ([f c1 c2]
+   (lazy-seq
+    (let [s1 (seq c1) s2 (seq c2)]
+      (when (and s1 s2)
+        (cons (f (first s1) (first s2))
+              (map f (rest s1) (rest s2)))))))
+  ([f c1 c2 c3]
+   (lazy-seq
+    (let [s1 (seq c1) s2 (seq c2) s3 (seq c3)]
+      (when (and  s1 s2 s3)
+        (cons (f (first s1) (first s2) (first s3))
+              (map f (rest s1) (rest s2) (rest s3)))))))
+  ([f c1 c2 c3 & colls]
+   (let [step (fn step [cs]
+                 (lazy-seq
+                  (let [ss (map seq cs)]
+                    (when (every? identity ss)
+                      (cons (map first ss) (step (map rest ss)))))))]
+     (map #(apply f %) (step (conj colls c3 c2 c1))))))
+

@@ -301,3 +301,41 @@
     (assert-equal (when-let [a 9] (+ a 4))  13)
     (assert-equal (when-let [a nil] (+ a 4)) nil))
 
+;;; functional stuff
+
+(deftest comp-tests
+    (assert-equal ((comp str +) 8 8 8) "24"))
+
+(deftest juxt-tests
+    (assert-equal ((juxt :a :b :c :d) {:a 1 :b 2 :c 3 :d 4}) [1 2 3 4]))
+
+(deftest partial-tests
+    (assert-equal ((partial + 1) 1) 2))
+
+;;; sequence stuff
+
+(deftest sequence-tests
+    (assert-equal (sequence [1 2 3]) '(1 2 3)))
+
+(deftest every?-tests
+    (assert-true (every? even? '(2 4 6)))
+    (assert-false (every? even? '(1 4 6))))
+
+(deftest every?-tests
+    (assert-false (not-every? even? '(2 4 6)))
+    (assert-true (not-every? even? '(1 4 6))))
+
+(deftest some-tests
+    (assert-true (some even? '(1 2 3 4)))
+    (assert-equal (some even? '(1 3 5 7)) nil))
+
+(deftest not-any?-tests
+    (assert-true (not-any? odd? '(2 4 6)))
+    (assert-false (not-any? odd? '(1 2 3))))
+
+(deftest dotimes-tests
+    (dotimes [n 5] (assert-true (and (>= n 0) (< n 5)))))
+
+(deftest map-tests
+    (assert-equal (map inc [1 2 3 4 5]) (seq [2 3 4 5 6])))
+ 
