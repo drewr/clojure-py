@@ -113,12 +113,11 @@ class Var(ARef, Settable, IFn, IRef ):
             return "#" + str(self.ns.__name__) + "/" + str(self.sym)
         return "#<Var: " + (str(self.sym) if self.sym is not None else "--unnamed--") + ">"
 
-    @staticmethod
-    def create(root = UKNOWN):
-        if root is not UKNOWN:
-            return Var(None, None, root)
-        else:
-            return Var(None, None)
+def var(root=UKNOWN):
+    if root is not UKNOWN:
+        return Var(None, None, root)
+    else:
+        return Var(None, None)
 
 
 def getThreadBindingFrame():

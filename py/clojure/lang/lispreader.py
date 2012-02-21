@@ -1,5 +1,5 @@
 from py.clojure.lang.fileseq import FileSeq, MutatableFileSeq
-from py.clojure.lang.var import Var, pushThreadBindings, popThreadBindings
+from py.clojure.lang.var import Var, pushThreadBindings, popThreadBindings, var
 from py.clojure.lang.ipersistentlist import IPersistentList
 from py.clojure.lang.ipersistentvector import IPersistentVector
 from py.clojure.lang.iseq import ISeq
@@ -36,8 +36,8 @@ _SYNTAX_QUOTE_ = Symbol.intern("`")
 _UNQUOTE_ = Symbol.intern("~")
 _UNQUOTE_SPLICING_ = Symbol.intern("~@")
 
-ARG_ENV = Var.create(None).setDynamic()
-GENSYM_ENV = Var.create(None).setDynamic()
+ARG_ENV = var(None).setDynamic()
+GENSYM_ENV = var(None).setDynamic()
 
 WHITESPACE = [',', '\n', '\t', '\r', ' ']
 

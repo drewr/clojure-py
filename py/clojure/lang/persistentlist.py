@@ -24,21 +24,6 @@ class PersistentList(ASeq, IPersistentList, IReduce, Counted):
             raise ArityException
         self._hash = -1
 
-    @staticmethod
-    def create(lst):
-        ret = EMPTY
-        for x in range(len(lst) - 1, -1, -1):
-            c = lst[x]
-            ret = ret.cons(c)
-        return ret
-
-    @staticmethod
-    def creator(*args):
-        ret = EMPTY
-        for x in range(len(args) - 1, -1, -1):
-            ret = ret.cons(args[x])
-        return ret
-
     def next(self):
         if self._count == 1:
             return None
@@ -93,6 +78,20 @@ class PersistentList(ASeq, IPersistentList, IReduce, Counted):
         for x in self:
             s.append(repr(x.first()))
         return "(" + " ".join(s) + ")"
+
+def create(lst):
+    ret = EMPTY
+    for x in range(len(lst) - 1, -1, -1):
+        c = lst[x]
+        ret = ret.cons(c)
+    return ret
+
+def creator(*args):
+    ret = EMPTY
+    for x in range(len(args) - 1, -1, -1):
+        ret = ret.cons(args[x])
+    return ret
+
 
 class EmptyList(Obj, IPersistentList, ISeq, Counted):
     def __init__(self, meta = None):
