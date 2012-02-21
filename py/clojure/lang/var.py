@@ -7,12 +7,12 @@ from py.clojure.lang.persistenthashmap import EMPTY
 from py.clojure.lang.threadutil import ThreadLocal, synchronized, currentThread
 from py.clojure.lang.symbol import Symbol
 from py.clojure.lang.cljkeyword import Keyword
-from persistentarraymap import PersistentArrayMap
+import persistentarraymap
 
 privateKey = Keyword.intern(Symbol.intern("private"))
 macrokey = Keyword.intern(Symbol.intern(":macro"))
 dvals = ThreadLocal()
-privateMeta = PersistentArrayMap.create([privateKey, True])
+privateMeta = persistentarraymap.create([privateKey, True])
 UKNOWN = Symbol.intern("UNKNOWN")
 
 def pushThreadBindings(bindings):

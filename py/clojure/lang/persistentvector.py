@@ -20,11 +20,6 @@ class PersistentVector(APersistentVector):
     def __call__(self, idx):
         return self.nth(idx)
 
-    class Node:
-        def __init__(self, edit, array = None):
-            self.edit = edit
-            self.array = array if array is not None else [None] * 32
-
     def tailoff(self):
         if self.cnt < 32:
             return 0
@@ -170,15 +165,21 @@ class PersistentVector(APersistentVector):
         return True
 
 
+class Node:
+    def __init__(self, edit, array = None):
+        self.edit = edit
+        self.array = array if array is not None else [None] * 32
+
+
 def newPath(edit, level, node):
     if not level:
         return node
-    ret = PersistentVector.Node(edit)
+    ret = Node(edit)
     ret.array[0] = newPath(edit, level - 5, node)
     return ret
 
 def doAssoc(level, node, i, val):
-    ret = PersistentVector.Node(node.edit,node.array[:])
+    ret = Node(node.edit,node.array[:])
     if not level:
         ret.array[i & 0x01f] = val
     else:
@@ -198,5 +199,5 @@ def vec(seq):
 
 
 NOEDIT = AtomicReference()
-EMPTY_NODE = PersistentVector.Node(NOEDIT)
+EMPTY_NODE = Node(NOEDIT)
 EMPTY = PersistentVector(0, 5, EMPTY_NODE, [])
