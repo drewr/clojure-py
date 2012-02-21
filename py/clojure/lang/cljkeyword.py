@@ -9,27 +9,6 @@ from py.clojure.lang.named import Named
 interned = AtomicReference(EMPTY_MAP)
 
 class Keyword(IFn, Named):
-    @staticmethod
-    def intern(*args):
-        if len(args) == 1:
-            if isinstance(args[0], Symbol):
-                sym = args[0]
-                if sym.meta() is not None:
-                    sym = sym.withMeta(None)
-                k = Keyword(sym)
-
-                interned.mutate(lambda old: old if sym in old else old.assoc(sym,k))
-
-                return interned.get()[sym]
-            elif isinstance(args[0], str):
-                return Keyword.intern(Symbol.intern(args[0]))
-            else:
-                raise InvalidArgumentException()
-        elif len(args) == 2:
-            return Keyword.intern(Symbol.intern(*args))
-        else:
-            raise ArityException()
-            
     def getNamespace(self):
         return self.sym.getNameSpace()
     
@@ -51,21 +30,40 @@ class Keyword(IFn, Named):
             return notFound
         return obj[self]
 
-    @staticmethod
-    def find(self, *args):
-        if len(args) == 1:
-            if isinstance(args[0], Symbol):
-                return interned.val()[args[0]]()
-            if isinstance(args[0], str):
-                return Keyword.find(Symbol.intern(args[0]))
-        if len(args) == 2:
-            return Keyword.find(Symbol.intern(*args))
-        raise ArityException()
-
     def __repr__(self):
         return str(self.sym)
 
+def keyword(*args):
+    if len(args) == 1:
+        if isinstance(args[0], Symbol):
+            sym = args[0]
+            if sym.meta() is not None:
+                sym = sym.withMeta(None)
+            k = Keyword(sym)
 
-LINE_KEY = Keyword.intern(None, "line")
-TAG_KEY = Keyword.intern(None, "tag")
-T = Keyword.intern(None, "T")
+            interned.mutate(lambda old: old if sym in old else old.assoc(sym,k))
+
+            return interned.get()[sym]
+        elif isinstance(args[0], str):
+            return keyword(Symbol.intern(args[0]))
+        else:
+            raise InvalidArgumentException()
+    elif len(args) == 2:
+        return keyword(Symbol.intern(*args))
+    else:
+        raise ArityException()
+
+def find(self, *args):
+    if len(args) == 1:
+        if isinstance(args[0], Symbol):
+            return interned.val()[args[0]]()
+        if isinstance(args[0], str):
+            return Keyword.find(Symbol.intern(args[0]))
+    if len(args) == 2:
+        return Keyword.find(Symbol.intern(*args))
+    raise ArityException()
+
+
+LINE_KEY = keyword(None, "line")
+TAG_KEY = keyword(None, "tag")
+T = keyword(None, "T")

@@ -8,7 +8,7 @@ from py.clojure.lang.ipersistentlist import IPersistentList
 from py.clojure.lang.var import Var
 from py.clojure.util.byteplay import *
 import py.clojure.util.byteplay as byteplay
-from py.clojure.lang.cljkeyword import Keyword
+from py.clojure.lang.cljkeyword import Keyword, keyword
 import new
 import py.clojure.lang.rt as RT
 from py.clojure.lang.lispreader import _AMP_
@@ -18,7 +18,7 @@ import re
 import new
 import sys
 
-_MACRO_ = Keyword.intern(Symbol.intern(":macro"))
+_MACRO_ = keyword(Symbol.intern(":macro"))
 version = (sys.version_info[0] * 10) + sys.version_info[1]
 
 def emitJump(label):

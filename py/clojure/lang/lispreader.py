@@ -13,7 +13,7 @@ from py.clojure.lang.cljkeyword import LINE_KEY
 from py.clojure.lang.symbol import Symbol
 from py.clojure.lang.persistentvector import EMPTY as EMPTY_VECTOR
 from py.clojure.lang.globals import currentCompiler
-from py.clojure.lang.cljkeyword import Keyword
+from py.clojure.lang.cljkeyword import Keyword, keyword
 import re
 
 def read1(rdr):
@@ -334,7 +334,7 @@ def matchSymbol(s):
         iskeyword = s.find(':') == 0
         sym = Symbol.intern(ns, name[(1 if iskeyword else 0):])
         if iskeyword:
-            return Keyword.intern(s)
+            return keyword(s)
         else:
             return sym
     return None

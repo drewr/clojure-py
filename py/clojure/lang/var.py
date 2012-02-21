@@ -6,11 +6,11 @@ from py.clojure.lang.cljexceptions import ArityException, InvalidArgumentExcepti
 from py.clojure.lang.persistenthashmap import EMPTY
 from py.clojure.lang.threadutil import ThreadLocal, synchronized, currentThread
 from py.clojure.lang.symbol import Symbol
-from py.clojure.lang.cljkeyword import Keyword
+from py.clojure.lang.cljkeyword import Keyword, keyword
 import persistentarraymap
 
-privateKey = Keyword.intern(Symbol.intern("private"))
-macrokey = Keyword.intern(Symbol.intern(":macro"))
+privateKey = keyword(Symbol.intern("private"))
+macrokey = keyword(Symbol.intern(":macro"))
 dvals = ThreadLocal()
 privateMeta = persistentarraymap.create([privateKey, True])
 UKNOWN = Symbol.intern("UNKNOWN")

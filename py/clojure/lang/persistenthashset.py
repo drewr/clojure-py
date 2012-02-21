@@ -7,21 +7,6 @@ class PersistentHashSet(APersistentSet, IObj):
         APersistentSet.__init__(self, impl)
         self._meta = meta
 
-    @staticmethod
-    def create(*args):
-        if not len(args):
-            return EMPTY
-        if len(args) == 1 and hasattr(args[0], "__iter__"):
-            m = EMPTY
-            s = args[0]
-            for x in s:
-                m = m.cons(x)
-            return m
-        m = EMPTY
-        for x in args:
-            m = m.cons(x)
-        return m
-
     def cons(self, o):
         if o in self:
             return self
@@ -40,6 +25,20 @@ class PersistentHashSet(APersistentSet, IObj):
         if key not in self:
             return self
         return PersistentHashSet(self._meta, self.impl.without(key))
+
+def create(*args):
+    if not len(args):
+        return EMPTY
+    if len(args) == 1 and hasattr(args[0], "__iter__"):
+        m = EMPTY
+        s = args[0]
+        for x in s:
+            m = m.cons(x)
+        return m
+    m = EMPTY
+    for x in args:
+        m = m.cons(x)
+    return m
 
 
 EMPTY = PersistentHashSet(None, EMPTY_MAP)
