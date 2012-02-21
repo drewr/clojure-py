@@ -342,3 +342,20 @@
 (deftest mapcat-tests
     (assert-equal (mapcat reverse [[3 2 1 0] [6 5 4] [9 8 7]]) [0 1 2 3 4 5 6 7 8 9]))
  
+(deftest filter-tests
+    (assert-equal (filter even? [1 2 3 4 5]) [2 4]))
+
+(deftest remove-tests
+    (assert-equal (remove even? [1 2 3 4 5]) [1 3 5]))
+
+(deftest take-tests
+    (assert-equal (take 2 [1 2 3 4]) [1 2]))
+
+(deftest take-while
+    (assert-equal (take-while even? [2 2 1 1]) [2 2]))
+
+(deftest drop-tests
+    (assert-equal (drop 1 [1 2 3]) [2 3]))
+
+(deftest drop-last-tests
+    (assert-equal (drop-last 2 [1 2 3 4]) [1 2]))

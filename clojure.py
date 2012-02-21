@@ -26,7 +26,7 @@ from py.clojure.lang.fileseq import StringReader
 from py.clojure.lang.globals import currentCompiler
 import py.clojure.lang.rt as RT
 from py.clojure.lang.compiler import Compiler
-from py.clojure.lang.symbol import Symbol
+from py.clojure.lang.symbol import Symbol, symbol
 
 VERSION = "0.0.0"
 
@@ -73,7 +73,7 @@ def main():
     RT.init()
     comp = Compiler()
     currentCompiler.set(comp)
-    comp.setNS(Symbol.intern("user"))
+    comp.setNS(symbol("user"))
 
     if not sys.argv[1:]:
         while True:
