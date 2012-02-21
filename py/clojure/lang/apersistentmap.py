@@ -32,7 +32,7 @@ class APersistentMap(IPersistentMap):
         return d
 
     def __eq__(self, other):
-        return APersistentMap.mapEquals(self, other)
+        return mapEquals(self, other)
 
     def __getitem__(self, item):
         return self.valAt(item)
@@ -45,101 +45,99 @@ class APersistentMap(IPersistentMap):
             yield s.first().getKey()
             s = s.next()
 
-    @staticmethod
-    def mapEquals(m1, m2):
-        if m1 is m2:
-            return True
-        if not hasattr(m2, "__getitem__"):
-            return False
-        if not hasattr(m2, "__len__"):
-            return False
-        if not hasattr(m2, "__iter__"):
-            return False
-
-        if len(m1) != len(m2):
-            return False
-
-        for s in m1:
-            if s not in m2 or m2[s] != m1[s]:
-                return False
-        return True
-
-    @staticmethod
-    def mapHash(m):
-        return reduce(lambda h, v: h + (0 if v.getKey() is None
-                                          else hash(v.getKey()))
-                                     ^ (0 if v.getValue() is None
-                                          else hash(v.getValue())),
-                      m.interator(),
-                      0)
-
 #    def __hash__(self):
-#        return APersistentMap.mapHash(self)
-
-    class KeySeq(ASeq):
-        def __init__(self, *args):
-            if len(args) == 1:
-                self._seq = args[0]
-            elif len(args) == 2:
-                self._meta = args[0]
-                self._seq = args[1]
-            else:
-                raise ArityException()
-
-        @staticmethod
-        def create(s):
-            if s is None:
-                return None
-            return APersistentMap.KeySeq(s)
-
-        def first(self):
-            return self._seq.first().getKey()
-
-        def next(self):
-            return APersistentMap.KeySeq.create(self._seq.next())
-
-        def withMeta(self, meta):
-            return APersistentMap.KeySeq(meta, self._seq)
-
-        def __iter__(self):
-            s = self
-            while s is not None:
-                yield s.first()
-                s = s.next()
-
-    class ValueSeq(ASeq):
-        def __init__(self, *args):
-            if len(args) == 1:
-                self._seq = args[0]
-            elif len(args) == 2:
-                self._meta = args[0]
-                self._seq = args[1]
-            else:
-                raise ArityException()
-
-        @staticmethod
-        def create(s):
-            if s is None:
-                return None
-            return APersistentMap.ValueSeq(s)
-
-        def first(self):
-            return self._seq.first().getValue()
-
-        def next(self):
-            return APersistentMap.ValueSeq.create(self._seq.next())
-
-        def withMeta(self, meta):
-            return APersistentMap.ValueSeq(meta, self._seq)
-
-        def __iter__(self):
-            s = self
-            while s is not None:
-                yield s.first()
-                s = s.next()
+#        return mapHash(self)
 
     def __call__(self, *args, **kwargs):
         return apply(self.valAt, args)
 
     def __contains__(self, item):
         return self.containsKey(item)
+
+def mapEquals(m1, m2):
+    if m1 is m2:
+        return True
+    if not hasattr(m2, "__getitem__"):
+        return False
+    if not hasattr(m2, "__len__"):
+        return False
+    if not hasattr(m2, "__iter__"):
+        return False
+
+    if len(m1) != len(m2):
+        return False
+
+    for s in m1:
+        if s not in m2 or m2[s] != m1[s]:
+            return False
+    return True
+
+def mapHash(m):
+    return reduce(lambda h, v: h + (0 if v.getKey() is None
+                                      else hash(v.getKey()))
+                                 ^ (0 if v.getValue() is None
+                                      else hash(v.getValue())),
+                  m.interator(),
+                  0)
+
+
+class KeySeq(ASeq):
+    def __init__(self, *args):
+        if len(args) == 1:
+            self._seq = args[0]
+        elif len(args) == 2:
+            self._meta = args[0]
+            self._seq = args[1]
+        else:
+            raise ArityException()
+
+    def first(self):
+        return self._seq.first().getKey()
+
+    def next(self):
+        return createKeySeq(self._seq.next())
+
+    def withMeta(self, meta):
+        return KeySeq(meta, self._seq)
+
+    def __iter__(self):
+        s = self
+        while s is not None:
+            yield s.first()
+            s = s.next()
+
+def createKeySeq(s):
+    if s is None:
+        return None
+    return KeySeq(s)
+
+
+class ValueSeq(ASeq):
+    def __init__(self, *args):
+        if len(args) == 1:
+            self._seq = args[0]
+        elif len(args) == 2:
+            self._meta = args[0]
+            self._seq = args[1]
+        else:
+            raise ArityException()
+
+    def first(self):
+        return self._seq.first().getValue()
+
+    def next(self):
+        return createValueSeq(self._seq.next())
+
+    def withMeta(self, meta):
+        return ValueSeq(meta, self._seq)
+
+    def __iter__(self):
+        s = self
+        while s is not None:
+            yield s.first()
+            s = s.next()
+
+def createValueSeq(s):
+    if s is None:
+        return None
+    return ValueSeq(s)
