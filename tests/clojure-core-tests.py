@@ -9,7 +9,7 @@ from py.clojure.lang.fileseq import StringReader
 from py.clojure.lang.globals import currentCompiler
 from py.clojure.lang.lispreader import read
 import py.clojure.lang.rt as RT
-from py.clojure.lang.symbol import Symbol
+from py.clojure.lang.symbol import symbol
 from py.clojure.util.byteplay import Code, Label, SetLineno
 from py.clojure.lang.persistentlist import PersistentList
 from py.clojure.lang.persistentvector import PersistentVector
@@ -28,7 +28,7 @@ class ClojureCoreTests(unittest.TestCase):
         RT.init()
         self.comp = Compiler()
         currentCompiler.set(self.comp)
-        self.comp.setNS(Symbol.intern('clojure.core'))
+        self.comp.setNS(symbol('clojure.core'))
 
     def testList(self):
         self.assertEqual(self.eval('(list 1 2 3)'), [1, 2, 3])

@@ -10,7 +10,7 @@ from py.clojure.lang.persistenthashmap import EMPTY as EMPTY_MAP
 from py.clojure.lang.cljexceptions import ReaderException, IllegalStateException
 import py.clojure.lang.rt as RT
 from py.clojure.lang.cljkeyword import LINE_KEY
-from py.clojure.lang.symbol import Symbol
+from py.clojure.lang.symbol import Symbol, symbol
 from py.clojure.lang.persistentvector import EMPTY as EMPTY_VECTOR
 from py.clojure.lang.globals import currentCompiler
 from py.clojure.lang.cljkeyword import Keyword, keyword
@@ -22,19 +22,19 @@ def read1(rdr):
         return ""
     return rdr.first()
 
-_AMP_ = Symbol.intern("&")
-_FN_ = Symbol.intern("fn")
-_VAR_ = Symbol.intern("var")
-_APPLY_ = Symbol.intern("apply")
-_HASHMAP_ = Symbol.intern("clojure.core", "hashmap")
-_CONCAT_ = Symbol.intern("clojure.core", "concat")
-_LIST_ = Symbol.intern("clojure.core", "list")
-_SEQ_ = Symbol.intern("clojure.core", "seq")
-_VECTOR_ = Symbol.intern("clojure.core", "vector")
-_QUOTE_ = Symbol.intern("quote")
-_SYNTAX_QUOTE_ = Symbol.intern("`")
-_UNQUOTE_ = Symbol.intern("~")
-_UNQUOTE_SPLICING_ = Symbol.intern("~@")
+_AMP_ = symbol("&")
+_FN_ = symbol("fn")
+_VAR_ = symbol("var")
+_APPLY_ = symbol("apply")
+_HASHMAP_ = symbol("clojure.core", "hashmap")
+_CONCAT_ = symbol("clojure.core", "concat")
+_LIST_ = symbol("clojure.core", "list")
+_SEQ_ = symbol("clojure.core", "seq")
+_VECTOR_ = symbol("clojure.core", "vector")
+_QUOTE_ = symbol("quote")
+_SYNTAX_QUOTE_ = symbol("`")
+_UNQUOTE_ = symbol("~")
+_UNQUOTE_SPLICING_ = symbol("~@")
 
 ARG_ENV = var(None).setDynamic()
 GENSYM_ENV = var(None).setDynamic()
@@ -332,7 +332,7 @@ def matchSymbol(s):
             return "FIX"
         ns = ns if ns is None else ns[:-1]
         iskeyword = s.find(':') == 0
-        sym = Symbol.intern(ns, name[(1 if iskeyword else 0):])
+        sym = symbol(ns, name[(1 if iskeyword else 0):])
         if iskeyword:
             return keyword(s)
         else:
@@ -428,7 +428,7 @@ class SyntaxQuoteReader():
                     raise ReaderException("Gensym literal not in syntax-quote, before", self.rdr)
                 gs = gmap[sym]
                 if gs is None:
-                    gs = Symbol.intern(None, sym.name[:-1] + "__" + str(RT.nextID()) + "__auto__")
+                    gs = symbol(None, sym.name[:-1] + "__" + str(RT.nextID()) + "__auto__")
                     GENSYM_ENV.set(gmap.assoc(sym, gs))
                 sym = gs
             elif sym.ns is None and sym.name.endswith("."):
@@ -445,7 +445,7 @@ class SyntaxQuoteReader():
                 ns = comp.getNS()
                 if ns is None:
                     raise IllegalStateException("No ns in reader")
-                sym = Symbol.intern(ns.__name__, sym.name)
+                sym = symbol(ns.__name__, sym.name)
             ret = RT.list(_QUOTE_, sym)
         else:
             if isUnquote(form):
@@ -502,7 +502,7 @@ class SyntaxQuoteReader():
 
 def garg(n):
     from symbol import Symbol
-    return Symbol.intern(None,  "rest" if n == -1 else  ("p" + str(n)) + "__" + str(RT.nextID()) + "#")
+    return symbol(None,  "rest" if n == -1 else  ("p" + str(n)) + "__" + str(RT.nextID()) + "#")
 
 macros = {'\"': stringReader,
           "\'": wrappingReader(_QUOTE_),

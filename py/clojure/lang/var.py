@@ -5,15 +5,15 @@ from py.clojure.lang.aref import ARef
 from py.clojure.lang.cljexceptions import ArityException, InvalidArgumentException, IllegalStateException
 from py.clojure.lang.persistenthashmap import EMPTY
 from py.clojure.lang.threadutil import ThreadLocal, synchronized, currentThread
-from py.clojure.lang.symbol import Symbol
-from py.clojure.lang.cljkeyword import Keyword, keyword
+from py.clojure.lang.symbol import symbol
+from py.clojure.lang.cljkeyword import keyword
 import persistentarraymap
 
-privateKey = keyword(Symbol.intern("private"))
-macrokey = keyword(Symbol.intern(":macro"))
+privateKey = keyword(symbol("private"))
+macrokey = keyword(symbol(":macro"))
 dvals = ThreadLocal()
 privateMeta = persistentarraymap.create([privateKey, True])
-UKNOWN = Symbol.intern("UNKNOWN")
+UKNOWN = symbol("UNKNOWN")
 
 def pushThreadBindings(bindings):
     f = dvals.get(lambda: Frame())
@@ -142,20 +142,20 @@ def find(sym):
     from py.clojure.lang.namespace import find as findNamespace
     if sym.ns is None:
         raise InvalidArgumentException("Symbol must be namespace-qualified")
-    ns = findNamespace(Symbol.intern(sym.ns))
+    ns = findNamespace(symbol(sym.ns))
     if ns is None:
         raise InvalidArgumentException("No such namespace " + str(sym.ns))
-    return ns.findInternedVar(Symbol.intern(sym.name))
+    return ns.findInternedVar(symbol(sym.name))
 
 def intern(ns, name):
     if isinstance(ns, Namespace):
         return ns.intern(name)
-    ns = Namespace.findOrCreate(Symbol.intern(ns))
+    ns = Namespace.findOrCreate(symbol(ns))
     return intern(ns, name)
 
 def internPrivate(nsName, sym):
-    ns = Namespace.findOrCreate(Symbol.intern(nsName))
-    ret = intern(ns, Symbol.intern(sym))
+    ns = Namespace.findOrCreate(symbol(nsName))
+    ret = intern(ns, symbol(sym))
     ret.setMeta(Var.privateMeta)
     return ret
 

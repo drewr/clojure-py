@@ -1,4 +1,4 @@
-from py.clojure.lang.symbol import Symbol
+from py.clojure.lang.symbol import Symbol, symbol
 from py.clojure.lang.persistenthashmap import EMPTY as EMPTY_MAP
 from py.clojure.lang.atomicreference import AtomicReference
 from py.clojure.lang.cljexceptions import InvalidArgumentException, ArityException
@@ -45,11 +45,11 @@ def keyword(*args):
 
             return interned.get()[sym]
         elif isinstance(args[0], str):
-            return keyword(Symbol.intern(args[0]))
+            return keyword(symbol(args[0]))
         else:
             raise InvalidArgumentException()
     elif len(args) == 2:
-        return keyword(Symbol.intern(*args))
+        return keyword(symbol(*args))
     else:
         raise ArityException()
 
@@ -58,9 +58,9 @@ def find(self, *args):
         if isinstance(args[0], Symbol):
             return interned.val()[args[0]]()
         if isinstance(args[0], str):
-            return Keyword.find(Symbol.intern(args[0]))
+            return Keyword.find(symbol(args[0]))
     if len(args) == 2:
-        return Keyword.find(Symbol.intern(*args))
+        return Keyword.find(symbol(*args))
     raise ArityException()
 
 

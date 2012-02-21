@@ -1,4 +1,4 @@
-from py.clojure.lang.symbol import Symbol
+from py.clojure.lang.symbol import Symbol, symbol
 from py.clojure.lang.namespace import findOrCreate as findOrCreateNamespace
 from py.clojure.lang.cljexceptions import CompilerException, AbstractMethodCall
 from py.clojure.lang.persistentvector import PersistentVector
@@ -18,7 +18,7 @@ import re
 import new
 import sys
 
-_MACRO_ = keyword(Symbol.intern(":macro"))
+_MACRO_ = keyword(symbol(":macro"))
 version = (sys.version_info[0] * 10) + sys.version_info[1]
 
 def emitJump(label):
@@ -63,7 +63,7 @@ def compileDef(comp, form):
 
 
     if sym.meta() is not None:
-        code.extend(comp.compileAccessList(Symbol.intern("clojure.lang.rt.setMeta")))
+        code.extend(comp.compileAccessList(symbol("clojure.lang.rt.setMeta")))
         code.append((ROT_TWO, 0))
         code.append((LOAD_CONST, sym.meta()))
         code.append((CALL_FUNCTION, 2))
@@ -119,7 +119,7 @@ def compileLoopStar(comp, form):
 
         body = s[idx]
         if local in comp.aliases:
-            newlocal = Symbol.intern(str(local)+"_"+str(RT.nextID()))
+            newlocal = symbol(str(local)+"_"+str(RT.nextID()))
             code.extend(comp.compile(body))
             comp.pushAlias(local, RenamedLocal(newlocal))
             args.append(local)
@@ -166,7 +166,7 @@ def compileLetStar(comp, form):
         body = s[idx]
         if comp.getAlias(local) is not None:
             code.extend(comp.compile(body))
-            newlocal = Symbol.intern(str(local)+"_"+str(RT.nextID()))
+            newlocal = symbol(str(local)+"_"+str(RT.nextID()))
             comp.pushAlias(local, RenamedLocal(newlocal))
             args.append(local)
         else:
@@ -326,7 +326,7 @@ def compileFn(comp, name, form, orgform):
     comp.popAliases(locals)
 
     clist = map(lambda x: x.sym.name, comp.closureList())
-    c = Code(code, clist, args, lastisargs, False, True, str(Symbol.intern(comp.getNS().__name__, name.name)), comp.filename, 0, None)
+    c = Code(code, clist, args, lastisargs, False, True, str(symbol(comp.getNS().__name__, name.name)), comp.filename, 0, None)
     if not clist:
         c = new.function(c.to_code(), comp.ns.__dict__, name.name)
 
@@ -423,7 +423,7 @@ def compileMultiFn(comp, name, form):
         code.append((RAISE_VARARGS, 1))
 
     clist = map(lambda x: x.sym.name, comp.closureList())
-    c = Code(code, clist, argslist, hasvararg, False, True, str(Symbol.intern(comp.getNS().__name__, name.name)), comp.filename, 0, None)
+    c = Code(code, clist, argslist, hasvararg, False, True, str(symbol(comp.getNS().__name__, name.name)), comp.filename, 0, None)
     if not clist:
         c = new.function(c.to_code(), comp.ns.__dict__, name.name)
 
@@ -464,8 +464,8 @@ def compileFNStar(comp, form):
         pushed = True
         form = form.next()
 
-    name = Symbol.intern(name)
-    gensym = Symbol.intern("_"+name.name + str(RT.nextID()))
+    name = symbol(name)
+    gensym = symbol("_"+name.name + str(RT.nextID()))
 
     if haslocalcaptures:
         comp.pushAlias(name, LocalMacro(name, gensym))
@@ -507,7 +507,7 @@ def compileFNStar(comp, form):
 
 def compileVector(comp, form):
     code = []
-    code.extend(comp.compile(Symbol.intern("clojure.lang.rt.vector")))
+    code.extend(comp.compile(symbol("clojure.lang.rt.vector")))
     for x in form:
         code.extend(comp.compile(x))
     code.append((CALL_FUNCTION, len(form)))
@@ -523,7 +523,7 @@ def compileRecur(comp, form):
         if idx >= len(comp.recurPoint.first()["args"]):
             raise CompilerException("to many arguments to recur", form)
         local = comp.recurPoint.first()["args"][idx]
-        local = comp.getAlias(Symbol.intern(local))
+        local = comp.getAlias(symbol(local))
         if local is None:
             pass
         locals.append(local)
@@ -550,7 +550,7 @@ def compileMap(comp, form):
     s = form.seq()
     c = 0
     code = []
-    code.extend(comp.compile(Symbol.intern("clojure.lang.rt.map")))
+    code.extend(comp.compile(symbol("clojure.lang.rt.map")))
     while s is not None:
         kvp = s.first()
         code.extend(comp.compile(kvp.getKey()))
@@ -634,21 +634,21 @@ def compileLetMacro(comp, form):
 
 
 
-builtins = {Symbol.intern("ns"): compileNS,
-            Symbol.intern("def"): compileDef,
-            Symbol.intern("."): compileDot,
-            Symbol.intern("fn*"): compileFNStar,
-            Symbol.intern("quote"): compileQuote,
-            Symbol.intern("py", "if"): compilePyIf,
-            Symbol.intern("if"): compileIf,
-            Symbol.intern("recur"): compileRecur,
-            Symbol.intern("do"): compileDo,
-            Symbol.intern("let*"): compileLetStar,
-            Symbol.intern("loop*"): compileLoopStar,
-            Symbol.intern("is?"): compileIs,
-            Symbol.intern("throw"): compileThrow,
-            Symbol.intern("apply"): compileApply,
-            Symbol.intern("let-macro"): compileLetMacro}
+builtins = {symbol("ns"): compileNS,
+            symbol("def"): compileDef,
+            symbol("."): compileDot,
+            symbol("fn*"): compileFNStar,
+            symbol("quote"): compileQuote,
+            symbol("py", "if"): compilePyIf,
+            symbol("if"): compileIf,
+            symbol("recur"): compileRecur,
+            symbol("do"): compileDo,
+            symbol("let*"): compileLetStar,
+            symbol("loop*"): compileLoopStar,
+            symbol("is?"): compileIs,
+            symbol("throw"): compileThrow,
+            symbol("apply"): compileApply,
+            symbol("let-macro"): compileLetMacro}
 
 
 """
@@ -705,7 +705,7 @@ class RenamedLocal(AAlias):
     def __init__(self, sym, rest = None):
         AAlias.__init__(self, rest)
         self.sym = sym
-        self.newsym = Symbol.intern(sym.name + str(RT.nextID()))
+        self.newsym = symbol(sym.name + str(RT.nextID()))
     def compile(self, comp):
         return [(LOAD_FAST, self.newsym.name)]
     def compileSet(self, comp):
@@ -983,7 +983,7 @@ class Compiler():
             return None
         newcode = code[:]
         newcode.append((RETURN_VALUE, None))
-        c = Code(newcode, [], [], False, False, False, str(Symbol.intern(self.getNS().__name__, "<string>")), self.filename, 0, None)
+        c = Code(newcode, [], [], False, False, False, str(symbol(self.getNS().__name__, "<string>")), self.filename, 0, None)
         retval = eval(c.to_code(), self.getNS().__dict__)
         return retval
 
@@ -1014,7 +1014,7 @@ class Compiler():
 
     def executeModule(self, code):
         code.append((RETURN_VALUE, None))
-        c = Code(code, [], [], False, False, False, str(Symbol.intern(self.getNS().__name__, "<string>")), self.filename, 0, None)
+        c = Code(code, [], [], False, False, False, str(symbol(self.getNS().__name__, "<string>")), self.filename, 0, None)
         import marshal
         import pickle
         import py_compile

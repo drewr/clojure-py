@@ -49,20 +49,19 @@ class Symbol(object, IObj):
         else:
             return self.ns + "/" + self.name
 
-    @staticmethod
-    def intern(*args):
-        if len(args) == 1:
-            a = args[0]
-            if isinstance(a, Symbol):
-                return a
-            idx = a.rfind("/")
-            if idx == -1 or a == "/":
-                return Symbol(None, intern(a))
-            else:
-                return Symbol(a[idx:], a[:idx+1])
-
-            return Symbol(null, )
-        elif len(args) == 2:
-            return Symbol(args[0], args[1])
+def symbol(*args):
+    if len(args) == 1:
+        a = args[0]
+        if isinstance(a, Symbol):
+            return a
+        idx = a.rfind("/")
+        if idx == -1 or a == "/":
+            return Symbol(None, intern(a))
         else:
-            raise ArityException()
+            return Symbol(a[idx:], a[:idx+1])
+
+        return Symbol(null, )
+    elif len(args) == 2:
+        return Symbol(args[0], args[1])
+    else:
+        raise ArityException()

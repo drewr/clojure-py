@@ -9,7 +9,7 @@ from py.clojure.lang.fileseq import StringReader
 from py.clojure.lang.globals import currentCompiler
 from py.clojure.lang.lispreader import read
 import py.clojure.lang.rt as RT
-from py.clojure.lang.symbol import Symbol
+from py.clojure.lang.symbol import symbol
 from py.clojure.util.byteplay import Code, Label, SetLineno
 
 
@@ -31,7 +31,7 @@ class NonOverloadedFunctions(unittest.TestCase):
         RT.init()
         self.comp = Compiler()
         currentCompiler.set(self.comp)
-        self.comp.setNS(Symbol.intern('clojure.core'))
+        self.comp.setNS(symbol('clojure.core'))
 
     def testZeroArguments(self):
         actual = self.compileActual('(defn abc [] 2)')
@@ -104,7 +104,7 @@ class TruthinessTests(unittest.TestCase):
         RT.init()
         self.comp = Compiler()
         currentCompiler.set(self.comp)
-        self.comp.setNS(Symbol.intern('clojure.core'))
+        self.comp.setNS(symbol('clojure.core'))
 
     def testTrue(self):
         self.assertTrue(self.eval('(if true true false)'))
@@ -145,7 +145,7 @@ class PyNamespaceTests(unittest.TestCase):
         RT.init()
         self.comp = Compiler()
         currentCompiler.set(self.comp)
-        self.comp.setNS(Symbol.intern('clojure.core'))
+        self.comp.setNS(symbol('clojure.core'))
 
     def testBuiltinsNamespaced(self):
         self.assertEqual(self.eval('(py/str [1 2 3])'), '[1 2 3]')
