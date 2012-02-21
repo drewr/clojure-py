@@ -723,6 +723,12 @@
 	           (if (nil? s)
 	               true
 	               false)))
+	(__iter__ [self]
+	    (loop [s (seq self)]
+	          (when s
+	              (py.bytecode/YIELD_VALUE s)
+	              (recur (next s)))))
+	           
 	(first [self]
 	    (.seq self)
 	    (py/if (nil? s)
@@ -1674,4 +1680,43 @@
                     (when (every? identity ss)
                       (cons (map first ss) (step (map rest ss)))))))]
      (map #(apply f %) (step (conj colls c3 c2 c1))))))
+
+
+(defn mapcat
+  "Returns the result of applying concat to the result of applying map
+  to f and colls.  Thus function f should return a collection."
+  {:added "1.0"
+   :static true}
+  [f & colls]
+    (apply concat (apply map f colls)))
+
+(defn filter
+  "Returns a lazy sequence of the items in coll for which
+  (pred item) returns true. pred must be free of side-effects."
+  {:added "1.0"
+   :static true}
+  ([pred coll]
+   (lazy-seq
+    (when-let [s (seq coll)]
+      (if (chunked-seq? s)
+        (let [c (chunk-first s)
+              size (count c)
+              b (chunk-buffer size)]
+          (dotimes [i size]
+              (when (pred (.nth c i))
+                (chunk-append b (.nth c i))))
+          (chunk-cons (chunk b) (filter pred (chunk-rest s))))
+        (let [f (first s) r (rest s)]
+          (if (pred f)
+            (cons f (filter pred r))
+            (filter pred r))))))))
+
+
+(defn remove
+  "Returns a lazy sequence of the items in coll for which
+  (pred item) returns false. pred must be free of side-effects."
+  {:added "1.0"
+   :static true}
+  [pred coll]
+  (filter (complement pred) coll))
 
