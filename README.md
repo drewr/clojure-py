@@ -22,4 +22,3 @@ Check out the Wiki for more information about the roadmap for this project. Then
 ## Running
 
     clojurepy
-
