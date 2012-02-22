@@ -786,39 +786,40 @@
 
 (deftype ChunkBuffer [buffer end]
     (add [self o]
-        (setattr self "end" (inc end))
-        (py.bytecode/STORE_SUBSCR buffer end o))
+        (py.bytecode/STORE_SUBSCR o buffer end)
+        (setattr self "end" (inc end)))
     (chunk [self]
         (let [ret (ArrayChunk buffer 0 end)]
              (setattr self "buffer" nil)
              ret))
-    (count [self] end))
+    (__len__ [self] end))
 
 (deftype ArrayChunk [array off end]
-    (__getitem__ ([self i]
-          (py.bytecode/BINARY_SUBSCR array (inc of)))
-         ([self i not-found]
-	  (if (py.bytecode/COMPARE_OP ">=" i 0)
-	      (if (py.bytecode/COMPARE_OP "<" i (len self))
-		  (nth self i)
-		  not-found)
-	      not-found)))
+    (__getitem__ 
+        ([self i]
+          (py.bytecode/BINARY_SUBSCR array (py.bytecode/BINARY_ADD off i)))
+        ([self i not-found]
+          (if (py.bytecode/COMPARE_OP ">=" i 0)
+              (if (py.bytecode/COMPARE_OP "<" i (py/len self))
+                  (py.bytecode/BINARY_SUBSCR array i)
+                  not-found)
+              not-found)))
 
     (__len__ [self]
         (py.bytecode/BINARY_SUBTRACT end off))
 
     (dropFirst [self]
-	(if (= off end)
-	    (throw (IllegalStateException "dropFirst of empty chunk")))
-	(ArrayChunk array (inc off) end))
+        (if (= off end)
+            (throw (IllegalStateException "dropFirst of empty chunk")))
+        (ArrayChunk array (inc off) end))
 
     (reduce [self f start]
-	(loop [ret (f start (py.bytecode/BINARY_SUBSCR array off))
-	       x (inc off)]
-	     (if (py.bytecode/COMPARE_OP "<" x end)
-		 (recur (f ret (py.bytecode/BINARY_SUBSCR array x)) 
-			(inc x))
-		 ret))))
+        (loop [ret (f start (py.bytecode/BINARY_SUBSCR array off))
+               x (inc off)]
+             (if (py.bytecode/COMPARE_OP "<" x end)
+             (recur (f ret (py.bytecode/BINARY_SUBSCR array x)) 
+                (inc x))
+             ret))))
 
 
 
@@ -826,25 +827,25 @@
 
 	clojure.lang.aseq.ASeq
 	(first [self]
-	       (.nth chunk 0))
+	       (py.bytecode/BINARY_SUBSCR chunk 0))
 	(withMeta [self meta]
-	  (if (py.bytecode/COMPARE_OP "is" meta _meta)
+	  (if (py.bytecode/COMPARE_OP "is not" meta _meta)
 	        (ChunkedCons meta chunk _more)
 		self))
 
 
 	(next [self]
-	  (if (py.bytecode/COMPARE_OP ">" (len chunk) 1)
+	  (if (py.bytecode/COMPARE_OP ">" (py/len chunk) 1)
 	      (ChunkedCons nil (.dropFirst chunk) _more)
 	      (.chunkedNext self)))
 
 	(more [self]
 	  (cond (py.bytecode/COMPARE_OP ">" (len chunk) 1)
-		  (ChunkedCons nil (.dropFirst chunk) _more)
-		(py.bytecode/COMPARE_OP "is" _more nil)
-		  '()
-		:else
-		  _more))
+		        (ChunkedCons nil (.dropFirst chunk) _more)
+		    (py.bytecode/COMPARE_OP "is" _more nil)
+		        '()
+		    :else
+		        _more))
 
 	IChunkedSeq
 	(chunkedFirst [self] chunk)
@@ -861,7 +862,7 @@
 
 
 (defn chunk-buffer [capacity]
-     (ChunkBuffer (py.bytecode/BINARY_MULTIPLY (list [None]) capacity)
+     (ChunkBuffer (py.bytecode/BINARY_MULTIPLY (py/list [nil]) capacity)
 		  0))
 (defn chunk-append [b x]
      (.add b x))
@@ -879,9 +880,9 @@
      (.chunkedNext s))
 
 (defn chunk-cons [chunk rest]
-     (if (= (len chunk) 0)
+     (if (= (py/len chunk) 0)
 	 rest
-	 (ChunkedCons chunk rest)))
+	 (ChunkedCons nil chunk rest)))
 
 (defn chunked-seq? [s]
      (instance? IChunkedSeq s))
@@ -1823,5 +1824,34 @@
   {:added "1.0"}
   ([x] (lazy-seq (cons x (repeat x))))
   ([n x] (take n (repeat x))))
+
+
+
+(defn iterate
+  "Returns a lazy sequence of x, (f x), (f (f x)) etc. f must be free of side-effects"
+  {:added "1.0"}
+  [f x] (cons x (lazy-seq (iterate f (f x)))))
+
+(defn range 
+  "Returns a lazy seq of nums from start (inclusive) to end
+  (exclusive), by step, where start defaults to 0, step to 1, and end
+  to infinity."
+  {:added "1.0"}
+  ([] (range 0 (py/float "inf")))
+  ([end] (range 0 end 1))
+  ([start end] (range start end 1))
+  ([start end step]
+   (lazy-seq
+    (let [b (chunk-buffer 32)
+          comp (if (pos? step) < >)]
+      (loop [i start]
+        (if (and (< (count b) 32)
+                 (comp i end))
+          (do
+            (chunk-append b i)
+            (recur (+ i step)))
+          (chunk-cons (chunk b) 
+                      (when (comp i end) 
+                        (range i end step)))))))))
 
 

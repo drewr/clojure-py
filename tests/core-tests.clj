@@ -371,3 +371,14 @@
 
 (deftest split-at-tests
     (assert-equal (split-at 3 [1 2 3 4 5]) [[1 2 3] [4 5]]))
+
+(deftest split-with-tests
+    (assert-equal (split-with odd? [1 1 1 1 2 2 2 2]) [[1 1 1 1] [2 2 2 2]]))
+
+(deftest repeat-tests
+    (assert-equal (repeat 3 1) [1 1 1]))
+
+(deftest interate-tests
+    (assert-equal (take 3 (iterate inc 0)) [0 1 2]))
+
+
