@@ -343,6 +343,8 @@ def cleanRest(name):
     code.extend(emitJump(label))
     code.append((LOAD_CONST, None))
     code.append((STORE_FAST, name))
+    if version == 26:
+        code.append((LOAD_CONST, None))
     code.extend(emitLanding(label))
     return code
 
@@ -932,40 +934,42 @@ class Compiler():
     def compile(self, itm):
         from py.clojure.lang.persistentlist import PersistentList, EmptyList
         from py.clojure.lang.cons import Cons
-
-        c = []
-        lineset = False
-        if hasattr(itm, "meta") and itm.meta() is not None:
-            line = itm.meta()[LINE_KEY]
-            if line is not None and line > self.lastlineno:
-                lineset = True
-                self.lastlineno = line
-                c.append([SetLineno, line])
-
-        if isinstance(itm, Symbol):
-            c.extend(self.compileSymbol(itm))
-        elif isinstance(itm, PersistentList) or isinstance(itm, Cons):
-            c.extend(self.compileForm(itm))
-        elif itm is None:
-            c.extend(self.compileNone(itm))
-        elif type(itm) in [str, int, new.classobj, type]:
-            c.extend([(LOAD_CONST, itm)])
-        elif isinstance(itm, IPersistentVector):
-            c.extend(compileVector(self, itm))
-        elif isinstance(itm, IPersistentMap):
-            c.extend(compileMap(self, itm))
-        elif isinstance(itm, Keyword):
-            c.extend(compileKeyword(self, itm))
-        elif isinstance(itm, bool):
-            c.extend(compileBool(self, itm))
-        elif isinstance(itm, EmptyList):
-            c.append((LOAD_CONST, itm))
-        else:
-            raise CompilerException("Don't know how to compile" + str(type(itm)), None)
-
-        if len(c) < 2 and lineset:
-            return []
-        return c
+        try: 
+            c = []
+            lineset = False
+            if hasattr(itm, "meta") and itm.meta() is not None:
+                line = itm.meta()[LINE_KEY]
+                if line is not None and line > self.lastlineno:
+                    lineset = True
+                    self.lastlineno = line
+                    c.append([SetLineno, line])
+    
+            if isinstance(itm, Symbol):
+                c.extend(self.compileSymbol(itm))
+            elif isinstance(itm, PersistentList) or isinstance(itm, Cons):
+                c.extend(self.compileForm(itm))
+            elif itm is None:
+                c.extend(self.compileNone(itm))
+            elif type(itm) in [str, int, new.classobj, type]:
+                c.extend([(LOAD_CONST, itm)])
+            elif isinstance(itm, IPersistentVector):
+                c.extend(compileVector(self, itm))
+            elif isinstance(itm, IPersistentMap):
+                c.extend(compileMap(self, itm))
+            elif isinstance(itm, Keyword):
+                c.extend(compileKeyword(self, itm))
+            elif isinstance(itm, bool):
+                c.extend(compileBool(self, itm))
+            elif isinstance(itm, EmptyList):
+                c.append((LOAD_CONST, itm))
+            else:
+                raise CompilerException("Don't know how to compile" + str(type(itm)), None)
+    
+            if len(c) < 2 and lineset:
+                return []
+            return c
+        except "d":
+            raise CompilerException("Unknown Error compiling: " + str(itm) + " " + str(e), itm)
 
     def compileNone(self, itm):
         return [(LOAD_CONST, None)]

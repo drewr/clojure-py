@@ -26,10 +26,10 @@
   vector clojure.lang.rt/vector)
 
 (def
- #^{:arglists '([x seq])
+ ^{:arglists '([x seq])
     :doc "Returns a new seq where x is the first element and seq is
     the rest."}
- cons (fn* cons [x seq] (. clojure.lang.rt (cons x seq))))
+ cons (fn* cons [x seq] (clojure.lang.rt/cons x seq)))
 
 ;during bootstrap we don't have destructuring let, loop or fn, will redefine later
 (def
