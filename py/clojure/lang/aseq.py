@@ -7,6 +7,7 @@ from py.clojure.lang.ihasheq import IHashEq
 from py.clojure.lang.iterable import Iterable
 import py.clojure.lang.rt as RT
 
+
 class ASeq(Obj, Sequential, ISeq, IHashEq, Iterable):
     def __eq__(self, other):
         if self is other:
@@ -20,7 +21,7 @@ class ASeq(Obj, Sequential, ISeq, IHashEq, Iterable):
             if ms is None or not se.first() == ms.first():
                 return False
             ms = ms.next()
-            se = se.next()	
+            se = se.next()
         return ms is None
 
     def __hash__(self):
@@ -64,5 +65,5 @@ class ASeq(Obj, Sequential, ISeq, IHashEq, Iterable):
     def hasheq(self):
         hash = 1
         for s in self:
-            hash = 31 * hash + Util.hasheq(s.first())
+            hash = 31 * hash + Util.hasheq(s.first())#FIXME: Util is... where?
         return hash

@@ -18,10 +18,10 @@ class Symbol(object, IObj):
             raise ArityException()
         if isinstance(self.ns, types.ModuleType):
             pass
-        
+
     def getNamespace(self):
         return self.ns
-    
+
     def getName(self):
         return self.name
 
@@ -49,6 +49,7 @@ class Symbol(object, IObj):
         else:
             return self.ns + "/" + self.name
 
+
 def symbol(*args):
     if len(args) == 1:
         a = args[0]
@@ -58,9 +59,7 @@ def symbol(*args):
         if idx == -1 or a == "/":
             return Symbol(None, intern(a))
         else:
-            return Symbol(a[idx:], a[:idx+1])
-
-        return Symbol(null, )
+            return Symbol(a[idx:], a[:idx + 1])
     elif len(args) == 2:
         return Symbol(args[0], args[1])
     else:
