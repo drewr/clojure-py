@@ -64,18 +64,18 @@ class Var(ARef, Settable, IFn, IRef):
     def isDynamic(self):
         return self.dynamic
 
-    def set(self, val):#FIXME: sym not defined?
+    def set(self, val):
         self.validate(self.getValidator(), val)
         b = self.getThreadBinding()
         if b is not None:
             if currentThread() != b.thread:
-                raise IllegalStateException("Can't set!: " + str(sym) +
+                raise IllegalStateException("Can't set!: " + str(self.sym) +
                                             " from non-binding thread")
             b.val = val
             return self
 
         raise IllegalStateException("Can't change/establish root binding "
-                                    "of: %s with set" % str(sym))
+                                    "of: %s with set" % str(self.sym))
 
     def hasRoot(self):
         return not isinstance(self.root, Unbound)
