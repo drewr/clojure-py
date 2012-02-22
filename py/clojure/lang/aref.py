@@ -5,8 +5,9 @@ from py.clojure.lang.cljexceptions import IllegalStateException, ArityException
 from py.clojure.lang.threadutil import synchronized
 from py.clojure.lang.persistenthashmap import EMPTY
 
+
 class ARef(AReference, IRef):
-    def __init__(self, meta = None):
+    def __init__(self, meta=None):
         AReference.__init__(self, meta)
         self.validator = None
         self.watches = EMPTY

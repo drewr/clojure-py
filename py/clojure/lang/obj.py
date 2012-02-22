@@ -1,6 +1,7 @@
 from py.clojure.lang.iobj import IObj
 from py.clojure.lang.cljexceptions import AbstractMethodCall
 
+
 class Obj(object, IObj):
     def meta(self):
         if not hasattr(self, "_meta"):

@@ -1,7 +1,4 @@
-
-
-
-def fact (x):
+def fact(x):
     f = 1
     n = x
     while True:
@@ -11,6 +8,7 @@ def fact (x):
             f = f * n
             n = n - 1
             continue
+
 
 def test(times):
     rem = times
@@ -22,6 +20,5 @@ def test(times):
         else:
             return
 
+
 test(20)
-
-
