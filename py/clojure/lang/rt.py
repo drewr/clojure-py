@@ -74,13 +74,13 @@ def booleanCast(obj):
 
 
 def keys(obj):
-    from py.clojure.lang.apersistentmap import APersistentMap
-    return APersistentMap.KeySeq.create(obj)# FIXME -KeySeq defined where?
+    from py.clojure.lang.apersistentmap import createKeySeq
+    return createKeySeq(obj)
 
 
 def vals(obj):
-    from py.clojure.lang.apersistentmap import APersistentMap
-    return APersistentMap.ValueSeq.create(obj)# FIXME - ValueSeq defn'd where?
+    from py.clojure.lang.apersistentmap import createValSeq
+    return createValueSeq(obj)
 
 
 def fulfillsHashSet(obj):
