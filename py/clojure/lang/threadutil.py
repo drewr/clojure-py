@@ -1,4 +1,5 @@
-from threading import Lock, local, currentThread
+from threading import Lock, local
+
 
 def synchronized(f):
     """ Synchronization decorator. """
@@ -27,7 +28,7 @@ class ThreadLocal(local):
 
 
 class AtomicInteger:
-    def __init__(self, v = 0):
+    def __init__(self, v=0):
         self.v = v
 
     def getAndIncrement(self):
