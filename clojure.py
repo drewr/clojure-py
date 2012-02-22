@@ -43,7 +43,6 @@ def requireClj(filename, stopafter=None):
     try:
         while True:
             s = read(r, True, None, True)
-
             try:
                 res = comp.compile(s)
                 comp.executeCode(res)

@@ -2,9 +2,11 @@ from py.clojure.lang.iref import IRef
 from py.clojure.lang.ifn import IFn
 from py.clojure.lang.settable import Settable
 from py.clojure.lang.aref import ARef
-from py.clojure.lang.cljexceptions import ArityException, InvalidArgumentException, IllegalStateException
+from py.clojure.lang.cljexceptions import (ArityException,
+                                           InvalidArgumentException,
+                                           IllegalStateException)
 from py.clojure.lang.persistenthashmap import EMPTY
-from py.clojure.lang.threadutil import ThreadLocal, synchronized, currentThread
+from py.clojure.lang.threadutil import ThreadLocal, currentThread
 from py.clojure.lang.symbol import symbol
 from py.clojure.lang.cljkeyword import keyword
 import persistentarraymap
@@ -15,6 +17,7 @@ dvals = ThreadLocal()
 privateMeta = persistentarraymap.create([privateKey, True])
 UKNOWN = symbol("UNKNOWN")
 
+
 def pushThreadBindings(bindings):
     f = dvals.get(lambda: Frame())
     bmap = f.bindings
@@ -23,12 +26,15 @@ def pushThreadBindings(bindings):
         e = bs.first()
         v = e.getKey()
         if not v.dynamic:
-            raise IllegalStateException("Can't dynamically bind non-dynamic var: " + str(v.ns) + "/" + str(v.sym))
+            raise IllegalStateException("Can't dynamically bind non-dynamic "
+                                        "var: " + str(v.ns) + "/"
+                                        + str(v.sym))
         v.validate(v.getValidator(), e.getValue())
         v.threadBound = True
         bmap = bmap.assoc(v, TBox(currentThread(), e.getValue()))
         bs = bs.next()
     dvals.set(Frame(bmap, f))
+
 
 def popThreadBindings():
     f = dvals.get(lambda: Frame())
@@ -37,8 +43,8 @@ def popThreadBindings():
     dvals.set(f.prev)
 
 
-class Var(ARef, Settable, IFn, IRef ):
-    def __init__(self, ns, sym, root = UKNOWN):
+class Var(ARef, Settable, IFn, IRef):
+    def __init__(self, ns, sym, root=UKNOWN):
         if root == UKNOWN:
             self.root = Unbound(self)
         self.ns = ns
@@ -51,23 +57,25 @@ class Var(ARef, Settable, IFn, IRef ):
         if isinstance(self.root, Unbound):
             self.rev += 1
 
-    def setDynamic(self, val = True):
+    def setDynamic(self, val=True):
         self.dynamic = val
         return self
 
     def isDynamic(self):
         return self.dynamic
 
-    def set(self, val):
-        self.validate(self.getValidator(), val);
+    def set(self, val):#FIXME: sym not defined?
+        self.validate(self.getValidator(), val)
         b = self.getThreadBinding()
         if b is not None:
             if currentThread() != b.thread:
-                raise IllegalStateException("Can't set!: " + str(sym) + " from non-binding thread")
+                raise IllegalStateException("Can't set!: " + str(sym) +
+                                            " from non-binding thread")
             b.val = val
             return self
 
-        raise IllegalStateException(str("Can't change/establish root binding of: "+ str(sym) +" with set"))
+        raise IllegalStateException("Can't change/establish root binding "
+                                    "of: %s with set" % str(sym))
 
     def hasRoot(self):
         return not isinstance(self.root, Unbound)
@@ -111,7 +119,10 @@ class Var(ARef, Settable, IFn, IRef ):
     def __repr__(self):
         if self.ns is not None:
             return "#" + str(self.ns.__name__) + "/" + str(self.sym)
-        return "#<Var: " + (str(self.sym) if self.sym is not None else "--unnamed--") + ">"
+        return ("#<Var: " +
+                (str(self.sym)
+                 if self.sym is not None else "--unnamed--") + ">")
+
 
 def var(root=UKNOWN):
     if root is not UKNOWN:
@@ -124,19 +135,23 @@ def getThreadBindingFrame():
     f = Val.dvals.get(lambda: Frame())
     return f
 
+
 def cloneThreadBindingFrame():
     f = Val.dvals.get(lambda: Frame()).clone()
     return f
 
+
 def resetThreadBindingFrame(val):
     Var.dvals.set(val)
 
-def internWithRoot(ns, sym, root, replaceRoot = True):
+
+def internWithRoot(ns, sym, root, replaceRoot=True):
     from namespace import intern as namespaceIntern
     dvout = namespaceIntern(ns, sym)
     if not dvout.hasRoot() or replaceRoot:
         dvout.bindRoot(root)
     return dvout
+
 
 def find(sym):
     from py.clojure.lang.namespace import find as findNamespace
@@ -147,11 +162,13 @@ def find(sym):
         raise InvalidArgumentException("No such namespace " + str(sym.ns))
     return ns.findInternedVar(symbol(sym.name))
 
+
 def intern(ns, name):
     if isinstance(ns, Namespace):
         return ns.intern(name)
     ns = Namespace.findOrCreate(symbol(ns))
     return intern(ns, name)
+
 
 def internPrivate(nsName, sym):
     ns = Namespace.findOrCreate(symbol(nsName))
@@ -165,17 +182,22 @@ class TBox(object):
         self.thread = thread
         self.val = val
 
+
 class Unbound(IFn):
     def __init__(self, v):
         self.v = v
+
     def __repr__(self):
         return "Unbound" + str(self.v)
+
     def __call__(self, *args, **kwargs):
         raise ArityException("Attempting to call unbound fn:" + str(self.v))
 
+
 class Frame(object):
-    def __init__(self, bindings = EMPTY, prev = None):
+    def __init__(self, bindings=EMPTY, prev=None):
         self.bindings = bindings
         self.prev = prev
+
     def clone(self):
         return Frame(self.bindings)
