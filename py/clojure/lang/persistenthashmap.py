@@ -64,6 +64,15 @@ class PersistentHashMap(APersistentMap, IEditableCollection, IObj):
             self.noneValue = args[4]
         else:
             raise ArityException()
+            
+    def withMeta(self, meta):
+        if self._meta is meta:
+            return self
+        return PersistentHashMap(meta,
+                                 self.count,
+                                 self.root,
+                                 self.hasNull,
+                                 self.noneValue)
 
     def assoc(self, key, val):
         if key is None:

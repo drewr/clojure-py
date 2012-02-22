@@ -1854,4 +1854,55 @@
                       (when (comp i end) 
                         (range i end step)))))))))
 
+(defn merge
+  "Returns a map that consists of the rest of the maps conj-ed onto
+  the first.  If a key occurs in more than one map, the mapping from
+  the latter (left-to-right) will be the mapping in the result."
+  {:added "1.0"}
+  [& maps]
+  (when (some identity maps)
+    (reduce1 #(conj (or %1 {}) %2) maps)))
+
+
+(defn merge-with
+  "Returns a map that consists of the rest of the maps conj-ed onto
+  the first.  If a key occurs in more than one map, the mapping(s)
+  from the latter (left-to-right) will be combined with the mapping in
+  the result by calling (f val-in-result val-in-latter)."
+  {:added "1.0"}
+  [f & maps]
+  (when (some identity maps)
+    (let [merge-entry (fn [m e]
+			(let [k (key e) v (val e)]
+			  (if (contains? m k)
+			    (assoc m k (f (get m k) v))
+			    (assoc m k v))))
+          merge2 (fn [m1 m2]
+		   (reduce1 merge-entry (or m1 {}) (seq m2)))]
+      (reduce1 merge2 maps))))
+
+
+(defn zipmap
+  "Returns a map with the keys mapped to the corresponding vals."
+  {:added "1.0"}
+  [keys vals]
+    (loop [map {}
+           ks (seq keys)
+           vs (seq vals)]
+      (if (and ks vs)
+        (recur (assoc map (first ks) (first vs))
+               (next ks)
+               (next vs))
+        map)))
+
+
+(defn line-seq
+  "Returns the lines of text from rdr as a lazy sequence of strings.
+  rdr must implement .readline"
+  {:added "1.0"}
+  [rdr]
+  (let [line (.readline rdr)]
+    (when-not (= line "")
+              (cons line (lazy-seq (line-seq rdr))))))
+
 

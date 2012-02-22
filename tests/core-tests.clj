@@ -381,4 +381,24 @@
 (deftest interate-tests
     (assert-equal (take 3 (iterate inc 0)) [0 1 2]))
 
+(deftest range-tests
+    (assert-equal (range 0 8 2) [0 2 4 6]))
+
+(deftest merge-tests
+    (assert-equal (merge {:a 1 :b 2} {:a 3 :c 4}) {:a 3 :b 2 :c 4}))
+
+(deftest merge-with-tests
+    (assert-equal (merge-with + 
+                   {:a 1  :b 2}
+                   {:a 9  :b 98 :c 0})
+                  {:c 0, :a 10, :b 100}))
+
+
+(deftest zipmap-tests
+    (assert-equal (zipmap [:a :b :c :d :e] [1 2 3 4 5])
+                    {:e 5, :d 4, :c 3, :b 2, :a 1}))
+
+
+
+
 

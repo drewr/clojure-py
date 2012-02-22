@@ -44,7 +44,7 @@ class APersistentMap(IPersistentMap):
                 pass
             yield s.first().getKey()
             s = s.next()
-
+            
 #    def __hash__(self):
 #        return mapHash(self)
 
