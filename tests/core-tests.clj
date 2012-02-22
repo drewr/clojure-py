@@ -359,3 +359,15 @@
 
 (deftest drop-last-tests
     (assert-equal (drop-last 2 [1 2 3 4]) [1 2]))
+
+(deftest take-last-tests
+    (assert-equal (take-last 3 [1 2 3 4]) [2 3 4]))
+
+(deftest drop-while-tests
+    (assert-equal (drop-while even? [2 4 6 1 2 3]) [1 2 3]))
+
+(deftest cycle-tests
+    (assert-equal (take 6 (cycle [1 2 3])) [1 2 3 1 2 3]))
+
+(deftest split-at-tests
+    (assert-equal (split-at 3 [1 2 3 4 5]) [[1 2 3] [4 5]]))

@@ -11,9 +11,10 @@ class ASeq(Obj, Sequential, ISeq, IHashEq, Iterable):
     def __eq__(self, other):
         if self is other:
             return True
-        if not isinstance(other, (Sequential, list, tuple)):
-            return False
+
         se = RT.seq(other)
+        if isinstance(se, RT.NotSeq):
+            return False
         ms = self.seq()
         while se is not None:
             if ms is None or not se.first() == ms.first():

@@ -427,13 +427,13 @@
   "Evaluates test. If logical true, evaluates body in an implicit do."
   {:added "1.0"}
   [test & body]
-  (list 'py/if test (cons 'do body)))
+  (list 'if test (cons 'do body)))
 
 (defmacro when-not
   "Evaluates test. If logical false, evaluates body in an implicit do."
   {:added "1.0"}
   [test & body]
-    (list 'py/if test nil (cons 'do body)))
+    (list 'if test nil (cons 'do body)))
 
 (defn false?
   "Returns true if x is the value false, false otherwise."
@@ -716,18 +716,35 @@
 	(__eq__ [self other]
 	    (loop [s (seq self)
 	           o (seq other)]
-	           (if (not (nil? s))
-	               (if (not (nil? o))
-	                   (if (py.bytecode/COMPARE_OP "==" (first s) (first o))
-	                       (recur (next s) (next o)))))
 	           (if (nil? s)
-	               true
-	               false)))
+	               (if (nil? o)
+	                   true
+	                   false)
+	               (if (nil? o)
+	                   false
+	                   (if (py.bytecode/COMPARE_OP "==" (first s) (first o))
+	                       (recur (next s) (next o))
+	                       false)))))
 	(__iter__ [self]
 	    (loop [s (seq self)]
 	          (when s
 	              (py.bytecode/YIELD_VALUE s)
 	              (recur (next s)))))
+	(__repr__ [self]
+	    (loop [c []
+	           s (seq self)
+	           cnt 0]
+	           (if (not (nil? s))
+                   (if (py.bytecode/COMPARE_OP "<" cnt 10)
+                       (recur (conj c (str (first s))) 
+                              (next s)
+                              (inc cnt))
+                       (recur (conj c "...")
+                              nil
+                              11)))
+               (str "[" (.join " " c) "]")))
+               
+	                   
 	           
 	(first [self]
 	    (.seq self)
@@ -1757,3 +1774,54 @@
   {:added "1.0"}
   ([s] (drop-last 1 s))
   ([n s] (map (fn [x _] x) s (drop n s))))
+
+
+
+(defn take-last
+  "Returns a seq of the last n items in coll.  Depending on the type
+  of coll may be no better than linear time.  For vectors, see also subvec."
+  {:added "1.1"}
+  [n coll]
+  (loop [s (seq coll), lead (seq (drop n coll))]
+    (if lead
+      (recur (next s) (next lead))
+      s)))
+
+(defn drop-while
+  "Returns a lazy sequence of the items in coll starting from the first
+  item for which (pred item) returns nil."
+  {:added "1.0"}
+  [pred coll]
+  (let [step (fn [pred coll]
+               (let [s (seq coll)]
+                 (if (and s (pred (first s)))
+                   (recur pred (rest s))
+                   s)))]
+    (lazy-seq (step pred coll))))
+
+(defn cycle
+  "Returns a lazy (infinite!) sequence of repetitions of the items in coll."
+  {:added "1.0"}
+  [coll] (lazy-seq 
+          (when-let [s (seq coll)] 
+              (concat s (cycle s)))))
+
+(defn split-at
+  "Returns a vector of [(take n coll) (drop n coll)]"
+  {:added "1.0"}
+  [n coll]
+    [(take n coll) (drop n coll)])
+
+(defn split-with
+  "Returns a vector of [(take-while pred coll) (drop-while pred coll)]"
+  {:added "1.0"}
+  [pred coll]
+    [(take-while pred coll) (drop-while pred coll)])
+
+(defn repeat
+  "Returns a lazy (infinite!, or length n if supplied) sequence of xs."
+  {:added "1.0"}
+  ([x] (lazy-seq (cons x (repeat x))))
+  ([n x] (take n (repeat x))))
+
+

@@ -29,6 +29,10 @@ def seqToTuple(s):
     if isinstance(s, IPersistentVector):
         return tuple(s)
     return tuple(mapInter(lambda x: x.first(),s))
+    
+class NotSeq:
+    pass
+
 
 def seq(obj):
     from py.clojure.lang.indexableseq import IndexableSeq
@@ -45,7 +49,11 @@ def seq(obj):
         if len(obj) == 0:
             return None
         return IndexableSeq(obj, 0)
-    return obj.seq()
+        
+    if hasattr(obj, "seq"):
+        return obj.seq()
+    return NotSeq() 
+        
 
 def first(obj):
     return seq(obj).first()

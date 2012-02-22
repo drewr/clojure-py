@@ -1,6 +1,7 @@
 from py.clojure.lang.ipersistentvector import IPersistentVector
 from py.clojure.lang.cljexceptions import AbstractMethodCall, ArityException
 from py.clojure.lang.indexableseq import IndexableSeq
+import py.clojure.lang.rt as RT
 
 class APersistentVector(object, IPersistentVector):
     def __iter__(self):
@@ -19,6 +20,11 @@ class APersistentVector(object, IPersistentVector):
         if not len(self):
             return None
         return IndexableSeq(self, 0)
+        
+    def __eq__(self, other):
+        s = self.seq()
+        o = RT.seq(other)
+        return s == o
 
 
 class SubVec(APersistentVector):

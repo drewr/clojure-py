@@ -146,23 +146,23 @@ class PersistentVector(APersistentVector):
         for x in range(len(self)):
             s.append(repr(self[x]))
         return "[" + " ".join(s) + "]"
-
-    def __eq__(self, other):
-        if other is self:
-            return True
-        if not hasattr(other, "__len__"):
-            return False
-        if not hasattr(other, "__getitem__"):
-            return False
-
-        if not len(self) == len(other):
-            return False
-
-        for x in range(len(self)):
-            if self[x] != other[x]:
-                return False
-
-        return True
+# 
+    # def __eq__(self, other):
+        # if other is self:
+            # return True
+        # if not hasattr(other, "__len__"):
+            # return False
+        # if not hasattr(other, "__getitem__"):
+            # return False
+# 
+        # if not len(self) == len(other):
+            # return False
+# 
+        # for x in range(len(self)):
+            # if self[x] != other[x]:
+                # return False
+# 
+        # return True
 
 
 class Node:
