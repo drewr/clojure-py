@@ -24,17 +24,6 @@ class ASeq(Obj, Sequential, ISeq, IHashEq, Iterable):
             se = se.next()
         return ms is None
 
-    def __hash__(self):
-        if not hasattr(self, "_hash") or self._hash == -1:
-            hval = -1
-            for s in self:
-                curhash = 0
-                if s.first() is not None:
-                    curhash = hash(s.first())
-                hval = 31 * hval + curhash
-            self._hash = hval
-        return self._hash
-
     def seq(self):
         return self
 
@@ -59,7 +48,7 @@ class ASeq(Obj, Sequential, ISeq, IHashEq, Iterable):
     def __iter__(self):
         s = self.seq()
         while s is not None:
-            yield s
+            yield s.first()
             s = s.next()
 
     def hasheq(self):

@@ -31,7 +31,7 @@ def seqToTuple(s):
         return s
     if isinstance(s, IPersistentVector):
         return tuple(s)
-    return tuple(mapInter(lambda x: x.first(),s))
+    return tuple(s)
 
 
 class NotSeq:

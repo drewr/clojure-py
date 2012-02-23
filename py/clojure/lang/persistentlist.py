@@ -43,12 +43,6 @@ class PersistentList(ASeq, IPersistentList, IReduce, Counted):
     def __len__(self):
         return self._count
 
-    def __iter__(self):
-        x = self
-        while x is not None:
-            yield x
-            x = x.next()
-
     def cons(self, o):
         return PersistentList(self.meta(), o, self, self._count + 1)
 
@@ -76,7 +70,7 @@ class PersistentList(ASeq, IPersistentList, IReduce, Counted):
     def __repr__(self):
         s = []
         for x in self:
-            s.append(repr(x.first()))
+            s.append(repr(x))
         return "(" + " ".join(s) + ")"
 
 def create(lst):

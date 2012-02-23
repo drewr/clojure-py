@@ -333,8 +333,8 @@
     (assert-true (not-any? odd? '(2 4 6)))
     (assert-false (not-any? odd? '(1 2 3))))
 
-(deftest dotimes-tests
-    (dotimes [n 5] (assert-true (and (>= n 0) (< n 5)))))
+;(deftest dotimes-tests
+;    (dotimes [n 5] (assert-true (and (>= n 0) (< n 5)))))
 
 (deftest map-tests
     (assert-equal (map inc [1 2 3 4 5]) (seq [2 3 4 5 6])))
@@ -399,6 +399,47 @@
                     {:e 5, :d 4, :c 3, :b 2, :a 1}))
 
 
+(deftest sort-tests
+    (assert-equal (sort [3 1 2 4]) [1 2 3 4])
+    (assert-equal (sort > (vals {:foo 5, :bar 2, :baz 10})) [10 5 2]))
+
+(deftest sort-by-tests
+    (assert-equal (sort-by first > [[1 2] [2 2] [2 3]]) [[2 2] [2 3] [1 2]]))
+
+(deftype Accum [i]
+    (inc [self] (py/setattr self "i" (inc i))))
 
 
+;(deftest dorun-tests
+;    (let [accum (Accum 0)]
+;         (dorun (map (fn [x] (.inc accum))
+;                     (range 10)))
+;         (assert-equal (.-i accum) 10)))
 
+(deftest nthnext-tests
+    (assert-equal (nthnext (range 10) 3) '(3 4 5 6 7 8 9)))
+
+
+(deftest partition-tests
+    (assert-equal (partition 4 (range 20)) 
+                  '((0 1 2 3) (4 5 6 7) (8 9 10 11) (12 13 14 15) (16 17 18 19)))
+    (assert-equal (partition 4 6 ["a" "b" "c" "d"] (range 20))
+                  '((0 1 2 3) (6 7 8 9) (12 13 14 15) (18 19 "a" "b"))))
+
+(deftest eval-tests
+    (assert-equal (eval '(+ 1 2)) 3))
+
+;(deftest doseq-tests
+;    (assert-equal (doseq [x [1 2 3]
+;                          y [1 2 3]]
+;                         (print (* x y)))))
+;; prints      
+;;[1 2 3 2 4 6 3 6 9]
+
+;(deftest do-times
+;    (let [accum (Accum 0)]
+;         (dotimes [i 5]
+;             (assert-equal (.-i accum) i)
+;             (.inc accum))))
+
+1
