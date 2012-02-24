@@ -1,13 +1,19 @@
 from clojure.lang.apersistentmap import APersistentMap
 from clojure.lang.aseq import ASeq
 from clojure.lang.box import Box
-from clojure.lang.cljexceptions import ArityException
+from clojure.lang.cljexceptions import (ArityException,
+                                        AbstractMethodCall,
+                                        IllegalArgumentException,
+                                        UnsupportedOperationException)
 from clojure.lang.comparator import Comparator
 from clojure.lang.iobj import IObj
 from clojure.lang.ipersistentmap import IPersistentMap
 from clojure.lang.reversible import Reversible
 import clojure.lang.rt as RT
 
+
+##FIXME: there are still several undefined symbols in the code below, but
+#maybe this is still in progress? JEJ
 
 class PersistentTreeMap(APersistentMap, IObj, Reversible):
     def __init__(self, *args):
@@ -49,8 +55,8 @@ class PersistentTreeMap(APersistentMap, IObj, Reversible):
         found = Box(None)
         t = self.add(self.tree, key, val, found)
         if t is None:   # None == already contains key
-            raise Util.runtimeException("Key already present")
-        return PersistentTreeMap(comp, t.blacken(), self._count + 1, self.meta())
+            raise Util.runtimeException("Key already present")#FIXME: not defined anywhere?
+        return PersistentTreeMap(comp, t.blacken(), self._count + 1, self.meta())#FIXME: comp is where?
 
     def assoc(self, key, val):
         found = Box(None)
@@ -99,7 +105,7 @@ class PersistentTreeMap(APersistentMap, IObj, Reversible):
     def seqFrom(self, key, ascending):
         if self._count > 0:
             stack = None
-            t = tree
+            t = tree# FIXME: tree defined where?
             while t is not None:
                 c = self.doCompare(key, t.key())
                 if c == 0:
@@ -311,7 +317,7 @@ class PersistentTreeMap(APersistentMap, IObj, Reversible):
         c = self.doCompare(key, t.key())
         return t.replace(t.key(),
                          val if c == 0 else t.val(),
-                         replace(t.left(), key, val) if c < 0 else t.left(),
+                         replace(t.left(), key, val) if c < 0 else t.left(),#FIXME: bare method replace needs instance or function definition
                          replace(t.right(), key, val) if c > 0 else t.right())
 
     def meta(self):

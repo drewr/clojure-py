@@ -1,11 +1,14 @@
 from clojure.lang.apersistentvector import APersistentVector
-from clojure.lang.cljexceptions import ArityException, IndexOutOfBoundsException, IllegalStateException
+from clojure.lang.cljexceptions import (ArityException,
+                                        IndexOutOfBoundsException,
+                                        IllegalStateException)
 from clojure.lang.atomicreference import AtomicReference
+
 
 class PersistentVector(APersistentVector):
     def __init__(self, *args):
         if len(args) == 4:
-            cnt, shift,    root, tail = args
+            cnt, shift, root, tail = args
             _meta = None
         elif len(args) == 5:
             _meta, cnt, shift, root, tail = args
@@ -16,7 +19,7 @@ class PersistentVector(APersistentVector):
         self.shift = shift
         self.root = root
         self.tail = tail
-        
+
     def __call__(self, idx):
         return self.nth(idx)
 
@@ -36,7 +39,7 @@ class PersistentVector(APersistentVector):
             return node.array
         raise IndexOutOfBoundsException()
 
-    def nth(self, i, notFound = None):
+    def nth(self, i, notFound=None):
         if 0 <= i < self.cnt:
             node = self.arrayFor(i)
             return node[i & 0x01f]
@@ -51,10 +54,12 @@ class PersistentVector(APersistentVector):
                 newTail = self.tail[:]
                 newTail[i & 0x01f] = val
 
-                return PersistentVector(self.meta(), self.cnt, self.shift, self.root, newTail)
+                return PersistentVector(self.meta(), self.cnt, self.shift,
+                                        self.root, newTail)
 
             n = doAssoc(self.shift, self.root, i, val)
-            return PersistentVector(self.meta(), self.cnt, self.shift, n , self.tail)
+            return PersistentVector(self.meta(), self.cnt, self.shift, n,
+                                    self.tail)
         if i == self.cnt:
             return self.cons(val)
 
@@ -64,13 +69,15 @@ class PersistentVector(APersistentVector):
         return self.cnt
 
     def withMeta(self, meta):
-        return PersistentVector(meta, self.cnt, self.shift, self.root, self.tail)
+        return PersistentVector(meta, self.cnt, self.shift, self.root,
+                                self.tail)
 
     def cons(self, val):
         if self.cnt - self.tailoff() < 32:
             newTail = self.tail[:]
             newTail.append(val)
-            return PersistentVector(self.meta(), self.cnt + 1, self.shift, self.root, newTail)
+            return PersistentVector(self.meta(), self.cnt + 1, self.shift,
+                                    self.root, newTail)
 
         tailnode = PersistentVector.Node(self.root.edit, self.tail)
         newshift = self.shift
@@ -82,7 +89,8 @@ class PersistentVector(APersistentVector):
         else:
             newroot = self.pushTail(self.shift, self.root, tailnode)
 
-        return PersistentVector(self.meta(), self.cnt + 1, newshift, newroot, [val])
+        return PersistentVector(self.meta(), self.cnt + 1, newshift, newroot,
+                                [val])
 
     def pushTail(self, level, parent, tailnode):
         subidx = ((self.cnt - 1) >> level) & 0x01f
@@ -92,9 +100,9 @@ class PersistentVector(APersistentVector):
             nodeToInsert = tailnode
         else:
             child = parent.array[subidx]
-            nodeToInsert = self.pushTail(level-5,child, tailnode) \
-                                if child is not None \
-                                else newPath(self.root.edit,level-5, tailnode)
+            nodeToInsert = (self.pushTail(level - 5, child, tailnode)
+                            if child is not None
+                            else newPath(self.root.edit, level - 5, tailnode))
         ret.array[subidx] = nodeToInsert
         return ret
 
@@ -106,10 +114,11 @@ class PersistentVector(APersistentVector):
             raise IllegalStateException("Can't pop empty vector")
         if self.cnt == 1:
             return EMPTY.withMeta(self.meta())
-        if self.cnt-self.tailoff() > 1:
+        if self.cnt - self.tailoff() > 1:
             newTail = self.tail[:]
             newTail.pop()
-            return PersistentVector(self.meta(), self.cnt - 1, self.shift, self.root, newTail)
+            return PersistentVector(self.meta(), self.cnt - 1, self.shift,
+                                    self.root, newTail)
 
         newtail = self.arrayFor(self.cnt - 2)
 
@@ -122,10 +131,11 @@ class PersistentVector(APersistentVector):
             newshift -= 5
         if newroot is None:
             pass
-        return PersistentVector(self.meta(), self.cnt - 1, newshift, newroot, newtail)
+        return PersistentVector(self.meta(), self.cnt - 1, newshift, newroot,
+                                newtail)
 
     def popTail(self, level, node):
-        subidx = ((self.cnt-2) >> level) & 0x01f
+        subidx = ((self.cnt - 2) >> level) & 0x01f
         if level > 5:
             newchild = self.popTail(level - 5, node.array[subidx])
             if newchild is None and not subidx:
@@ -146,27 +156,27 @@ class PersistentVector(APersistentVector):
         for x in range(len(self)):
             s.append(repr(self[x]))
         return "[" + " ".join(s) + "]"
-# 
-    # def __eq__(self, other):
-        # if other is self:
-            # return True
-        # if not hasattr(other, "__len__"):
-            # return False
-        # if not hasattr(other, "__getitem__"):
-            # return False
-# 
-        # if not len(self) == len(other):
-            # return False
-# 
-        # for x in range(len(self)):
-            # if self[x] != other[x]:
-                # return False
-# 
-        # return True
+
+#    def __eq__(self, other):
+#        if other is self:
+#            return True
+#        if not hasattr(other, "__len__"):
+#            return False
+#        if not hasattr(other, "__getitem__"):
+#            return False
+#
+#        if not len(self) == len(other):
+#            return False
+#
+#        for x in range(len(self)):
+#            if self[x] != other[x]:
+#                return False
+#
+#        return True
 
 
 class Node:
-    def __init__(self, edit, array = None):
+    def __init__(self, edit, array=None):
         self.edit = edit
         self.array = array if array is not None else [None] * 32
 
@@ -178,14 +188,16 @@ def newPath(edit, level, node):
     ret.array[0] = newPath(edit, level - 5, node)
     return ret
 
+
 def doAssoc(level, node, i, val):
-    ret = Node(node.edit,node.array[:])
+    ret = Node(node.edit, node.array[:])
     if not level:
         ret.array[i & 0x01f] = val
     else:
         subidx = (i >> level) & 0x01f
         ret.array[subidx] = doAssoc(level - 5, node.array[subidx], i, val)
     return ret
+
 
 def vec(seq):
     if isinstance(seq, APersistentVector):
