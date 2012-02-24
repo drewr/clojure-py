@@ -52,6 +52,7 @@ from clojure.lang.globals import currentCompiler
 import clojure.lang.rt as RT
 from clojure.lang.compiler import Compiler
 from clojure.lang.symbol import Symbol, symbol
+
 VERSION = "0.0.0"
 
 
