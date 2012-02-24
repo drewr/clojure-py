@@ -21,14 +21,39 @@ else:
         pass
     atexit.register(readline.write_history_file, histfile)
 
+import __builtin__
+import sys
+import os.path
+
+_old_import_ = __builtin__.__import__
+def import_hook(name, globals=None, locals=None, fromlist=None, level = -1):
+    try:
+        return _old_import_(name, globals, locals, fromlist, level)
+    except ImportError:
+        pass
+    
+   
+    conv = name.replace(".", "/")
+    for p in sys.path:
+        f = p + "/" + conv + ".clj"
+        if os.path.exists(f):
+            requireClj(f)
+            return _old_import_(name, globals, locals, fromlist, level)
+            
+    raise ImportError("module " + name + " not found")
+
+__builtin__.__import__ = import_hook
+    
+
+
 from clojure.lang.lispreader import read
 from clojure.lang.fileseq import StringReader
 from clojure.lang.globals import currentCompiler
 import clojure.lang.rt as RT
 from clojure.lang.compiler import Compiler
 from clojure.lang.symbol import Symbol, symbol
-
 VERSION = "0.0.0"
+
 
 
 def requireClj(filename, stopafter=None):
