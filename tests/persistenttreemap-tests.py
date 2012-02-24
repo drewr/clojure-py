@@ -1,7 +1,7 @@
 from random import randint, shuffle
 import unittest
 
-from py.clojure.lang.persistenttreemap import PersistentTreeMap
+from clojure.lang.persistenttreemap import PersistentTreeMap
 
 
 class PersistentTreeMapTests(unittest.TestCase):

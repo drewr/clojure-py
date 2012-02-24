@@ -3,18 +3,18 @@ import pprint
 from textwrap import dedent
 import unittest
 
-from clojure import requireClj
-from py.clojure.lang.compiler import Compiler
-from py.clojure.lang.fileseq import StringReader
-from py.clojure.lang.globals import currentCompiler
-from py.clojure.lang.lispreader import read
-import py.clojure.lang.rt as RT
-from py.clojure.lang.symbol import symbol
-from py.clojure.util.byteplay import Code, Label, SetLineno
-from py.clojure.lang.persistentlist import PersistentList
-from py.clojure.lang.persistentvector import PersistentVector
+from clojure.main import requireClj
+from clojure.lang.compiler import Compiler
+from clojure.lang.fileseq import StringReader
+from clojure.lang.globals import currentCompiler
+from clojure.lang.lispreader import read
+import clojure.lang.rt as RT
+from clojure.lang.symbol import symbol
+from clojure.util.byteplay import Code, Label, SetLineno
+from clojure.lang.persistentlist import PersistentList
+from clojure.lang.persistentvector import PersistentVector
 
-requireClj('./clj/clojure/core.clj')
+requireClj('./clojure/core.clj')
 
 
 class ClojureCoreTests(unittest.TestCase):
