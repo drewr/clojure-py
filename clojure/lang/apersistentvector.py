@@ -32,24 +32,26 @@ class SubVec(APersistentVector):
         self._meta = meta
         if isinstance(v, SubVec):
             start += v.start
-            end += sv.start
-            v = sv.v
+            end += v.start
+            v = v.v
         self.v = v
         self.start = start
         self.end = end
+
     def nth(self, i):
         if self.start + i >= self.end:
             raise Exception("Index out of range")
         return self.v.nth(self.start + i)
+
     def assocN(self, i, val):
-        if start + i > end:
+        if self.start + i > self.end:
             raise Exception("Index out of range")
-        elif start + i == end:
+        elif self.start + i == self.end:
             return self.cons(val)
         return SubVec(self._meta,
                       self.v.assocN(self.start + self.i, val),
-                      start,
-                      end)
+                      self.start,
+                      self.end)
 
     def __len__(self):
         return self.end - self.start
@@ -59,6 +61,7 @@ class SubVec(APersistentVector):
                       self.v.assocN(self.end, o),
                       self.start,
                       self.end + 1)
+
     def empty(self):
         from clojure.lang.persistentvector import EMPTY as EMPTY_VECTOR
         return EMPTY_VECTOR.withMeta(self.meta())

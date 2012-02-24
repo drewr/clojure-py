@@ -1,7 +1,10 @@
 from clojure.lang.areference import AReference
 from clojure.lang.atomicreference import AtomicReference
 from clojure.lang.persistenthashmap import EMPTY as EMPTY_MAP
-from clojure.lang.cljexceptions import InvalidArgumentException, IllegalStateException, ArityException
+from clojure.lang.cljexceptions import (InvalidArgumentException,
+                                        IllegalStateException,
+                                        ArityException,
+                                        IllegalArgumentException)
 import clojure.lang.rt as RT
 import sys, new
 

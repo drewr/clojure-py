@@ -132,12 +132,12 @@ def var(root=UKNOWN):
 
 
 def getThreadBindingFrame():
-    f = Val.dvals.get(lambda: Frame())
+    f = Val.dvals.get(lambda: Frame())#FIXME: Val undefined
     return f
 
 
 def cloneThreadBindingFrame():
-    f = Val.dvals.get(lambda: Frame()).clone()
+    f = Val.dvals.get(lambda: Frame()).clone()#FIXME: Val undefined
     return f
 
 
@@ -164,14 +164,14 @@ def find(sym):
 
 
 def intern(ns, name):
-    if isinstance(ns, Namespace):
+    if isinstance(ns, Namespace):#FIXME: Namespace doesn't appear to be defined anywhere
         return ns.intern(name)
-    ns = Namespace.findOrCreate(symbol(ns))
+    ns = Namespace.findOrCreate(symbol(ns))#FIXME: undefined Namespace
     return intern(ns, name)
 
 
 def internPrivate(nsName, sym):
-    ns = Namespace.findOrCreate(symbol(nsName))
+    ns = Namespace.findOrCreate(symbol(nsName))#FIXME: undefined Namespace
     ret = intern(ns, symbol(sym))
     ret.setMeta(Var.privateMeta)
     return ret

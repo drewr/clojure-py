@@ -144,11 +144,11 @@ def stringReader(rdr, doublequote):
                 ch = read1(rdr)
                 if digit(ch, 16) == -1:
                     raise ReaderException("Invalid unicode escape: \\u" + ch)
-                ch = readUnicodeChar(rdr, ch, 16, 4, True)
+                ch = readUnicodeChar(rdr, ch, 16, 4, True)#FIXME: readUnicodeVar undefined
             else:
                 if digit(ch, 8) == -1:
                     raise ReaderException("Unsupported escape character: \\" + ch)
-                ch = readUnicodeChar(rdr, ch, 8, 4, True)
+                ch = readUnicodeChar(rdr, ch, 8, 4, True)#FIXME: readUnicodeVar undefined
                 if ch > 0377:
                     raise ReaderException("Octal escape sequence must be in range [0, 377].")
         sb.append(ch)
@@ -203,7 +203,7 @@ def matchNumber(s):
         return int(str(float(s)))
     m = floatPat.match(s)
     if m is not None:
-        f = Float()
+        f = Float()#FIXME: Float undefined. Is it supposed to be imported from GMP?
         f.set(s)
         return f
     return None
@@ -233,7 +233,7 @@ class wrappingReader():
 
 
 def varReader():
-    return wrappingReader(THE_VAR)
+    return wrappingReader(THE_VAR)#FIXME: THE_VAR undefined
 
 def dispatchReader(rdr, hash):
     ch = read1(rdr)
@@ -459,7 +459,7 @@ class SyntaxQuoteReader():
                 raise IllegalStateException("splice not in list")
             elif isinstance(form, IPersistentCollection):
                 if isinstance(form, IPersistentMap):
-                    keyvals = flattenMap(form)
+                    keyvals = self.flattenMap(form)
                     ret = RT.list(_APPLY_, _HASHMAP_, RT.list(RT.cons(_CONCAT_, self.sqExpandList(keyvals.seq()))))
                 elif isinstance(form, (IPersistentVector, IPersistentSet)):
                     ret = RT.list(_APPLY_, _VECTOR_, RT.list(_SEQ_, RT.cons(_CONCAT_, self.sqExpandList(form.seq()))))
@@ -478,7 +478,7 @@ class SyntaxQuoteReader():
         if hasattr(form, "meta") and form.meta() is not None:
             newMeta = form.meta().without(LINE_KEY)
             if len(newMeta) > 0:
-                return RT.list(_WITH_META_, ret, self.syntaxQuote(form.meta()))
+                return RT.list(_WITH_META_, ret, self.syntaxQuote(form.meta()))#FIXME: _WITH_META_ undefined
         return ret
 
     def sqExpandList(self, seq):
@@ -496,7 +496,7 @@ class SyntaxQuoteReader():
 
     def flattenMap(self, m):
         keyvals = EMPTY_VECTOR
-        s = form.seq()
+        s = form.seq()#FIXME: undefined 'form'
         while s is not None:
             e = s.first()
             keyvals = keyvals.cons(e.getKey())

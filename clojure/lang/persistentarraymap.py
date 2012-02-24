@@ -33,15 +33,15 @@ class PersistentArrayMap(APersistentMap, IEditableCollection):
         i = self.indexOf(key)
         if i >= 0: # already have the key
             if self.array[i + 1] == val:
-                return this # no op
+                return self # no op
             newarray = self.array[:]
             newarray[i + 1] = val
         else:
             if len(self.array) > HASHTABLE_THRESHOLD:
-                return self.createHT(self.array).assoc(key, value)
+                return self.createHT(self.array).assoc(key, val)
             newarray = self.array[:]
             newarray.append(key)
-            newarray.append(value)
+            newarray.append(val)
 
         return create(newarray)
 
@@ -146,13 +146,13 @@ class TransientArrayMap(ATransientMap):
         i = self.indexOf(key)
         if i >= 0: # allready have the key
             if self.array[i + 1] == val:
-                return this #no op
+                return self #no op
             self.array[i + 1] = val
         else:
             if len(self.array) > HASHTABLE_THRESHOLD:
-                return create(self.array).asTransient().assoc(key, value)
+                return create(self.array).asTransient().assoc(key, val)
             self.array.append(key)
-            self.array.append(value)
+            self.array.append(val)
 
         return self
 
@@ -188,3 +188,5 @@ class TransientArrayMap(ATransientMap):
         if self.owner is None:
             raise IllegalAccessError("Transient used by non-owner thread")
         raise IllegalAccessError("Transient used after persistent! call")
+
+EMPTY = PersistentArrayMap()

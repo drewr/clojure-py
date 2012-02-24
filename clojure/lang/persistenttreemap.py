@@ -8,6 +8,7 @@ from clojure.lang.cljexceptions import (ArityException,
 from clojure.lang.comparator import Comparator
 from clojure.lang.iobj import IObj
 from clojure.lang.ipersistentmap import IPersistentMap
+from clojure.lang.iseq import ISeq
 from clojure.lang.reversible import Reversible
 import clojure.lang.rt as RT
 
@@ -324,7 +325,7 @@ EMPTY = PersistentTreeMap()
 
 
 def create(self, *args):
-    if len(args) == 1 and isinstance(args[0], Map):
+    if len(args) == 1 and isinstance(args[0], Map):#FIXME: Map undefined
         other = args[0]
         ret = EMPTY
         for o in other.entrySet():
@@ -435,7 +436,7 @@ class Black(Node):
         return self
 
     def redden(self):
-        return Red(key)
+        return Red(self.key)
 
     def replace(self, key, val, left, right):
         return black(key, val, left, right)

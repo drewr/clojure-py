@@ -10,7 +10,7 @@ def hashCombine(hash, seed):#FIXME - unused argument?
 
 
 def hasheq(o):
-    raise AbstractMethodCall(self)
+    raise AbstractMethodCall()
 
 
 def conjToAssoc(self, o):
