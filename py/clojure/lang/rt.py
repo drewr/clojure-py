@@ -53,10 +53,10 @@ def seq(obj):
         if len(obj) == 0:
             return None
         return IndexableSeq(obj, 0)
-        
+
     if hasattr(obj, "seq"):
         return obj.seq()
-    return NotSeq() 
+    return NotSeq()
 
 
 def first(obj):
@@ -64,7 +64,7 @@ def first(obj):
 
 
 def applyTo(fn, args):
-    return apply(fn, tuple(map(lambda x: x.first(),args)))
+    return apply(fn, tuple(map(lambda x: x.first(), args)))
 
 
 def booleanCast(obj):
@@ -79,7 +79,7 @@ def keys(obj):
 
 
 def vals(obj):
-    from py.clojure.lang.apersistentmap import createValSeq
+    from py.clojure.lang.apersistentmap import createValueSeq
     return createValueSeq(obj)
 
 
@@ -152,6 +152,8 @@ def getDefaultImports():
 
 
 id = AtomicInteger()
+
+
 def nextID():
     return id.getAndIncrement()
 

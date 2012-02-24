@@ -44,7 +44,7 @@ class APersistentMap(IPersistentMap):
                 pass
             yield s.first().getKey()
             s = s.next()
-            
+
 #    def __hash__(self):
 #        return mapHash(self)
 
@@ -53,6 +53,7 @@ class APersistentMap(IPersistentMap):
 
     def __contains__(self, item):
         return self.containsKey(item)
+
 
 def mapEquals(m1, m2):
     if m1 is m2:
@@ -71,6 +72,7 @@ def mapEquals(m1, m2):
         if s not in m2 or m2[s] != m1[s]:
             return False
     return True
+
 
 def mapHash(m):
     return reduce(lambda h, v: h + (0 if v.getKey() is None
@@ -106,6 +108,7 @@ class KeySeq(ASeq):
             yield s.first()
             s = s.next()
 
+
 def createKeySeq(s):
     if s is None:
         return None
@@ -136,6 +139,7 @@ class ValueSeq(ASeq):
         while s is not None:
             yield s.first()
             s = s.next()
+
 
 def createValueSeq(s):
     if s is None:
