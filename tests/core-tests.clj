@@ -442,3 +442,29 @@
              (assert-equal (.-i accum) i)
              (.inc accum))))
 
+(deftest class-tests
+    (assert-equal (class "f") py/str))
+
+(deftest num-tests
+    (assert-equal (num "1") 1))
+
+(deftest num-tests
+    (assert-true (float? (num "inf"))))
+
+(deftest number?-tests
+    (assert-true (number? 1)))
+
+(deftest read-string-tests
+    (assert-equal (read-string "12") 12))
+
+(deftest subvec-tests
+    (assert-equal (subvec [1 2 3 4] 1 3) [2 3]))
+
+(deftest doto-tests
+    (assert-equal (doto (py/list) (.append "foo") (.append "bar")) ["foo" "bar"]))
+
+(deftest memfn-tests
+    (assert-equal (let [f (memfn join ch)]
+                       (f "," ["1" "2"])) 
+                  "1,2"))
+

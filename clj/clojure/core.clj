@@ -2129,4 +2129,96 @@
    `(do ~@(map #(list 'clojure.core/import* (first %) (next %))
                 specs))))
 
+(defn class
+  "Returns the Class of x"
+  {:added "1.0"}
+  [x] (py/type x))
 
+(defn num
+  "Coerce to Number"
+  {:added "1.0"}
+  [x] (float x))
+
+(defn float?
+  "Returns true if n is a floating point number"
+  {:added "1.0"
+   :static true}
+  [n]
+  (instance? py/float n))
+
+(defn int?
+  "Returns true if n is a floating point number"
+  {:added "1.0"
+   :static true}
+  [n]
+  (instance? py/int n))
+
+(defn number?
+  "Returns true if x is a Number"
+  {:added "1.0"
+   :static true}
+  [x]
+  (or (float? x) (int? x)))
+
+(import '(py.clojure.lang.lispreader readString))
+
+(defn read-string
+  "Reads one object from the string s"
+  {:added "1.0"}
+  [s] (readString s))
+
+
+(defn subvec
+  "Returns a persistent vector of the items in vector from
+  start (inclusive) to end (exclusive).  If end is not supplied,
+  defaults to (count vector). This operation is O(1) and very fast, as
+  the resulting vector shares structure with the original and no
+  trimming is done."
+  {:added "1.0"}
+  ([v start]
+   (subvec v start (count v)))
+  ([v start end]
+   (. clojure.lang.rt (subvec v start end))))
+
+(defmacro doto
+  "Evaluates x then calls all of the methods and functions with the
+  value of x supplied at the front of the given arguments.  The forms
+  are evaluated in order.  Returns x.
+
+  (doto (new java.util.HashMap) (.put \"a\" 1) (.put \"b\" 2))"
+  {:added "1.0"}
+  [x & forms]
+    (let [gx (gensym)]
+      `(let [~gx ~x]
+         ~@(map (fn [f]
+                  (if (seq? f)
+                    `(~(first f) ~gx ~@(next f))
+                    `(~f ~gx)))
+                forms)
+         ~gx)))
+
+(defmacro memfn
+  "Expands into code that creates a fn that expects to be passed an
+  object and any args and calls the named instance method on the
+  object passing the args. Use when you want to treat a Java method as
+  a first-class fn."
+  {:added "1.0"}
+  [name & args]
+  `(fn [target# ~@args]
+     (. target# (~name ~@args))))
+
+(import '(time time))
+(def pytime time)
+
+(defmacro time
+  "Evaluates expr and prints the time it took.  Returns the value of
+ expr."
+  {:added "1.0"}
+  [expr]
+  `(let [start# (pytime)
+         ret# ~expr]
+     (py/print (str "Elapsed time: " (* (- (pytime) start#) 1000) " msecs"))
+     ret#))
+
+
+(import '(py.clojure.lang.compiler macroexpand))

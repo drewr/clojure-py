@@ -14,6 +14,7 @@ from py.clojure.lang.symbol import Symbol, symbol
 from py.clojure.lang.persistentvector import EMPTY as EMPTY_VECTOR
 from py.clojure.lang.globals import currentCompiler
 from py.clojure.lang.cljkeyword import Keyword, keyword
+from py.clojure.lang.fileseq import StringReader
 import re
 
 def read1(rdr):
@@ -79,6 +80,10 @@ chrLiterals = {'t': '\t',
                '\\': '\\',
                '"': '"',
                "f": '\f'}
+
+def readString(s):
+    r = StringReader(s)
+    return read(r, False, None, False)
 
 def read(rdr, eofIsError, eofValue, isRecursive):
     while True:

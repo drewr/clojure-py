@@ -12,4 +12,8 @@
             (do (fact 20)
                 (recur (dec rem))))))
 
-(test 200000)
+(time (test 20000000))
+
+;; on my machine
+;; clojure jvm : 25 sec
+;; clojure pypy : 48 sec

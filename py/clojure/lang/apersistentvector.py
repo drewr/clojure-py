@@ -38,9 +38,9 @@ class SubVec(APersistentVector):
         self.start = start
         self.end = end
     def nth(self, i):
-        if self.start + i >= end:
+        if self.start + i >= self.end:
             raise Exception("Index out of range")
-        return v.nth(self.start + i)
+        return self.v.nth(self.start + i)
     def assocN(self, i, val):
         if start + i > end:
             raise Exception("Index out of range")

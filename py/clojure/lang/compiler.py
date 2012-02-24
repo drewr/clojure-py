@@ -189,6 +189,7 @@ def compileLetStar(comp, form):
 
 def compileDot(comp, form):
     from py.clojure.lang.persistentlist import PersistentList
+    from py.clojure.lang.iseq import ISeq
 
     if len(form) != 3:
         raise CompilerException(". form must have two arguments", form)
@@ -199,7 +200,7 @@ def compileDot(comp, form):
     if isinstance(member, Symbol):
         attr = member.name
         args = []
-    elif isinstance(member, PersistentList):
+    elif isinstance(member, ISeq):
         if not isinstance(member.first(), Symbol):
             raise CompilerException("Member name must be symbol")
         attr = member.first().name
@@ -636,6 +637,8 @@ def compileLetMacro(comp, form):
     comp.popAliases(syms)
     return code
 
+def compileCompiler(comp, form):
+    return [(LOAD_CONST, comp)]
 
 
 builtins = {symbol("ns"): compileNS,
@@ -652,7 +655,8 @@ builtins = {symbol("ns"): compileNS,
             symbol("is?"): compileIs,
             symbol("throw"): compileThrow,
             symbol("apply"): compileApply,
-            symbol("let-macro"): compileLetMacro}
+            symbol("let-macro"): compileLetMacro,
+            symbol("__compiler__"): compileCompiler}
 
 
 """
@@ -764,6 +768,33 @@ def evalForm(form, ns):
     code = comp.compile(form)
     return comp.executeCode(code)
     
+def macroexpand(form, comp, one = False):
+    if isinstance(form.first(), Symbol):
+        macro = findItem(comp.getNS(), form.first())
+        # Handle macros here
+        # TODO: Break this out into a seperate function
+        if macro is not None:
+            if not isinstance(macro, type) \
+            and (hasattr(macro, "meta") and macro.meta()[_MACRO_])\
+            or (hasattr(macro, "macro?") and getattr(macro, "macro?")):
+                args = RT.seqToTuple(form.next())
+                
+                macroform = macro
+                if hasattr(macro, "_macro-form"):
+                    macroform = getattr(macro, "_macro-form")
+    
+                mresult = macro(macroform, None, *args)
+                
+                if hasattr(mresult, "withMeta") \
+                   and hasattr(form, "meta"):
+                    mresult = mresult.withMeta(form.meta())
+                    
+                if one:
+                    return mresult
+                else:
+                    return comp.compile(mresult)
+    return None
+    
 class Compiler():
     def __init__(self):
         self.recurPoint = RT.list()
@@ -852,27 +883,9 @@ class Compiler():
     def compileForm(self, form):
         if form.first() in builtins:
             return builtins[form.first()](self, form)
-        if isinstance(form.first(), Symbol):
-            macro = findItem(self.getNS(), form.first())
-            # Handle macros here
-            # TODO: Break this out into a seperate function
-            if macro is not None:
-                if not isinstance(macro, type) \
-		        and (hasattr(macro, "meta") and macro.meta()[_MACRO_])\
-                or (hasattr(macro, "macro?") and getattr(macro, "macro?")):
-                    args = RT.seqToTuple(form.next())
-                    
-                    macroform = macro
-                    if hasattr(macro, "_macro-form"):
-                    	macroform = getattr(macro, "_macro-form")
-
-                    mresult = macro(macroform, self, *args)
-                    
-                    if hasattr(mresult, "withMeta") \
-                       and hasattr(form, "meta"):
-                        mresult = mresult.withMeta(form.meta())
-                    s = repr(mresult)
-                    return self.compile(mresult)
+        c = macroexpand(form, self)
+        if c:
+            return c
         if isinstance(form.first(), Symbol):
             if form.first().ns == "py.bytecode":
                 return compileBytecode(self, form)
