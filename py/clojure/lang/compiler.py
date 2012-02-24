@@ -136,7 +136,7 @@ def compileLoopStar(comp, form):
     form = form.next()
     recurlabel = Label("recurLabel")
     recur = {"label": recurlabel,
-             "args": map(lambda x: x.name, args)}
+             "args": map(lambda x: comp.getAlias(x).compileSet(comp), args)}
     code.append((recurlabel, None))
     comp.pushRecur(recur)
     code.extend(compileImplcitDo(comp, form))
@@ -314,8 +314,10 @@ def compileFn(comp, name, form, orgform):
         code.extend(cleanRest(argsname.name))
 
     recurlabel = Label("recurLabel")
+
     recur = {"label": recurlabel,
-             "args": args}
+    "args": map(lambda x: comp.getAlias(symbol(x)).compileSet(comp), args)}
+
     code.append((recurlabel, None))
     comp.pushRecur(recur)
     code.extend(compileImplcitDo(comp, form.next()))
@@ -384,8 +386,10 @@ class MultiFn(object):
             comp.pushAlias(x, FnArgument(x))
 
         recurlabel = Label("recurLabel")
+
         recur = {"label": recurlabel,
-                 "args": self.args}
+        "args": map(lambda x: comp.getAlias(symbol(x)).compileSet(comp), self.args)}
+        
         bodycode = [(recurlabel, None)]
         comp.pushRecur(recur)
         bodycode.extend(compileImplcitDo(comp, body))
@@ -520,21 +524,18 @@ def compileRecur(comp, form):
     s = form.next()
     idx = 0
     code = []
-    locals = []
     while s is not None:
         code.extend(comp.compile(s.first()))
         if idx >= len(comp.recurPoint.first()["args"]):
             raise CompilerException("to many arguments to recur", form)
-        local = comp.recurPoint.first()["args"][idx]
-        local = comp.getAlias(symbol(local))
-        if local is None:
-            pass
-        locals.append(local)
+
         idx += 1
         s = s.next()
-    locals.reverse()
-    for x in locals:
-        code.extend(x.compileSet(comp))
+        
+    sets = comp.recurPoint.first()["args"][:]
+    sets.reverse()
+    for x in sets:
+        code.extend(x)
     code.append((JUMP_ABSOLUTE, comp.recurPoint.first()["label"]))
     return code
 

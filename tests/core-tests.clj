@@ -410,11 +410,11 @@
     (inc [self] (py/setattr self "i" (inc i))))
 
 
-;(deftest dorun-tests
-;    (let [accum (Accum 0)]
-;         (dorun (map (fn [x] (.inc accum))
-;                     (range 10)))
-;         (assert-equal (.-i accum) 10)))
+(deftest dorun-tests
+    (let [accum (Accum 0)]
+         (dorun (map (fn [x] (.inc accum))
+                     (range 10)))
+         (assert-equal (.-i accum) 10)))
 
 (deftest nthnext-tests
     (assert-equal (nthnext (range 10) 3) '(3 4 5 6 7 8 9)))
@@ -429,17 +429,16 @@
 (deftest eval-tests
     (assert-equal (eval '(+ 1 2)) 3))
 
-;(deftest doseq-tests
-;    (assert-equal (doseq [x [1 2 3]
-;                          y [1 2 3]]
-;                         (print (* x y)))))
+(deftest doseq-tests
+    (doseq [x [1 2 3]
+                          y [1 2 3]]
+                         (print (* x y))))
 ;; prints      
 ;;[1 2 3 2 4 6 3 6 9]
 
-;(deftest do-times
-;    (let [accum (Accum 0)]
-;         (dotimes [i 5]
-;             (assert-equal (.-i accum) i)
-;             (.inc accum))))
+(deftest do-times
+    (let [accum (Accum 0)]
+         (dotimes [i 5]
+             (assert-equal (.-i accum) i)
+             (.inc accum))))
 
-1

@@ -2051,7 +2051,7 @@
                            needrec (steppair 0)
                            subform (steppair 1)
                            recform-chunk 
-                             `(recur ~seq- ~chunk- ~count- (unchecked-inc ~i-))
+                             `(recur ~seq- ~chunk- ~count- (inc ~i-))
                            steppair-chunk (step recform-chunk (nnext exprs))
                            subform-chunk (steppair-chunk 1)]
                        [true
@@ -2088,7 +2088,7 @@
        (loop [~i 0]
          (when (< ~i n#)
            ~@body
-           (recur ~i))))))
+           (recur (inc ~i)))))))
 
 ;redef into with batch support
 (defn ^:private into1
