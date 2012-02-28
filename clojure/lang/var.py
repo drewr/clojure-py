@@ -85,6 +85,7 @@ class Var(ARef, Settable, IFn, IRef):
         oldroot = self.root
         self.root = root
         self.rev += 1
+        return self
 
     def deref(self):
         b = self.getThreadBinding()

@@ -5,7 +5,7 @@ from clojure.lang.persistentvector import PersistentVector
 from clojure.lang.ipersistentvector import IPersistentVector
 from clojure.lang.ipersistentmap import IPersistentMap
 from clojure.lang.ipersistentlist import IPersistentList
-from clojure.lang.var import Var, define
+from clojure.lang.var import Var, define, intern as internVar, var as createVar
 from clojure.util.byteplay import *
 import clojure.util.byteplay as byteplay
 from clojure.lang.cljkeyword import Keyword, keyword
@@ -58,18 +58,13 @@ def compileDef(comp, form):
     comp.pushName(sym.name)
 
     code = []
-    code.append((LOAD_CONST, define))
-    code.append((LOAD_CONST, comp.getNS()))
-    code.append((LOAD_CONST, sym))
+    v = internVar(comp.getNS(), sym)
+    v.setMeta(sym.meta())
+    code.append((LOAD_CONST, v))
+    code.append((LOAD_ATTR, "bindRoot"))
     code.extend(comp.compile(value))
-    code.append((CALL_FUNCTION, 3))
+    code.append((CALL_FUNCTION, 1))
 
-
-    if sym.meta() is not None:
-        code.extend(comp.compileAccessList(symbol("clojure.lang.rt", "setMeta")))
-        code.append((ROT_TWO, 0))
-        code.append((LOAD_CONST, sym.meta()))
-        code.append((CALL_FUNCTION, 2))
 
     comp.popName()
     return code
@@ -347,7 +342,7 @@ def compileFn(comp, name, form, orgform):
     if not clist:
         c = new.function(c.to_code(), comp.ns.__dict__, name.name)
 
-    return [(LOAD_CONST, c)]
+    return [(LOAD_CONST, c)], c
     
 def cleanRest(name):
     label = Label("isclean")
@@ -418,7 +413,6 @@ class MultiFn(object):
 
 
 def compileMultiFn(comp, name, form):
-    from clojure.lang.var import var as createVar
     s = form
     argdefs = []
     selfreference = createVar()
@@ -453,10 +447,8 @@ def compileMultiFn(comp, name, form):
     if not clist:
         c = new.function(c.to_code(), comp.ns.__dict__, name.name)
 
-    selfreference.bindRoot(c)
-    comp.popAlias(symbol(name))
     
-    return [(LOAD_CONST, c)]
+    return [(LOAD_CONST, c)], c
 
 def compileImplcitDo(comp, form):
     code = []
@@ -474,11 +466,12 @@ def compileImplcitDo(comp, form):
 def compileFNStar(comp, form):
     haslocalcaptures = False
     aliases = []
-    if len(comp.aliases) > 0: # we got a closure to deal with
+    if len(comp.aliases) > 0: # we might have closures to deal with
         for x in comp.aliases:
             comp.pushAlias(x, Closure(x))
             aliases.append(x)
         haslocalcaptures = True
+        
 
     orgform = form
     if len(form) < 2:
@@ -495,15 +488,14 @@ def compileFNStar(comp, form):
         form = form.next()
 
     name = symbol(name)
-    gensym = symbol("_"+name.name + str(RT.nextID()))
-
-    if haslocalcaptures:
-        comp.pushAlias(name, LocalMacro(name, gensym))
+    
+    selfreference = createVar()
+    comp.pushAlias(symbol(name), SelfReference(selfreference))
 
     if isinstance(form.first(), IPersistentVector):
-        code = compileFn(comp, name, form, orgform)
+        code, ptr = compileFn(comp, name, form, orgform)
     else:
-        code = compileMultiFn(comp, name, form)
+        code, ptr = compileMultiFn(comp, name, form)
 
 
 
@@ -512,9 +504,6 @@ def compileFNStar(comp, form):
 
     clist = comp.closureList()
     fcode = []
-
-    if haslocalcaptures:
-	comp.popAlias(name)
 
     if haslocalcaptures:
         comp.popAliases(aliases)
@@ -529,9 +518,8 @@ def compileFNStar(comp, form):
         fcode.append((MAKE_CLOSURE, 0))
         code = fcode
 
-    if haslocalcaptures:
-        code.append((DUP_TOP, None))
-        code.append((STORE_GLOBAL, gensym.name))
+    selfreference.bindRoot(ptr)
+    comp.popAlias(symbol(name))
 
     return code
 
@@ -797,7 +785,7 @@ def evalForm(form, ns):
     
 def ismacro(macro):
     if not isinstance(macro, type) \
-            and (hasattr(macro, "meta") and macro.meta()[_MACRO_])\
+            and (hasattr(macro, "meta") and macro.meta() and macro.meta()[_MACRO_])\
             or (hasattr(macro, "macro?") and getattr(macro, "macro?")):
             return True
             

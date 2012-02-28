@@ -586,7 +586,7 @@
     "Creates a new clas with the given name, that is inherited from
     classes and has the given member functions."
     [name classes members]
-    (py/type (.-name name) (apply tuple (conj classes py/object)) (.toDict members)))
+    (py/type (.-name name) (apply py/tuple (conj classes py/object)) (.toDict members)))
 
 (defn make-init
     "Creates a __init__ method for use in deftype"
@@ -611,7 +611,7 @@
            props
            (recur (next remain) 
                   (conj (conj props (first remain))
-                        (list 'getattr selfname (.-name (first remain))))))))
+                        (list 'py/getattr selfname (.-name (first remain))))))))
 
 (defn prop-wrap-fn
     [members f]
@@ -655,7 +655,7 @@
     [name fields & specs]
     (loop [specs (seq specs)
            inherits []
-           fns (if (= (len fields) 0) {} {"__init__" (make-init fields)})]
+           fns (if (= (py/len fields) 0) {} {"__init__" (make-init fields)})]
           (cond (not specs)
                     (list 'def name (list 'py/type (.-name name) 
                                                    (list 'py/tuple 
@@ -685,8 +685,8 @@
 		(LazySeq nil nil (.seq self) meta))
 	(sval [self]
 		(when (not (nil? fnc))
-			  (setattr self "sv" (fnc))
-			  (setattr self "fnc" nil))
+			  (py/setattr self "sv" (fnc))
+			  (py/setattr self "fnc" nil))
 		(py/if (not (nil? sv))
 			sv
 		s))
@@ -695,8 +695,8 @@
 		(.sval self)
 		(when (not (nil? sv))
 		      (let [ls sv]
-		           (setattr self "sv" nil)
-          		   (setattr self "s"
+		           (py/setattr self "sv" nil)
+          		   (py/setattr self "s"
        		 	 	         (loop [ls ls]
 					   (py/if (instance? LazySeq ls)
 					          (recur (.sval ls))
@@ -768,7 +768,7 @@
   seq calls. See also - realized?"
   {:added "1.0"}
   [& body]
-  (list 'clojure.core.LazySeq (list* '^{:once true} fn* [] body) nil nil nil))    
+  (list 'clojure.core/LazySeq (list* '^{:once true} fn* [] body) nil nil nil))    
 
 
 (definterface IChunkedSeq [] 
@@ -780,15 +780,6 @@
 	(chunkedMore [self] nil))
 
 
-(deftype ChunkBuffer [buffer end]
-    (add [self o]
-        (py.bytecode/STORE_SUBSCR o buffer end)
-        (setattr self "end" (inc end)))
-    (chunk [self]
-        (let [ret (ArrayChunk buffer 0 end)]
-             (setattr self "buffer" nil)
-             ret))
-    (__len__ [self] end))
 
 (deftype ArrayChunk [array off end]
     (__getitem__ 
@@ -818,6 +809,15 @@
              ret))))
 
 
+(deftype ChunkBuffer [buffer end]
+    (add [self o]
+        (py.bytecode/STORE_SUBSCR o buffer end)
+        (py/setattr self "end" (inc end)))
+    (chunk [self]
+        (let [ret (ArrayChunk buffer 0 end)]
+             (py/setattr self "buffer" nil)
+             ret))
+    (__len__ [self] end))
 
 (deftype ChunkedCons [_meta chunk _more]
 
@@ -837,7 +837,7 @@
 	      (.chunkedNext self)))
 
 	(more [self]
-	  (cond (py.bytecode/COMPARE_OP ">" (len chunk) 1)
+	  (cond (py.bytecode/COMPARE_OP ">" (py/len chunk) 1)
 		        (ChunkedCons nil (.dropFirst chunk) _more)
 		    (py.bytecode/COMPARE_OP "is" _more nil)
 		        '()
@@ -2109,7 +2109,7 @@
     (let [module (.-name module)
           copies (map #(list 'py.bytecode/STORE_GLOBAL
                              (name %)
-                             (list 'getattr 'itms (name %)))
+                             (list 'py/getattr 'itms (name %)))
                         syms)
           symnames (list* (map name syms))]
                   
