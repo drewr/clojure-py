@@ -93,7 +93,7 @@ def requireClj(filename, stopafter=None):
 
 
 def main():
-    requireClj(os.path.dirname(__file__) + "/core.clj")
+    requireClj(os.path.dirname(__file__) + "/core.clj", "defmacro")
 
     RT.init()
     comp = Compiler()

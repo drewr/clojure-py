@@ -46,8 +46,7 @@
  ^{:macro true
    :added "1.0"}
  fn (fn* fn [&form &env & decl] 
-         (.withMeta (cons 'fn* decl) 
-                    (.meta &form))))
+         (cons 'fn* decl)))
 
 (def
     ^{:arglists '([& args])
@@ -56,7 +55,7 @@
  _assoc (fn* assoc [col k v]
                    (py/if col
                       (.assoc col k v)
-                      (clojure.lang.rt.map k v))))
+                      (clojure.lang.rt/map k v))))
 
 (def
  ^{:arglists '(^clojure.lang.ISeq [coll])
@@ -81,7 +80,7 @@
    :doc "Return true if x implements ISeq"
    :added "1.0"
    :static true}
- seq? (fn seq? [x] (instance? clojure.lang.iseq.ISeq x)))
+ seq? (fn seq? [x] (instance? clojure.lang.iseq/ISeq x)))
 
 (def
  ^{:arglists '([coll])
@@ -126,7 +125,7 @@
                        (let [s (seq x)]
                            (py/if s
                                (.more s)
-                               clojure.lang.persistentlist.EMPTY)))))
+                               clojure.lang.persistentlist/EMPTY)))))
 
 (def
  ^{:doc "Same as (first (next x))"
@@ -175,14 +174,14 @@
    :doc "Return true if x implements IPersistentMap"
    :added "1.0"
    :static true}
- map? (fn ^:static map? [x] (instance? clojure.lang.ipersistentmap.IPersistentMap x)))
+ map? (fn ^:static map? [x] (instance? clojure.lang.ipersistentmap/IPersistentMap x)))
 
 (def
  ^{:arglists '([x])
    :doc "Return true if x implements IPersistentVector"
    :added "1.0"
    :static true}
- vector? (fn vector? [x] (instance? clojure.lang.ipersistentvector.IPersistentVector x)))
+ vector? (fn vector? [x] (instance? clojure.lang.ipersistentvector/IPersistentVector x)))
 
 (def
  ^{:arglists '([map key val] [map key val & kvs])
@@ -240,7 +239,7 @@
    :doc "Clojure version of RT.conj"
    :added "1.0"}
  _conj (fn _conj [coll x] (py/if (nil? coll)
-                            clojure.lang.persistentlist.EMPTY
+                            clojure.lang.persistentlist/EMPTY
                             (.cons coll x))))
 
 
@@ -289,7 +288,7 @@
            (let [arglist (first fdecl)
                  ;elide implicit macro args
                  arglist (py/if (.__eq__ '&form (first arglist)) 
-                           (clojure.lang.rt.subvec arglist 2 (py/len arglist))
+                           (clojure.lang.rt/subvec arglist 2 (py/len arglist))
                            arglist)
                  body (next fdecl)]
              (py/if (map? (first body))
@@ -343,9 +342,9 @@
                       iname (second inline)]
                   ;; same as: (py/if (and (= 'fn ifn) (not (symbol? iname))) ...)
                   (py/if (py/if (.__eq__ 'fn ifn)
-                        (py/if (instance? clojure.lang.symbol.Symbol iname) false true))
+                        (py/if (instance? clojure.lang.symbol/Symbol iname) false true))
                     ;; inserts the same fn name to the inline fn if it does not have one
-                    (assoc m :inline (cons ifn (cons (clojure.lang.symbol.Symbol/intern (.concat (.getName name) "__inliner"))
+                    (assoc m :inline (cons ifn (cons (clojure.lang.symbol/intern (.concat (.getName name) "__inliner"))
                                                      (next inline))))
                     m))
               m (conj (py/if (meta name) (meta name) {}) m)
@@ -365,7 +364,7 @@
   ([coll]
     (py/if (nil? coll)
         nil
-        (clojure.lang.persistentvector.vec coll))))
+        (clojure.lang.persistentvector/vec coll))))
 
 (def
  ^{:doc "Like defn, but the resulting function name is declared as a
@@ -464,19 +463,19 @@
 (defn symbol?
   "Return true if x is a Symbol"
   {:added "1.0"}
-  [x] (instance? clojure.lang.symbol.Symbol x))
+  [x] (instance? clojure.lang.symbol/Symbol x))
 
 (defn keyword?
   "Return true if x is a Keyword"
   {:added "1.0"}
-  [x] (instance? clojure.lang.cljkeyword.Keyword x))
+  [x] (instance? clojure.lang.cljkeyword/Keyword x))
 
 (defn symbol
   "Returns a Symbol with the given namespace and name."
   {:tag clojure.lang.Symbol
    :added "1.0"}
-  ([name] (py/if (symbol? name) name (clojure.lang.symbol.Symbol.intern name)))
-  ([ns name] (clojure.lang.symbol.Symbol.intern ns name)))
+  ([name] (py/if (symbol? name) name (clojure.lang.symbol/intern name)))
+  ([ns name] (clojure.lang.symbol/intern ns name)))
 
 
 (defn inc
@@ -530,7 +529,7 @@
       (list 'py/if (first clauses)
             (py/if (next clauses)
                 (second clauses)
-                (throw (IllegalArgumentException.
+                (throw (IllegalArgumentException
                          "cond requires an even number of forms")))
             (cons 'clojure.core/cond (next (next clauses))))))
 
@@ -666,12 +665,14 @@
                     (recur (next specs) 
                            (conj inherits (first specs))
                            fns)
-                (instance? clojure.lang.ipersistentlist.IPersistentList (first specs))
+                (instance? clojure.lang.ipersistentlist/IPersistentList
+ (first specs))
                     (recur (next specs)
                            inherits
                            (assoc fns (py/str (ffirst specs))
                            	   	      (prop-wrap fields (first specs)))))))
-(def definterface deftype) 
+(def definterface deftype)
+(set-macro definterface)
 
 ;;;;;;;;;;;;;;;;;Lazy Seq and Chunked Seq;;;;;;;;;;;;;;;;
 
@@ -689,7 +690,7 @@
 		(py/if (not (nil? sv))
 			sv
 		s))
-	clojure.lang.iseq.ISeq
+	clojure.lang.iseq/ISeq
 	(seq [self]
 		(.sval self)
 		(when (not (nil? sv))
@@ -771,8 +772,9 @@
 
 
 (definterface IChunkedSeq [] 
-	clojure.lang.sequential.Sequential
-	clojure.lang.iseq.ISeq
+	clojure.lang.sequential/Sequential
+
+	clojure.lang.iseq/ISeq
 	(chunkedFirst [self] nil)
 	(chunkedNext [self] nil)
 	(chunkedMore [self] nil))
@@ -819,7 +821,8 @@
 
 (deftype ChunkedCons [_meta chunk _more]
 
-	clojure.lang.aseq.ASeq
+	clojure.lang.aseq/ASeq
+
 	(first [self]
 	       (py.bytecode/BINARY_SUBSCR chunk 0))
 	(withMeta [self meta]
@@ -1279,7 +1282,8 @@
 (defn list?
   "Returns true if x implements IPersistentList"
   {:added "1.0"}
-  [x] (instance? clojure.lang.ipersistentlist.IPersistentList x))
+  [x] (instance? clojure.lang.ipersistentlist/IPersistentList
+ x))
 
 (defn set?
   "Returns true if x implements IPersistentSet"

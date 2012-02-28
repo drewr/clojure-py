@@ -81,7 +81,6 @@ class Var(ARef, Settable, IFn, IRef):
         return not isinstance(self.root, Unbound)
 
     def bindRoot(self, root):
-        import rt as RT
         self.validate(self.getValidator(), root)
         oldroot = self.root
         self.root = root
@@ -109,12 +108,6 @@ class Var(ARef, Settable, IFn, IRef):
 
     def __call__(self, *args):
         return self.deref()(*args)
-
-    def __getitem__(self, item):
-        return self.deref().__getitem__(item)
-
-    def __str__(self):
-        return str(self.deref())
 
     def __repr__(self):
         if self.ns is not None:
@@ -164,10 +157,18 @@ def find(sym):
 
 
 def intern(ns, name):
-    if isinstance(ns, Namespace):#FIXME: Namespace doesn't appear to be defined anywhere
-        return ns.intern(name)
-    ns = Namespace.findOrCreate(symbol(ns))#FIXME: undefined Namespace
-    return intern(ns, name)
+    from namespace import findOrCreate, intern as nsintern
+    import new 
+    
+    if isinstance(ns, new.module):
+        return nsintern(ns, name)
+    ns = findOrCreate(symbol(ns))
+    return nsintern(ns, name)
+    
+def define(ns, name, root):
+    v = intern(ns, name)
+    v.bindRoot(root)
+    return v
 
 
 def internPrivate(nsName, sym):
