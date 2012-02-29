@@ -107,9 +107,6 @@ class Var(ARef, Settable, IFn, IRef):
     def setMacro(self):
         self.alterMeta(lambda x, y, z: x.assoc(y, z), macrokey, True)
 
-    def __call__(self, *args):
-        return self.deref()(*args)
-
     def __repr__(self):
         if self.ns is not None:
             return "#" + str(self.ns.__name__) + "/" + str(self.sym)

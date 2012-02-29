@@ -79,9 +79,9 @@ def compileBytecode(comp, form):
     arg = None
     if hasarg:
         arg = form.first()
-        if not isinstance(arg, (int, str)) \
+        if not isinstance(arg, (int, str, unicode)) \
            and bc is not LOAD_CONST:
-            raise CompilerException("first argument to "+ codename + " must be int or str", form)
+            raise CompilerException("first argument to "+ codename + " must be int, unicode, or str", form)
         
         arg = evalForm(arg, comp.getNS().__name__)
         form = form.next()
@@ -415,8 +415,6 @@ class MultiFn(object):
 def compileMultiFn(comp, name, form):
     s = form
     argdefs = []
-    selfreference = createVar()
-    comp.pushAlias(symbol(name), SelfReference(selfreference))
     
     while s is not None:
         argdefs.append(MultiFn(comp, s.first()))
@@ -468,6 +466,7 @@ def compileFNStar(comp, form):
     aliases = []
     if len(comp.aliases) > 0: # we might have closures to deal with
         for x in comp.aliases:
+            
             comp.pushAlias(x, Closure(x))
             aliases.append(x)
         haslocalcaptures = True
@@ -489,15 +488,21 @@ def compileFNStar(comp, form):
 
     name = symbol(name)
     
-    selfreference = createVar()
-    comp.pushAlias(symbol(name), SelfReference(selfreference))
+    # This is fun stuff here. The idea is that we want closures to be able
+    # to call themselves. But we can't get a pointer to a closure until after
+    # it's created, which is when we actually run this code. So, we're going to
+    # create a tmp local that is None at first, then pass that in as a possible
+    # closure cell. Then after we create the closure with MAKE_CLOSURE we'll 
+    # populate this var with the correct value
+    
+    selfalias = Closure(name)
+    
+    comp.pushAlias(name, selfalias)
 
     if isinstance(form.first(), IPersistentVector):
         code, ptr = compileFn(comp, name, form, orgform)
     else:
         code, ptr = compileMultiFn(comp, name, form)
-
-
 
     if pushed:
         comp.popName()
@@ -510,16 +515,27 @@ def compileFNStar(comp, form):
 
     if clist:
         for x in clist:
-            fcode.extend(comp.getAlias(x.sym).compile(comp))  # Load our local version
-            fcode.append((STORE_DEREF, x.sym.name))            # Store it in a Closure Cell
+            if x is not selfalias:   #we'll populate selfalias later
+                fcode.extend(comp.getAlias(x.sym).compile(comp))  # Load our local version
+                fcode.append((STORE_DEREF, x.sym.name))            # Store it in a Closure Cell
             fcode.append((LOAD_CLOSURE, x.sym.name))           # Push the cell on the stack
         fcode.append((BUILD_TUPLE, len(clist)))
         fcode.extend(code)
         fcode.append((MAKE_CLOSURE, 0))
         code = fcode
 
-    selfreference.bindRoot(ptr)
-    comp.popAlias(symbol(name))
+    if selfalias in clist:
+        prefix = []
+        prefix.append((LOAD_CONST, None))
+        prefix.extend(selfalias.compileSet(comp))
+        prefix.extend(code)
+        code = prefix
+        code.append((DUP_TOP, None))
+        code.extend(selfalias.compileSet(comp))
+
+    print code
+    comp.popAlias(symbol(name)) #closure
+
 
     return code
 
@@ -735,6 +751,8 @@ class Closure(AAlias):
     def compile(self, comp):
         self.isused = True
         return [(LOAD_DEREF, self.sym.name)]
+    def compileSet(self, comp):
+        return [(STORE_DEREF, self.sym.name)]
 
 
 class LocalMacro(AAlias):
@@ -751,7 +769,9 @@ class SelfReference(AAlias):
     def __init__(self, var, rest = None):
         AAlias.__init__(self, rest)
         self.var = var
+        self.isused = False
     def compile(self, comp):
+        self.isused = True
         return [(LOAD_CONST, self.var),
                 (LOAD_ATTR, "deref"),
                 (CALL_FUNCTION, 0)]
@@ -953,7 +973,17 @@ class Compiler():
         splt = []
         if sym.ns is not None:
             module = findNamespace(sym.ns) 
-            splt.append((LOAD_CONST, module))
+            if not hasattr(module, sym.name):
+                raise CompilerException(str(module) + " does not define " + sym.name, None)
+            attr = getattr(module, sym.name)
+            if isinstance(attr, Var):
+                splt.append((LOAD_CONST, attr))
+                splt.append((LOAD_ATTR, "deref"))
+                splt.append((CALL_FUNCTION, 0))
+            else:
+                splt.append((LOAD_CONST, module))
+                splt.append((LOAD_ATTR, sym.name))
+            return splt
             
         code = LOAD_ATTR if sym.ns else LOAD_GLOBAL
         if not sym.ns and sym.name.find(".") != -1 and sym.name != "..":
@@ -1018,6 +1048,8 @@ class Compiler():
         elif isinstance(itm, bool):
             c.extend(compileBool(self, itm))
         elif isinstance(itm, EmptyList):
+            c.append((LOAD_CONST, itm))
+        elif isinstance(itm, unicode):
             c.append((LOAD_CONST, itm))
         else:
             raise CompilerException("Don't know how to compile" + str(type(itm)), None)

@@ -57,7 +57,7 @@ def symbol(*args):
             return a
         idx = a.rfind("/")
         if idx == -1 or a == "/":
-            return Symbol(None, intern(a))
+            return Symbol(None, a)
         else:
             return Symbol(a[idx:], a[:idx + 1])
     elif len(args) == 2:

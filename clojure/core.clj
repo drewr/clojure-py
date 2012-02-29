@@ -344,7 +344,7 @@
                   (py/if (py/if (.__eq__ 'fn ifn)
                         (py/if (instance? clojure.lang.symbol/Symbol iname) false true))
                     ;; inserts the same fn name to the inline fn if it does not have one
-                    (assoc m :inline (cons ifn (cons (clojure.lang.symbol/intern (.concat (.getName name) "__inliner"))
+                    (assoc m :inline (cons ifn (cons (clojure.lang.symbol/symbol (.concat (.getName name) "__inliner"))
                                                      (next inline))))
                     m))
               m (conj (py/if (meta name) (meta name) {}) m)
@@ -474,8 +474,8 @@
   "Returns a Symbol with the given namespace and name."
   {:tag clojure.lang.Symbol
    :added "1.0"}
-  ([name] (py/if (symbol? name) name (clojure.lang.symbol/intern name)))
-  ([ns name] (clojure.lang.symbol/intern ns name)))
+  ([name] (py/if (symbol? name) name (clojure.lang.symbol/symbol name)))
+  ([ns name] (clojure.lang.symbol/symbol ns name)))
 
 
 (defn inc
@@ -614,9 +614,9 @@
                         (list 'py/getattr selfname (.-name (first remain))))))))
 
 (defn prop-wrap-fn
-    [members f]
+    [name members f]
     (list 'fn 
- 	  (first f) 
+ 	  (clojure.lang.symbol/symbol (str name "_" (first f))) 
 	  (second f)
           (list* 'let-macro 
 		(make-props members 
@@ -624,8 +624,8 @@
 		(next (next f)))))
 
 (defn prop-wrap-multi
-    [members f]
-    (let [name (first f)
+    [name members f]
+    (let [name (clojure.lang.symbol/symbol (str name "_" (first f))) 
           f (next f)
           wrapped (loop [remain f
                          wr []]
@@ -645,10 +645,10 @@
                         
          
 (defn prop-wrap
-    [members f]
+    [name members f]
     (if (vector? (fnext f))
-	(prop-wrap-fn members f)
-	(prop-wrap-multi members f)))
+	(prop-wrap-fn name members f)
+	(prop-wrap-multi name members f)))
 
 
 (defmacro deftype
@@ -666,11 +666,11 @@
                            (conj inherits (first specs))
                            fns)
                 (instance? clojure.lang.ipersistentlist/IPersistentList
- (first specs))
+                           (first specs))
                     (recur (next specs)
                            inherits
                            (assoc fns (py/str (ffirst specs))
-                           	   	      (prop-wrap fields (first specs)))))))
+                           	   	      (prop-wrap name fields (first specs)))))))
 (def definterface deftype)
 (set-macro definterface)
 
@@ -697,10 +697,10 @@
 		      (let [ls sv]
 		           (py/setattr self "sv" nil)
           		   (py/setattr self "s"
-       		 	 	         (loop [ls ls]
-					   (py/if (instance? LazySeq ls)
-					          (recur (.sval ls))
-					          (seq ls))))))
+       		 	 	   (loop [ls ls]
+					         (py/if (instance? LazySeq ls)
+					                (recur (.sval ls))
+					                (seq ls))))))
 		s)
 	(__len__ [self]
 	    (loop [c 0
@@ -1225,7 +1225,7 @@
   {:added "1.0"}
    [n] (if (integer? n)
         (zero? (bit-and n 1))
-        (throw (TypeError (str "Argument must be an integer: " n)))))
+        (throw (py/TypeError (str "Argument must be an integer: " n)))))
 
 (defn odd?
   "Returns true if n is odd, throws an exception if n is not an integer"
@@ -1277,7 +1277,7 @@
 (defn coll?
   "Returns true if x implements IPersistentCollection"
   {:added "1.0"}
-  [x] (instance? clojure.lang.ipersistentcollection.IPersistentCollection x))
+  [x] (instance? clojure.lang.ipersistentcollection/IPersistentCollection x))
 
 (defn list?
   "Returns true if x implements IPersistentList"
@@ -1288,7 +1288,7 @@
 (defn set?
   "Returns true if x implements IPersistentSet"
   {:added "1.0"}
-  [x] (instance? clojure.lang.ipersistentset.IPersistentSet x))
+  [x] (instance? clojure.lang.ipersistentset/IPersistentSet x))
 
 (defn pylist?
   "Returns true if coll is a native python list"
