@@ -372,9 +372,9 @@ class MultiFn(object):
 
         self.locals, self.args, self.lastisargs, self.argsname = unpackArgs(argv)
         endLabel = Label("endLabel")
-        argcode = [(LOAD_FAST, '__argsv__'),
-            (LOAD_ATTR, '__len__'),
-            (CALL_FUNCTION, 0),
+        argcode = [(LOAD_CONST, len),
+            (LOAD_FAST, '__argsv__'),
+            (CALL_FUNCTION, 1),
             (LOAD_CONST, len(self.args) - (1 if self.lastisargs else 0)),
             (COMPARE_OP, ">=" if self.lastisargs else "==")]
         argcode.extend(emitJump(endLabel))
@@ -965,8 +965,7 @@ class Compiler():
                                         + sym.name + " not found in " + self.getNS().__name__, sym)
             var = getattr(self.getNS(), sym.name)
             if isinstance(var, Var):
-                return [(LOAD_CONST, var),
-                        (LOAD_ATTR, "deref"),
+                return [(LOAD_CONST, var.deref),
                         (CALL_FUNCTION, 0)]
             return [(LOAD_GLOBAL, sym.name)]
                 
@@ -977,8 +976,7 @@ class Compiler():
                 raise CompilerException(str(module) + " does not define " + sym.name, None)
             attr = getattr(module, sym.name)
             if isinstance(attr, Var):
-                splt.append((LOAD_CONST, attr))
-                splt.append((LOAD_ATTR, "deref"))
+                splt.append((LOAD_CONST, attr.deref))
                 splt.append((CALL_FUNCTION, 0))
             else:
                 splt.append((LOAD_CONST, module))
