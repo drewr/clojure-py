@@ -59,12 +59,16 @@ def compileDef(comp, form):
 
     code = []
     v = internVar(comp.getNS(), sym)
+    v.setDynamic(True)
     v.setMeta(sym.meta())
     code.append((LOAD_CONST, v))
     code.append((LOAD_ATTR, "bindRoot"))
     code.extend(comp.compile(value))
     code.append((CALL_FUNCTION, 1))
-
+    code.append((LOAD_CONST, v.setDynamic))
+    code.append((LOAD_CONST, False))
+    code.append((CALL_FUNCTION, 1))
+    code.append((POP_TOP, None))
 
     comp.popName()
     return code
@@ -965,8 +969,11 @@ class Compiler():
                                         + sym.name + " not found in " + self.getNS().__name__, sym)
             var = getattr(self.getNS(), sym.name)
             if isinstance(var, Var):
-                return [(LOAD_CONST, var.deref),
-                        (CALL_FUNCTION, 0)]
+                if (var.isDynamic()):
+                    return [(LOAD_CONST, var.deref),
+                            (CALL_FUNCTION, 0)]
+                else:
+                    return [(LOAD_CONST, var.deref())]
             return [(LOAD_GLOBAL, sym.name)]
                 
         splt = []
