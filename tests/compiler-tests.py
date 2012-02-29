@@ -94,7 +94,7 @@ class NonOverloadedFunctions(unittest.TestCase):
         s = read(r, True, None, True)
         res = self.comp.compile(s)
         fn = self.comp.executeCode(res)
-        return [c for c in Code.from_code(fn.func_code).code[:]
+        return [c for c in Code.from_code(fn.deref().func_code).code[:]
                 if c[0] is not SetLineno]
 
     def compileExpected(self, code):
@@ -134,7 +134,7 @@ class TruthinessTests(unittest.TestCase):
 
     def testNil(self):
         self.assertFalse(self.eval('(if nil true false)'))
-        self.assertFalse(self.eval('(if None true false)'))
+        self.assertFalse(self.eval('(if nil true false)'))
 
     def testFalse(self):
         self.assertFalse(self.eval('(if false true false)'))

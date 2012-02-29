@@ -1320,7 +1320,7 @@
   ([map key]
    (get map key nil))
   ([map key not-found]
-   (cond (instance? clojure.lang.ilookup.ILookup map)
+   (cond (instance? clojure.lang.ilookup/ILookup map)
            (.valAt map key not-found)
          
          :else
@@ -1348,11 +1348,11 @@
   [map key] 
     (cond (nil? map)
            nil
-          (instance? clojure.lang.associative.Associative map)
+          (instance? clojure.lang.associative/Associative map)
            (.entryAt map key)
           :else
            (if (contains? map key)
-               (clojure.lang.mapentry.MapEntry key (get map key))
+               (clojure.lang.mapentry/MapEntry key (get map key))
                nil)))
 
 (defn select-keys
@@ -1375,7 +1375,7 @@
    :static true}
   [map] 
     (if (map? map)
-         (clojure.lang.apersistentmap.createKeySeq (seq map))
+         (clojure.lang.apersistentmap/createKeySeq (seq map))
          (seq (.keys map))))
 
 (defn vals 
@@ -1384,7 +1384,7 @@
    :static true}
   [map] 
     (if (map? map)
-         (clojure.lang.apersistentmap.createValueSeq (seq map))
+         (clojure.lang.apersistentmap/createValueSeq (seq map))
          (seq (.items map))))
 
 (defn key
@@ -1464,7 +1464,7 @@
 (defmacro assert-args
   [& pairs]
   `(do (when-not ~(first pairs)
-         (throw (Exception
+         (throw (py/Exception
                   (str (first ~'&form) " requires " ~(second pairs) " in " ~'__name__ ":" (:line (meta ~'&form))))))
      ~(let [more (nnext pairs)]
         (when more
@@ -2141,7 +2141,7 @@
 (defn num
   "Coerce to Number"
   {:added "1.0"}
-  [x] (float x))
+  [x] (py/float x))
 
 (defn float?
   "Returns true if n is a floating point number"

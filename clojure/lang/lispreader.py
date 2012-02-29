@@ -7,6 +7,7 @@ from clojure.lang.ipersistentmap import IPersistentMap
 from clojure.lang.ipersistentset import IPersistentSet
 from clojure.lang.ipersistentcollection import IPersistentCollection
 from clojure.lang.persistenthashmap import EMPTY as EMPTY_MAP
+import clojure.lang.persistenthashset
 from clojure.lang.cljexceptions import ReaderException, IllegalStateException
 import clojure.lang.rt as RT
 from clojure.lang.cljkeyword import LINE_KEY

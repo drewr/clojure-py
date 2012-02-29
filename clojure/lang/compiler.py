@@ -533,7 +533,6 @@ def compileFNStar(comp, form):
         code.append((DUP_TOP, None))
         code.extend(selfalias.compileSet(comp))
 
-    print code
     comp.popAlias(symbol(name)) #closure
 
 
@@ -820,7 +819,8 @@ def macroexpand(form, comp, one = False):
         dreffed = itm
         if isinstance(dreffed, Var):
             dreffed = itm.deref()
-
+            
+        
         # Handle macros here
         # TODO: Break this out into a seperate function
         if ismacro(itm) or ismacro(dreffed):

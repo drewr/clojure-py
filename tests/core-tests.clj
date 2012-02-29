@@ -3,26 +3,26 @@
 
 (defn assert-true [val]
     (if val true 
-            (throw (AssertionError (str val " is not true")))))
+            (throw (py/AssertionError (str val " is not true")))))
 
 (defn assert-false [val]
-    (if val (throw (AssertionError (str val " is not false")))
+    (if val (throw (py/AssertionError (str val " is not false")))
             false))
 
 (defn assert-greater [x y]
     (if (py.bytecode/COMPARE_OP ">" x y)
         true
-        (throw (AssertionError (str x " is not greater than " y)))))
+        (throw (py/AssertionError (str x " is not greater than " y)))))
 
 (defn assert-lesser [x y]
     (if (py.bytecode/COMPARE_OP "<" x y)
         true
-        (throw (AssertionError (str x " is not greater than " y)))))
+        (throw (py/AssertionError (str x " is not greater than " y)))))
 
 (defn assert-equal [x y]
     (if (py.bytecode/COMPARE_OP "==" x y)
         true
-        (throw (AssertionError (str x " does not equal " y)))))
+        (throw (py/AssertionError (str x " does not equal " y)))))
 
 
 (defmacro deftest [name & body]
@@ -63,7 +63,7 @@
     (assert-equal (count '()) 0)
     (assert-equal (count '(1)) 1))
 
-(deftest int
+(deftest int-tests
     (assert-equal (int "1") 1)
     (assert-equal (int "-1") -1))
 
@@ -351,7 +351,7 @@
 (deftest take-tests
     (assert-equal (take 2 [1 2 3 4]) [1 2]))
 
-(deftest take-while
+(deftest take-while-tests
     (assert-equal (take-while even? [2 2 1 1]) [2 2]))
 
 (deftest drop-tests
@@ -432,7 +432,7 @@
 (deftest doseq-tests
     (doseq [x [1 2 3]
                           y [1 2 3]]
-                         (print (* x y))))
+                         (py/print (* x y))))
 ;; prints      
 ;;[1 2 3 2 4 6 3 6 9]
 
